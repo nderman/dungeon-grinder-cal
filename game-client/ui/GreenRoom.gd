@@ -4,8 +4,8 @@
 extends Control
 
 func _ready() -> void:
-	$Subtitle.text = "Floor reached %d     Syndication %d     Tokens %d\n\nPress SPACE or E for a new Season" % [
-		GameManager.current_floor, MetaManager.syndication_points, MetaManager.milestone_tokens
+	$Subtitle.text = "Floor reached %d     Level %d     Syndication %d     Tokens %d\n\nPress SPACE or E for a new Season" % [
+		GameManager.current_floor, GameManager.level, MetaManager.syndication_points, MetaManager.milestone_tokens
 	]
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -16,8 +16,8 @@ extends Node2D
 @export var neighborhood_bosses: int = 2   # DCC: a floor has several bosses, not one
 
 # Boss tiers. On Floor 1 every boss is arena-locked (per DCC lore).
-const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.0, "tint": Color(1, 1, 1), "telegraph": 0.55, "speed": 340.0}
-const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.8, "tint": Color(1.0, 0.7, 0.4), "telegraph": 0.7, "speed": 290.0}
+const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.0, "tint": Color(1, 1, 1), "telegraph": 0.55, "speed": 340.0, "xp": 300}
+const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.8, "tint": Color(1.0, 0.7, 0.4), "telegraph": 0.7, "speed": 290.0, "xp": 120}
 
 var grid: Dictionary = {}                 # Vector2i -> type string
 var rooms: Dictionary = {}                # Vector2i -> Room
@@ -56,12 +56,12 @@ func _designate() -> void:
 	for p in order:
 		if grid[p] == "MiniBoss":
 			anchors.append(p)
-	for c in _pick_spread(combat, anchors, clampi(combat.size() / 4, 1, 3)):
+	for c in _pick_spread(combat, anchors, 2, 4.0):   # ≥4 cells apart — real travel to safety
 		grid[c] = "PhaseDoor"
 
 # Greedily choose up to k Combat cells maximising the min distance to the anchors
 # (and to each other), so the picks end up spread across the floor.
-func _pick_spread(candidates: Array, anchors: Array, k: int) -> Array[Vector2i]:
+func _pick_spread(candidates: Array, anchors: Array, k: int, min_sep: float = 0.0) -> Array[Vector2i]:
 	var chosen: Array[Vector2i] = []
 	for _i in range(k):
 		var best := Vector2i.ZERO
@@ -74,7 +74,9 @@ func _pick_spread(candidates: Array, anchors: Array, k: int) -> Array[Vector2i]:
 				best_d = d
 				best = c
 		if best_d < 0.0:
-			break
+			break                       # nothing left
+		if not chosen.is_empty() and best_d < min_sep:
+			break                       # remaining picks are too close — keep them spread out
 		chosen.append(best)
 	return chosen
 
@@ -103,7 +105,7 @@ func _instantiate_rooms() -> void:
 func _populate(cell: Vector2i, room: Room) -> void:
 	match grid[cell]:
 		"Combat":
-			for _i in range(randi_range(1, 2)):
+			for _i in range(randi_range(2, 4)):
 				_spawn_enemy(room)
 		"Boss":
 			_spawn_boss(room, FLOOR_BOSS)
@@ -121,6 +123,7 @@ func _spawn_boss(room: Room, tier: Dictionary) -> void:
 	var hc := b.get_node_or_null("HealthComponent")
 	if hc:
 		hc.configured_hearts = tier["hearts"]
+		hc.xp_reward = tier["xp"]   # bosses are the big XP payout — the grind-gate reward
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
 		ai.damage_hearts = tier["damage"]

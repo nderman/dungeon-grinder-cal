@@ -9,6 +9,8 @@ extends CanvasLayer
 @onready var mana_label: Label = $ManaLabel
 @onready var ratings: Label = $Ratings
 @onready var hype_bar: ProgressBar = $HypeBar
+@onready var level_label: Label = $Level
+@onready var xp_bar: ProgressBar = $XPBar
 @onready var ticker: Label = $Ticker
 
 const SPIKE_TEXT := {
@@ -24,8 +26,11 @@ func _ready() -> void:
 	GameManager.hype_changed.connect(_on_hype)
 	SignalBus.achievement_unlocked.connect(_on_achievement)
 	SignalBus.item_acquired.connect(_on_item)
+	SignalBus.xp_changed.connect(_on_xp)
+	SignalBus.leveled_up.connect(_on_levelup)
 	_on_rating(GameManager.run_ratings)
 	_on_hype(GameManager.hype_meter)
+	_on_xp(GameManager.xp, GameManager.xp_to_next(GameManager.level), GameManager.level)
 	ticker.modulate.a = 0.0
 	_bind_player.call_deferred()
 
@@ -67,6 +72,16 @@ func _on_rating(v: int) -> void:
 
 func _on_hype(v: float) -> void:
 	hype_bar.value = v
+
+func _on_xp(current: int, to_next: int, level: int) -> void:
+	xp_bar.max_value = maxf(1.0, to_next)
+	xp_bar.value = current
+	# Show banked, unspent skill points as a ★ pip — your cue to hit a Safe-Room terminal.
+	var sp: int = GameManager.skill_points
+	level_label.text = "LVL %d   ★%d" % [level, sp] if sp > 0 else "LVL %d" % level
+
+func _on_levelup(level: int, _points: int) -> void:
+	_flash_ticker("LEVEL UP!  LVL %d  (+%d pts)" % [level, GameManager.SKILL_POINTS_PER_LEVEL])
 
 func _on_spike(type: String) -> void:
 	if SPIKE_TEXT.has(type):

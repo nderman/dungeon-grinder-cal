@@ -19,6 +19,12 @@ signal achievement_unlocked(title: String)          # Authorizes a loot box
 signal sponsor_pod_incoming(target_location: Vector2)
 signal hype_threshold_reached(tier_index: int)      # 50% / 75% / 90%
 
+# --- PROGRESSION (XP → LEVELS → SKILL POINTS) ---
+# Distinct from Ratings (audience/loot) and Gold (shops). This is character growth.
+signal xp_awarded(amount: int)                       # a kill paid out XP (emitted by HealthComponent)
+signal xp_changed(xp: int, xp_to_next: int, level: int)   # HUD bar refresh
+signal leveled_up(level: int, skill_points: int)     # +3 points banked; spend in a Safe Room (DCC)
+
 # --- NANO-MAGIC & EQUIPMENT ---
 signal spell_cast(spell_name: String, location: Vector2)
 signal mana_updated(current: float, max: float)

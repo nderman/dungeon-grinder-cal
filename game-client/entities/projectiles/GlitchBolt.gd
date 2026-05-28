@@ -5,7 +5,7 @@
 extends Node2D
 
 @export var speed: float = 700.0
-@export var lifetime: float = 2.0
+@export var lifetime: float = 1.0   # range = speed × lifetime ≈ 700px ≈ one room (CELL 768)
 var direction: Vector2 = Vector2.RIGHT
 
 # Called by the caster right after instancing.

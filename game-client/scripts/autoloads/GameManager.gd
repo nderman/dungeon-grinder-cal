@@ -24,6 +24,18 @@ var earned_loot_boxes: Array = []     # {tier, source} flagged by the achievemen
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
 
+# --- PROGRESSION (XP / LEVELS / SKILL POINTS) — the character-growth rail ---
+# Per DCC: kills grant XP; every level hands you 3 stat points to spend, and you may only
+# spend them in a Safe Room. Levels reset per run (roguelite); you re-grow each Season.
+const XP_PER_LEVEL_BASE := 80          # XP for L1→L2; scales linearly with level
+const SKILL_POINTS_PER_LEVEL := 3      # DCC canon
+var xp: int = 0
+var level: int = 1
+var skill_points: int = 0              # unspent — banked until you reach a Safe-Room terminal
+
+func xp_to_next(lvl: int) -> int:
+	return XP_PER_LEVEL_BASE * lvl     # L1→80, L2→160, L3→240 …
+
 # --- ACTIVE CONTRACT ---
 var current_race: String = "Human"
 var current_class: String = "Brawler"
@@ -35,16 +47,51 @@ signal floor_changed(floor: int)
 
 func _ready() -> void:
 	SignalBus.ratings_spike.connect(_on_ratings_spike)
+	SignalBus.enemy_cancelled.connect(_on_enemy_cancelled)
+	SignalBus.xp_awarded.connect(add_xp)
+
+# Every kill pays Ratings — the AUDIENCE rail (drives loot drops + fan/sponsor boxes).
+# Character growth rides the separate XP rail (see add_xp); shops will use Gold.
+func _on_enemy_cancelled(_loc: Vector2, ratings_earned: int) -> void:
+	run_ratings += ratings_earned
+	rating_changed.emit(run_ratings)
+
+# Kills feed the XP rail. Banks 3 skill points per level gained (spendable in a Safe Room).
+func add_xp(amount: int) -> void:
+	if amount <= 0:
+		return
+	xp += amount
+	while xp >= xp_to_next(level):
+		xp -= xp_to_next(level)
+		level += 1
+		skill_points += SKILL_POINTS_PER_LEVEL
+		SignalBus.leveled_up.emit(level, skill_points)
+	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
+
+# Spend one banked point on a core stat. Mutates the live run-stats dict (the Player shares
+# this reference) and pings stat_injected so the Player re-derives hearts/mana/speed.
+func spend_skill_point(stat: String) -> bool:
+	if skill_points <= 0 or not current_run_stats.has(stat):
+		return false
+	skill_points -= 1
+	current_run_stats[stat] = int(current_run_stats[stat]) + 1
+	SignalBus.stat_injected.emit(stat, int(current_run_stats[stat]))
+	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)   # refresh the points pip
+	return true
 
 func start_new_run() -> void:
 	current_floor = 1
 	run_ratings = 0
 	hype_meter = 0.0
+	xp = 0
+	level = 1
+	skill_points = 0
 	earned_loot_boxes.clear()
 	run_inventory.clear()
 	is_run_active = true
 	MetaManager.reset_run_cache()
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)
+	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
 
 func advance_floor() -> void:
 	current_floor += 1

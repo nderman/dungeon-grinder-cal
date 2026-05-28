@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://entities/enemies/MeatGrinderGolem.gd" id="1_golem"]
 [ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
 [ext_resource type="Script" path="res://components/MovementComponent.gd" id="3_move"]
 [ext_resource type="Script" path="res://components/AIComponent.gd" id="4_ai"]
+[ext_resource type="Script" path="res://components/HealthBar.gd" id="5_hb"]
 
 [sub_resource type="CircleShape2D" id="cs_golem"]
 radius = 46.0
@@ -21,6 +22,7 @@ shape = SubResource("cs_golem")
 [node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("2_health")
 configured_hearts = 10.0
+xp_reward = 150
 
 [node name="MovementComponent" type="Node2D" parent="."]
 script = ExtResource("3_move")
@@ -33,3 +35,8 @@ telegraph_duration = 0.8
 attack_cooldown = 1.4
 damage_hearts = 2.0
 move_speed = 130.0
+
+[node name="HealthBar" type="Node2D" parent="."]
+script = ExtResource("5_hb")
+width = 110.0
+y_offset = -66.0

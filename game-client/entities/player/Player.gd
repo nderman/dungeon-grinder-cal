@@ -29,10 +29,18 @@ var _can_fire: bool = true
 func _ready() -> void:
 	add_to_group("player")
 	_initialize_contestant()
+	# Safe-Room skill-point spends mutate the shared run-stats dict; re-derive vitals.
+	SignalBus.stat_injected.connect(_on_stat_injected)
 
 func _initialize_contestant() -> void:
 	if not GameManager.current_run_stats.is_empty():
 		current_stats = GameManager.current_run_stats
+	_calculate_vitals()
+	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
+
+# A point was injected into a stat (Stat-Injection terminal). Re-apply the derived vitals.
+# In a Safe Room this doubles as a full patch-up — earned, not free.
+func _on_stat_injected(_stat: String, _new_value: int) -> void:
 	_calculate_vitals()
 	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
 

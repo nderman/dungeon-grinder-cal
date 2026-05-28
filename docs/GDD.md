@@ -88,8 +88,21 @@ Meat-Grinder's Stage 0/0/0/100 (boss). Spawn/Safe/Exit = 0.
   opens all pending boxes. Boss Boxes / per-tier prefabs / affixes are TODO.
 - **Director's Algorithm:** loot weights shift toward the player's highest stat / current
   build (gap-fills CON/healing when near death). Human's passive doubles the tailoring.
-- Currencies: **Ratings** (in-run, lost on death) → 10% to **Syndication Points** (persistent).
-  **Milestone Tokens** at floors 3/6/9. **Fan Tokens / Bio-Scrap** for crafting/cosmetics.
+- **Currencies (three distinct rails — do not conflate):**
+  - **XP** — earned from kills → **level-ups** → **skill points** the player spends on stats.
+    This is the *character-growth* rail (the "level up, get loot, then risk the boss" grind-gate).
+    **Implemented:** `HealthComponent.xp_reward` per mob (goblin 20, Neighborhood boss 120, Floor
+    boss 300) → `SignalBus.xp_awarded` → `GameManager.add_xp`. Curve `xp_to_next(lvl)=80×lvl`
+    (L1→80, L2→160…); each level banks **3 skill points** (DCC). Levels reset per run (roguelite).
+    Spend in a Safe Room at the **`LevelTerminal`** (cyan pad, press E) → `LevelUpPanel` `+` per
+    stat → `GameManager.spend_skill_point` mutates the shared run-stats dict + emits `stat_injected`,
+    so the Player re-derives hearts/mana/speed (a level-up doubles as a full patch-up). HUD shows
+    `LVL n` + an XP bar + a `★n` pip when points are unspent. *(Skills/spells leveling-by-use: TODO.)*
+  - **Ratings (Hype)** — the *audience* rail. Drives **loot drops + fan/sponsor boxes** and Ratings
+    Spikes (§9). NOT a shop wallet. In-run, partly converts to persistent **Syndication Points**.
+  - **Gold** — the *shop* rail. Spent at shops/vendors for gear. *(Shops are TODO.)*
+  - **Milestone Tokens** at floors 3/6/9; **Syndication Points** = persistent Green-Room meta.
+  - *Superseded:* the earlier "Ratings → stat-injection terminal" idea is replaced by XP→skill-points.
 
 ## 9. Ratings Spikes (audience economy)
 | Trigger | Achievement | Reward |

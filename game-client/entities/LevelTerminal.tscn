@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://entities/LevelTerminal.gd" id="1_lt"]
+[ext_resource type="Script" path="res://ui/LevelUpPanel.gd" id="2_lup"]
+
+[sub_resource type="RectangleShape2D" id="rs_lt"]
+size = Vector2(96, 96)
+
+[node name="LevelTerminal" type="Area2D"]
+script = ExtResource("1_lt")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.3, 0.8, 1, 0.85)
+polygon = PackedVector2Array(-48, -48, 48, -48, 48, 48, -48, 48)
+
+[node name="Label" type="Label" parent="."]
+offset_left = -80.0
+offset_top = -78.0
+offset_right = 80.0
+offset_bottom = -56.0
+horizontal_alignment = 1
+text = "LEVEL UP [E]"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("rs_lt")
+
+[node name="LevelUpPanel" type="CanvasLayer" parent="."]
+script = ExtResource("2_lup")

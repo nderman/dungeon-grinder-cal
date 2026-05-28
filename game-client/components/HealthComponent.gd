@@ -12,6 +12,7 @@ var is_player: bool = false
 # Enemies set this in their scene to self-initialize their pool.
 # The Player leaves it 0 and instead calls initialize_health() from CON.
 @export var configured_hearts: float = 0.0
+@export var xp_reward: int = 0               # XP this mob pays on death (bosses set higher)
 @export var iframe_seconds: float = 0.4      # brief post-hit invulnerability (player)
 var _invuln: bool = false
 
@@ -62,5 +63,7 @@ func _on_cancelled() -> void:
 	if is_player:
 		GameManager.end_run()   # Save meta-progression, fade to the Green Room.
 	else:
-		SignalBus.enemy_cancelled.emit(global_position, 10)
+		SignalBus.enemy_cancelled.emit(global_position, 10)   # audience/Ratings rail
+		if xp_reward > 0:
+			SignalBus.xp_awarded.emit(xp_reward)              # character-growth rail
 		get_parent().queue_free()
