@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://entities/LootBoxTerminal.gd" id="1_lbt"]
+
+[sub_resource type="CircleShape2D" id="cs_lbt"]
+radius = 44.0
+
+[node name="LootBoxTerminal" type="Area2D"]
+script = ExtResource("1_lbt")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(1.0, 0.82, 0.25, 0.6)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("cs_lbt")

@@ -24,9 +24,12 @@ SignalBus="*res://scripts/autoloads/SignalBus.gd"
 RaceData="*res://data/RaceData.gd"
 ClassData="*res://data/ClassData.gd"
 NanoMagicLibrary="*res://data/NanoMagicLibrary.gd"
+LootData="*res://data/LootData.gd"
+AchievementData="*res://data/AchievementData.gd"
 MetaManager="*res://scripts/autoloads/MetaManager.gd"
 GameManager="*res://scripts/autoloads/GameManager.gd"
 FeedbackManager="*res://scripts/autoloads/FeedbackManager.gd"
+AchievementManager="*res://scripts/autoloads/AchievementManager.gd"
 
 [display]
 

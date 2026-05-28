@@ -22,6 +22,7 @@ var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Spo
 var is_run_active: bool = false
 var earned_loot_boxes: Array = []     # {tier, source} flagged by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
+var run_inventory: Array = []                             # items pulled from Loot Boxes this run
 
 # --- ACTIVE CONTRACT ---
 var current_race: String = "Human"
@@ -40,6 +41,7 @@ func start_new_run() -> void:
 	run_ratings = 0
 	hype_meter = 0.0
 	earned_loot_boxes.clear()
+	run_inventory.clear()
 	is_run_active = true
 	MetaManager.reset_run_cache()
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)

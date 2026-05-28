@@ -16,6 +16,7 @@ var unlocked_races: Array[String] = ["Human"]
 var unlocked_classes: Array[String] = ["Brawler", "Scavenger"]
 var permanent_loot_pool: Array[String] = []      # IDs available to the Director's Algorithm
 var permanent_stat_buffs: Dictionary = {}         # +1s from Artifact-tier injectors
+var unlocked_achievements: Array[String] = []     # one-time achievements already earned
 
 # --- RUN CACHE (cleared on death) ---
 var total_injections_this_run: int = 0
@@ -79,6 +80,7 @@ func save_persistence() -> void:
 	cfg.set_value("Unlocks", "classes", unlocked_classes)
 	cfg.set_value("Unlocks", "loot_pool", permanent_loot_pool)
 	cfg.set_value("Unlocks", "stat_buffs", permanent_stat_buffs)
+	cfg.set_value("Progression", "achievements", unlocked_achievements)
 	cfg.save(SAVE_PATH)
 
 func load_persistence() -> void:
@@ -87,7 +89,9 @@ func load_persistence() -> void:
 		return  # Fresh meat, no history.
 	syndication_points = cfg.get_value("Progression", "syndication_points", 0)
 	milestone_tokens = cfg.get_value("Progression", "milestone_tokens", 0)
-	unlocked_races = cfg.get_value("Unlocks", "races", ["Human"])
-	unlocked_classes = cfg.get_value("Unlocks", "classes", ["Brawler", "Scavenger"])
-	permanent_loot_pool = cfg.get_value("Unlocks", "loot_pool", [])
+	# .assign() coerces ConfigFile's untyped Arrays into our typed Array[String]s.
+	unlocked_races.assign(cfg.get_value("Unlocks", "races", ["Human"]))
+	unlocked_classes.assign(cfg.get_value("Unlocks", "classes", ["Brawler", "Scavenger"]))
+	permanent_loot_pool.assign(cfg.get_value("Unlocks", "loot_pool", []))
 	permanent_stat_buffs = cfg.get_value("Unlocks", "stat_buffs", {})
+	unlocked_achievements.assign(cfg.get_value("Progression", "achievements", []))

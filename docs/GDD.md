@@ -79,8 +79,13 @@ Meat-Grinder's Stage 0/0/0/100 (boss). Spawn/Safe/Exit = 0.
   (Meat-Grinder Golem, 10♥, 2 phases); distinct per-tier prefabs + Boss-Box loot are TODO.
 
 ## 8. Loot & Economy
-- Rarity: Trash/Common/Rare/Legendary/Artifact. Rarity = number of **affix slots**
-  (stat bonuses + abilities: Burn, Bleed, Lightning, AOE, Life Leech, Slow).
+- **Loot Box tiers (DCC):** Bronze → Silver → Gold → Platinum → Legendary → Celestial.
+  Achievements grant boxes; they open **only in a Safe Room, all at once, low→high tier** (DCC).
+- Item affix rarity: Trash/Common/Rare/Legendary/Artifact = number of **affix slots**
+  (Burn, Bleed, Lightning, AOE, Life Leech, Slow). *(affix system still TODO)*
+- **Implemented (MVP framework):** `LootData` (box tiers + build-aware roll), `AchievementData`
+  + `AchievementManager` (SignalBus events → achievements → boxes), Safe-Room `LootBoxTerminal`
+  opens all pending boxes. Boss Boxes / per-tier prefabs / affixes are TODO.
 - **Director's Algorithm:** loot weights shift toward the player's highest stat / current
   build (gap-fills CON/healing when near death). Human's passive doubles the tailoring.
 - Currencies: **Ratings** (in-run, lost on death) → 10% to **Syndication Points** (persistent).

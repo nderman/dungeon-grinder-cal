@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://levels/prefabs/Room.tscn" id="1_room"]
 [ext_resource type="PackedScene" path="res://entities/Teleporter.tscn" id="2_tp"]
+[ext_resource type="PackedScene" path="res://entities/LootBoxTerminal.tscn" id="3_lbt"]
 
 [node name="SafeRoom" type="Node2D"]
 
@@ -13,3 +14,6 @@ position = Vector2(-200, 0)
 [node name="ExitPortal" parent="." instance=ExtResource("2_tp")]
 position = Vector2(200, 0)
 mode = 1
+
+[node name="LootBoxTerminal" parent="." instance=ExtResource("3_lbt")]
+position = Vector2(0, -150)

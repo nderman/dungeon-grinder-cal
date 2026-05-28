@@ -22,6 +22,8 @@ func _ready() -> void:
 	SignalBus.ratings_spike.connect(_on_spike)
 	GameManager.rating_changed.connect(_on_rating)
 	GameManager.hype_changed.connect(_on_hype)
+	SignalBus.achievement_unlocked.connect(_on_achievement)
+	SignalBus.item_acquired.connect(_on_item)
 	_on_rating(GameManager.run_ratings)
 	_on_hype(GameManager.hype_meter)
 	ticker.modulate.a = 0.0
@@ -69,6 +71,12 @@ func _on_hype(v: float) -> void:
 func _on_spike(type: String) -> void:
 	if SPIKE_TEXT.has(type):
 		_flash_ticker(SPIKE_TEXT[type])
+
+func _on_achievement(title: String) -> void:
+	_flash_ticker("★ " + title)
+
+func _on_item(item_name: String) -> void:
+	_flash_ticker("Looted: " + item_name)
 
 func _flash_ticker(text: String) -> void:
 	ticker.text = text

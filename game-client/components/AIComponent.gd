@@ -14,16 +14,24 @@ var current_state: State = State.IDLE
 @export var attack_cooldown: float = 1.2
 @export var damage_hearts: float = 1.0          # mobs 1, bosses 2
 @export var move_speed: float = 240.0           # chase speed (bosses set this low)
+@export var start_active: bool = true           # bosses start dormant until the arena locks
 
+var _active: bool = true
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
 @onready var move_comp: MovementComponent = get_parent().get_node_or_null("MovementComponent")
 
 func _ready() -> void:
 	parent = get_parent() as CharacterBody2D
+	_active = start_active
 	_change_state(State.IDLE)
 
+func activate() -> void:
+	_active = true
+
 func _physics_process(delta: float) -> void:
+	if not _active:
+		return
 	match current_state:
 		State.IDLE: _find_target()
 		State.CHASE: _handle_chase(delta)

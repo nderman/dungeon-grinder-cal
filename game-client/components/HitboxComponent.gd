@@ -20,7 +20,13 @@ func _on_area_entered(area: Area2D) -> void:
 	_try_hit(area.get_parent())
 
 func _try_hit(victim: Node) -> void:
-	if victim == null or not victim.is_in_group(target_group):
+	if victim == null:
+		return
+	# Stop on solid level geometry (walls + lock barriers) — no shooting through walls.
+	if victim is StaticBody2D:
+		_consume()
+		return
+	if not victim.is_in_group(target_group):
 		return
 	var health := victim.get_node_or_null("HealthComponent") as HealthComponent
 	if health == null:
@@ -30,5 +36,8 @@ func _try_hit(victim: Node) -> void:
 	if prot:
 		dmg = prot.handle_incoming_damage(dmg)
 	health.take_damage(dmg)
+	_consume()
+
+func _consume() -> void:
 	if one_shot and get_parent() is Node2D:
 		get_parent().queue_free()

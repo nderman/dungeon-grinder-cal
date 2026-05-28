@@ -16,8 +16,8 @@ extends Node2D
 @export var neighborhood_bosses: int = 2   # DCC: a floor has several bosses, not one
 
 # Boss tiers. On Floor 1 every boss is arena-locked (per DCC lore).
-const FLOOR_BOSS := {"hearts": 10.0, "damage": 2.0, "scale": 1.0, "tint": Color(1, 1, 1)}
-const NEIGHBORHOOD_BOSS := {"hearts": 5.0, "damage": 1.0, "scale": 0.8, "tint": Color(1.0, 0.7, 0.4)}
+const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.0, "tint": Color(1, 1, 1), "telegraph": 0.55, "speed": 340.0}
+const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.8, "tint": Color(1.0, 0.7, 0.4), "telegraph": 0.7, "speed": 290.0}
 
 var grid: Dictionary = {}                 # Vector2i -> type string
 var rooms: Dictionary = {}                # Vector2i -> Room
@@ -124,6 +124,9 @@ func _spawn_boss(room: Room, tier: Dictionary) -> void:
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
 		ai.damage_hearts = tier["damage"]
+		ai.telegraph_duration = tier["telegraph"]
+		ai.move_speed = tier["speed"]
+		ai.start_active = false   # dormant until the arena locks
 	b.scale = Vector2(tier["scale"], tier["scale"])
 	b.modulate = tier["tint"]
 	room.enemies_root.add_child(b)
