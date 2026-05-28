@@ -66,6 +66,12 @@ signal rating_changed(new_value: int)
 signal hype_changed(new_value: float)
 signal floor_changed(floor: int)
 signal items_changed()
+signal loot_boxes_changed(count: int)   # pending boxes waiting to open at a Safe Room
+
+# Queue a loot box (from an achievement) and ping the HUD so the player knows it's waiting.
+func add_loot_box(tier: int) -> void:
+	earned_loot_boxes.append(tier)
+	loot_boxes_changed.emit(earned_loot_boxes.size())
 
 # Effective stats = base run-stats (race/class + skill points) + equipped gear bonuses.
 func get_effective_stats() -> Dictionary:
@@ -210,5 +216,5 @@ func end_run() -> void:
 		MetaManager.add_milestone_token(1)
 
 	MetaManager.save_persistence()
-	await get_tree().create_timer(2.0).timeout   # let the "Cancelled" static play
+	await get_tree().create_timer(1.2).timeout   # brief "Cancelled" beat, then cut to Green Room
 	get_tree().change_scene_to_file(GREEN_ROOM_PATH)

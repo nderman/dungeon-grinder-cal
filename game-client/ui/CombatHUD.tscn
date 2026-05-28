@@ -30,6 +30,15 @@ offset_right = 400.0
 offset_bottom = 60.0
 text = "MANA — / —"
 
+[node name="Boxes" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 64.0
+offset_right = 400.0
+offset_bottom = 90.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+text = ""
+
 [node name="Ratings" type="Label" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0
@@ -61,6 +70,18 @@ offset_bottom = 84.0
 theme_override_colors/font_color = Color(0.5, 0.9, 1, 1)
 horizontal_alignment = 2
 text = "LVL 1"
+
+[node name="XPLabel" type="Label" parent="."]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -244.0
+offset_top = 82.0
+offset_right = -200.0
+offset_bottom = 100.0
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.6, 0.9, 1, 0.8)
+horizontal_alignment = 2
+text = "XP"
 
 [node name="XPBar" type="ProgressBar" parent="."]
 anchor_left = 1.0

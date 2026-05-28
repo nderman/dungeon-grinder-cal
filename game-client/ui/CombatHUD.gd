@@ -14,6 +14,7 @@ extends CanvasLayer
 @onready var ticker: Label = $Ticker
 @onready var weapon_label: Label = $Weapon
 @onready var quickbar_label: Label = $QuickBar
+@onready var boxes_label: Label = $Boxes
 
 const SPIKE_TEXT := {
 	"SPEED_DEMON": "SPEED DEMON!", "NEAR_DEATH": "NEAR DEATH!",
@@ -33,12 +34,18 @@ func _ready() -> void:
 	SignalBus.leveled_up.connect(_on_levelup)
 	SignalBus.weapon_changed.connect(func(n): weapon_label.text = n)
 	GameManager.items_changed.connect(_refresh_quickbar)
+	GameManager.loot_boxes_changed.connect(_on_boxes)
 	_on_rating(GameManager.run_ratings)
 	_on_hype(GameManager.hype_meter)
 	_on_xp(GameManager.xp, GameManager.xp_to_next(GameManager.level), GameManager.level)
 	_refresh_quickbar()
+	_on_boxes(GameManager.earned_loot_boxes.size())
 	ticker.modulate.a = 0.0
 	_bind_player.call_deferred()
+
+# Persistent reminder of loot boxes waiting to be opened at the next Safe Room.
+func _on_boxes(count: int) -> void:
+	boxes_label.text = "📦 %d loot box%s — open at a Safe Room" % [count, "" if count == 1 else "es"] if count > 0 else ""
 
 func _refresh_quickbar() -> void:
 	if GameManager.quickbar.is_empty():

@@ -9,6 +9,7 @@ enum State { IDLE, CHASE, TELEGRAPH, ATTACK, COOLDOWN }
 var current_state: State = State.IDLE
 
 @export var detection_range: float = 400.0
+@export var alert_radius: float = 260.0          # a freshly-aggroed mob rallies buddies within this
 @export var attack_range: float = 60.0
 @export var telegraph_duration: float = 0.3   # Glitch-Goblin baseline
 @export var attack_cooldown: float = 1.2
@@ -53,6 +54,28 @@ func _acquire_player() -> void:
 	target = players[0] as CharacterBody2D
 	if current_state == State.IDLE:
 		_change_state(State.CHASE)
+		_rally_nearby()
+
+# Alert idle mobs near me to the same target — sniping/sighting one wakes its cluster.
+# Alerted mobs do NOT re-rally (one hop), so a pack wakes, not the whole floor.
+func _rally_nearby() -> void:
+	if not is_instance_valid(target):
+		return
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e == parent or not (e is Node2D):
+			continue
+		if global_position.distance_to((e as Node2D).global_position) > alert_radius:
+			continue
+		var ai := e.get_node_or_null("AIComponent") as AIComponent
+		if ai:
+			ai.alert(target)
+
+func alert(t: CharacterBody2D) -> void:
+	if not _active or is_instance_valid(target):
+		return   # dormant, or already engaged
+	target = t
+	if current_state == State.IDLE:
+		_change_state(State.CHASE)
 
 func _physics_process(delta: float) -> void:
 	if not _active:
@@ -70,6 +93,7 @@ func _find_target() -> void:
 	if p and global_position.distance_to(p.global_position) < detection_range:
 		target = p
 		_change_state(State.CHASE)
+		_rally_nearby()
 
 func _handle_chase(delta: float) -> void:
 	if target == null:

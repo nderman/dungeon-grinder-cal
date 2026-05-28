@@ -58,6 +58,14 @@ func _ready() -> void:
 	add_child(_melee_fx)
 	_inventory_panel = InventoryPanel.new()
 	add_child(_inventory_panel)
+	health_comp.health_depleted.connect(_on_death)
+
+# Death ("Cancelled"): freeze the contestant at once so you can't keep playing during the
+# brief Green-Room cut. GameManager.end_run (fired by HealthComponent) handles the hand-off.
+func _on_death() -> void:
+	set_physics_process(false)
+	set_process_unhandled_input(false)
+	velocity = Vector2.ZERO
 
 func _initialize_contestant() -> void:
 	if not GameManager.current_run_stats.is_empty():

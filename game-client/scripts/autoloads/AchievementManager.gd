@@ -47,8 +47,9 @@ func unlock(id: String) -> void:
 			_run_unlocked.append(id)
 		_:
 			pass   # "repeatable" — no dedup
-	GameManager.earned_loot_boxes.append(int(a["tier"]))
-	SignalBus.achievement_unlocked.emit(a["title"])
+	GameManager.add_loot_box(int(a["tier"]))
+	# Name the box tier so the ticker tells you what you actually won.
+	SignalBus.achievement_unlocked.emit("%s — %s Box" % [a["title"], LootData.tier_name(int(a["tier"]))])
 
 # Safe-Room only: open every pending box at once, low tier -> high (DCC).
 func open_all_boxes(stats: Dictionary) -> void:
@@ -57,6 +58,7 @@ func open_all_boxes(stats: Dictionary) -> void:
 		return
 	var boxes: Array = GameManager.earned_loot_boxes.duplicate()
 	GameManager.earned_loot_boxes.clear()
+	GameManager.loot_boxes_changed.emit(0)   # pending counter back to zero
 	boxes.sort()
 	for tier in boxes:
 		SignalBus.box_opened.emit(LootData.tier_name(int(tier)))
