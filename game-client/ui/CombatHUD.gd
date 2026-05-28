@@ -28,10 +28,16 @@ func _ready() -> void:
 	_bind_player.call_deferred()
 
 # Hearts + initial mana come straight off the player's components.
+var _bound: bool = false
+
 func _bind_player() -> void:
+	if _bound:
+		return
 	var p := get_tree().get_first_node_in_group("player")
 	if p == null:
+		get_tree().create_timer(0.1).timeout.connect(_bind_player)   # spawn race — retry
 		return
+	_bound = true
 	var hc := p.get_node_or_null("HealthComponent")
 	if hc:
 		hc.health_changed.connect(_on_health)
@@ -41,7 +47,13 @@ func _bind_player() -> void:
 		_on_mana(mc.current_mana, mc.max_mana)
 
 func _on_health(current: float, maximum: float) -> void:
-	hearts.text = "HP %s / %s" % [_fmt(current), _fmt(maximum)]
+	hearts.text = "%s   %s / %s" % [_hearts_glyphs(current, maximum), _fmt(current), _fmt(maximum)]
+
+func _hearts_glyphs(current: float, maximum: float) -> String:
+	var s := ""
+	for i in range(int(ceil(maximum))):
+		s += "♥" if current >= float(i + 1) else "♡"
+	return s
 
 func _on_mana(current: float, maximum: float) -> void:
 	mana_bar.max_value = maximum

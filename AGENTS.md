@@ -57,16 +57,18 @@ Autoloads (registered in `game-client/project.godot`, load order matters):
 **Implemented (GDScript):** all 6 autoloads/data scripts; components Health, Hitbox,
 Movement, Protection, Mana, AI; `LevelGenerator.gd`; `entities/player/Player.gd`;
 `project.godot` with autoloads + twin-stick input map.
-**Runnable vertical slice:** `Main.tscn` (set as the main scene) drops `Player.tscn` and a
-`GlitchGoblin.tscn` into `TestRoom.tscn`. Open the **`game-client/`** folder in Godot 4 and
-press Play — move = WASD, aim = arrows, dash = Space, cast Glitch Bolt = Q, fire = mouse.
-The goblin telegraphs, hits for 1♥, CON gives a DR "Clink!" chance; at 0♥ you're Cancelled to
-the placeholder `ui/GreenRoom.tscn`. (`HealthComponent.configured_hearts` lets an enemy scene
-set its own pool; the Player still derives hearts from CON.)
+**Runnable game (`Floor.tscn` = main scene):** `LevelGenerator` builds an **Open Floor** —
+a Random Walk grid of parametric `Room`s (walls + door-gaps built in code via `Room.gd`),
+doors opened between neighbours, enemies + Phase-Doors scattered, and a sub-dimensional
+`SafeRoom` parked off-grid. You spawn in the Spawn room. Controls: move WASD, aim arrows,
+dash Space, fire mouse, cast Q, **interact E** (Phase-Door pad → Safe Room; the portal there
+warps you back via `GameManager.last_safe_room_entrance_pos`). `CombatHUD` shows HP/mana/
+hype/ratings; death → placeholder Green Room. `Main.tscn` is kept as a single-room combat
+test bench.
 **Not yet built (next work):**
-- Real scenes — author in-editor (gray-box art is fine): the **10 room prefabs** (each needs
-  `open_exit(dir)`, `Marker2D` spawn/door points, `NavigationRegion2D`, camera bounds), more
-  enemy types, `CombatHUD.tscn`, `SafeRoomUI.tscn`, and a real Green Room.
+- Real **boss** (Meat-Grinder Golem) in place of the placeholder goblin in the boss room;
+  weighted enemy spawns (Sniper, Shield-Bot per the GDD table); `SafeRoom` stat/loot
+  terminals; floor→floor progression via an exit room; art (everything is gray-box squares).
 - Scripts still to draft: `InputComponent` (optional — Player handles input inline now),
   `SafeRoomTerminal.gd`, `LootBoxTerminal.gd`, `SponsorDropPod.gd`, `GreenRoomUI.gd`,
   `CastingCouchUI.gd`, `FeedbackManager.gd` (the SignalBus listener that plays VFX/SFX),

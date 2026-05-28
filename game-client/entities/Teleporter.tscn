@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://entities/Teleporter.gd" id="1_tp"]
+
+[sub_resource type="CircleShape2D" id="cs_tp"]
+radius = 44.0
+
+[node name="Teleporter" type="Area2D"]
+script = ExtResource("1_tp")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.4, 0.9, 1, 0.55)
+polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("cs_tp")

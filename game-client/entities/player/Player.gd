@@ -46,10 +46,15 @@ func _physics_process(delta: float) -> void:
 		move_comp.apply_dash_friction(delta)
 		return
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	# Aim with the right stick / arrows if used, otherwise track the mouse (desktop).
 	var aim := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 	if aim.length() > 0.1:
-		aim_dir = aim
-		weapon_anchor.rotation = aim.angle()
+		aim_dir = aim.normalized()
+	else:
+		var to_mouse := get_global_mouse_position() - global_position
+		if to_mouse.length() > 1.0:
+			aim_dir = to_mouse.normalized()
+	weapon_anchor.rotation = aim_dir.angle()
 	if Input.is_action_pressed("fire") and _can_fire:
 		_fire()
 	move_comp.handle_movement(delta, move, base_speed)
@@ -82,19 +87,26 @@ func execute_nano_magic(spell_id: String) -> void:
 		SignalBus.spell_cast.emit(spell["name"], global_position)
 		_cast_effect(spell["effect_type"], scaled_damage)
 
+# Left-click: a FREE basic Glitch Bolt (a weapon, not a spell — no mana cost).
 func _fire() -> void:
 	_can_fire = false
-	execute_nano_magic("glitch_bolt")
+	var int_stat := int(current_stats["INT"])
+	var dmg: float = NanoMagicLibrary.SPELLS["glitch_bolt"]["damage"] * (1.0 + int_stat * 0.05)
+	_spawn_projectile(dmg)
+	SignalBus.spell_cast.emit("Glitch Bolt", global_position)
 	await get_tree().create_timer(fire_cooldown).timeout
 	_can_fire = true
 
 func _cast_effect(effect_type: String, damage: float) -> void:
 	match effect_type:
 		"projectile":
-			var bolt := BOLT_SCENE.instantiate()
-			get_tree().current_scene.add_child(bolt)
-			bolt.global_position = weapon_anchor.global_position
-			bolt.setup(aim_dir, damage)
+			_spawn_projectile(damage)
 		_:
 			pass  # TODO: chain_lightning / beam / aoe_pull effects
+
+func _spawn_projectile(damage: float) -> void:
+	var bolt := BOLT_SCENE.instantiate()
+	get_tree().current_scene.add_child(bolt)
+	bolt.global_position = weapon_anchor.global_position
+	bolt.setup(aim_dir, damage)
 

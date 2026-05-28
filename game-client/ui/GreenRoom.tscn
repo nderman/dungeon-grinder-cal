@@ -1,7 +1,32 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=2 format=3]
 
-[node name="GreenRoom" type="Label"]
-offset_right = 700.0
-offset_bottom = 120.0
-text = "GREEN ROOM — Contestant Cancelled.
-(placeholder: spend Syndication Points / Milestone Tokens here)"
+[ext_resource type="Script" path="res://ui/GreenRoom.gd" id="1_gr"]
+
+[node name="GreenRoom" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_gr")
+
+[node name="BG" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.06, 0.08, 1)
+
+[node name="Title" type="Label" parent="."]
+anchor_left = 0.0
+anchor_right = 1.0
+anchor_top = 0.34
+offset_bottom = 64.0
+theme_override_font_sizes/font_size = 52
+theme_override_colors/font_color = Color(1, 0.3, 0.35, 1)
+horizontal_alignment = 1
+text = "CANCELLED"
+
+[node name="Subtitle" type="Label" parent="."]
+anchor_left = 0.0
+anchor_right = 1.0
+anchor_top = 0.5
+offset_bottom = 90.0
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "Press SPACE or E for a new Season"

@@ -21,6 +21,7 @@ var run_ratings: int = 0
 var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Sponsor Pod
 var is_run_active: bool = false
 var earned_loot_boxes: Array = []     # {tier, source} flagged by the achievement system
+var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 
 # --- ACTIVE CONTRACT ---
 var current_race: String = "Human"
