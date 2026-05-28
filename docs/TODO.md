@@ -18,10 +18,6 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   should live on the *weapon*, not as hardcoded `MELEE_*` constants on the Player. Needs a
   weapon/item resource the player equips; pairs with inventory + the loot-items-do-things work.
   *(2026-05-28)*
-- **Inventory + quick bar** — for items/weapons/potions. Quick bar = the at-a-glance row
-  of equipped weapons + consumables; should also surface the **active weapon mode**
-  (RANGED/MELEE — currently only a transient toast on swap) and bind quick-use slots.
-  Inventory = full holdings screen. *(2026-05-28)*
 - **Make rooms more interesting** — environmental hazards (the Bestiary hazards:
   spikes, gas, etc.), destructible/static **cover** to break line-of-sight, and
   **varied room sizes & shapes** (current rooms are all one 768px square). Procedural
@@ -39,8 +35,10 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 - **DEX → ranged accuracy / projectile spread** (second role beyond move speed).
 - **Wire up STR + CHA** — currently dead (only race/class bonuses + loot tags read them).
   STR: melee / knockback / carry? CHA: loot luck / charm lesser bosses / shop prices?
-- **Make loot items apply real effects** — items are currently just names in
-  `run_inventory`; affixes (Burn/Bleed/Lightning/AOE/Leech/Slow) are unimplemented.
+- **Item depth (on top of the MVP)** — gear stat bonuses + consumables now work; still TODO:
+  **equip slots** + drop/swap, **weapons-as-items** (folds in weapon-specific stats), and
+  **affixes** (Burn/Bleed/Lightning/AOE/Leech/Slow). Also consider pausing while the inventory
+  screen is open in combat.
 
 ### Loot & economy
 - **Inventory UI + loot-box visibility** — show pending boxes + what you're holding.
@@ -78,6 +76,9 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 ---
 
 ## Done
+- **Item system MVP** — gear auto-equips (passive stat bonuses, per-item & removable),
+  consumables → quick bar (key `1`), inventory screen (key `I`), HUD quick bar + weapon mode.
+  *Deferred:* equip slots, drop/swap, weapons-as-items, affixes, pause-inventory-in-combat. *(2026-05-28)*
 - XP → levels → skill points (Safe-Room stat terminal). *(2026-05-28)*
 - Achievement scopes (run / repeatable / lifetime) + per-run loot drip. *(2026-05-28)*
 - Aggro-on-damage; boss lunge; health bars; weapon-range cut. *(2026-05-28)*

@@ -37,6 +37,7 @@ const MELEE_KNOCK_BASE := 48.0      # px shove on hit
 const MELEE_KNOCK_PER_STR := 4.0    # STR 10 → +40px
 var _can_melee: bool = true
 var _melee_fx: MeleeSwing            # reused sweep VFX, created on spawn
+var _inventory_panel: InventoryPanel  # toggled with the inventory key
 
 # Weapon mode — the PRIMARY attack button performs whichever mode is active, so going
 # melee doesn't change which button you press. Right-click swaps modes.
@@ -55,15 +56,19 @@ func _ready() -> void:
 	SignalBus.stat_injected.connect(_on_stat_injected)
 	_melee_fx = MeleeSwing.new()
 	add_child(_melee_fx)
+	_inventory_panel = InventoryPanel.new()
+	add_child(_inventory_panel)
 
 func _initialize_contestant() -> void:
 	if not GameManager.current_run_stats.is_empty():
-		current_stats = GameManager.current_run_stats
+		current_stats = GameManager.get_effective_stats()   # base + equipped gear
 	_derive_vitals(true)   # spawn at full
 
-# A point was injected into a stat (Stat-Injection terminal). Re-derive vitals but
-# WITHOUT a free heal — gaining CON grants the new heart, it doesn't top off the bar.
+# Stats changed — a skill point was spent OR gear was equipped (both emit stat_injected).
+# Refresh the effective snapshot and re-derive vitals WITHOUT a free heal (a CON gain adds
+# the new heart, it doesn't top off the rest of the bar).
 func _on_stat_injected(_stat: String, _new_value: int) -> void:
+	current_stats = GameManager.get_effective_stats()
 	_derive_vitals(false)
 
 # Single source of truth for stat → vitals. full=true sets pools to max (spawn);
@@ -103,6 +108,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_perform_dash()
 	elif event.is_action_pressed("swap_weapon"):
 		_swap_weapon()
+	elif event.is_action_pressed("use_item"):
+		GameManager.use_consumable()
+	elif event.is_action_pressed("inventory"):
+		_inventory_panel.toggle()
 	elif event.is_action_pressed("nano"):
 		execute_nano_magic("glitch_bolt")
 
@@ -115,9 +124,14 @@ func _primary_attack() -> void:
 	elif _can_fire:
 		_fire()
 
+func weapon_mode_name() -> String:
+	return "MELEE" if weapon_mode == WeaponMode.MELEE else "RANGED"
+
 func _swap_weapon() -> void:
 	weapon_mode = WeaponMode.RANGED if weapon_mode == WeaponMode.MELEE else WeaponMode.MELEE
-	SignalBus.toast.emit("Weapon: " + ("MELEE" if weapon_mode == WeaponMode.MELEE else "RANGED"), global_position)
+	var n := weapon_mode_name()
+	SignalBus.toast.emit("Weapon: " + n, global_position)
+	SignalBus.weapon_changed.emit(n)   # persistent HUD indicator
 
 func _perform_dash() -> void:
 	_is_dashing = true
@@ -203,6 +217,14 @@ func _enemy_radius(e: Node) -> float:
 	if cs is CollisionShape2D and cs.shape is CircleShape2D:
 		return (cs.shape as CircleShape2D).radius
 	return 0.0
+
+# Use a consumable from the quick bar — CON potions heal hearts, INT batteries restore mana.
+# Magnitude scales with the box tier the item came from.
+func apply_consumable(id: String, tier: int) -> void:
+	var e := LootData.consumable_effect(id, tier)
+	match e["stat"]:
+		"CON": health_comp.heal(int(e["amount"]))
+		"INT": mana_comp.restore_mana(int(e["amount"]))
 
 func _cast_effect(effect_type: String, damage: float) -> void:
 	match effect_type:

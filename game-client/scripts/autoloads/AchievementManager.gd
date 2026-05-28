@@ -61,9 +61,14 @@ func open_all_boxes(stats: Dictionary) -> void:
 	for tier in boxes:
 		SignalBus.box_opened.emit(LootData.tier_name(int(tier)))
 		var item := LootData.roll(int(tier), stats)
-		if item != "":
-			GameManager.run_inventory.append(item)
-			SignalBus.item_acquired.emit(LootData.ITEMS[item]["name"])
+		if item == "":
+			continue
+		# Consumables stock the quick bar; gear auto-equips (bonus applied immediately).
+		if LootData.is_consumable(item):
+			GameManager.add_consumable(item, int(tier))
+		else:
+			GameManager.equip_gear(item, int(tier))
+		SignalBus.item_acquired.emit(LootData.item_name(item))
 
 func _player_pos() -> Vector2:
 	var p := get_tree().get_first_node_in_group("player") as Node2D

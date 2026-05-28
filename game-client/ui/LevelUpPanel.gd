@@ -2,7 +2,7 @@
 # The Stat-Injection screen. Opened from the Safe-Room LevelTerminal — the only place
 # you may spend banked skill points (DCC: stat allocation happens in safe rooms).
 # UI is built in code so the .tscn stays a single node and headless import never trips.
-extends CanvasLayer
+extends ModalPanel
 
 const STATS := ["STR", "DEX", "INT", "CON", "CHA"]
 
@@ -12,50 +12,17 @@ var _plus_buttons: Dictionary = {}   # stat -> Button
 var _preview: Label
 
 func _ready() -> void:
-	visible = false
-	layer = 10
 	_build()
 	# Live-refresh while open. xp_changed fires both on level-up (right after leveled_up)
 	# and on every point spent, so this one connection covers all refresh cases.
 	SignalBus.xp_changed.connect(func(_x, _n, _lv): _refresh())
 
-func open() -> void:
-	visible = true
+func _on_show() -> void:
 	_refresh()
 
-func close() -> void:
-	visible = false
-
-func toggle() -> void:
-	if visible:
-		close()
-	else:
-		open()
-
 func _build() -> void:
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.6)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP   # swallow clicks behind the panel
-	add_child(dim)
-
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
-
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(380, 0)
-	center.add_child(panel)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
-
-	var title := Label.new()
-	title.text = "STAT INJECTION"
-	title.add_theme_font_size_override("font_size", 30)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(title)
+	var box := _build_frame(380.0)
+	add_title(box, "STAT INJECTION")
 
 	_points_label = Label.new()
 	_points_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -86,11 +53,7 @@ func _build() -> void:
 	_preview.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_preview)
 
-	var hint := Label.new()
-	hint.text = "Press E to step off the pad"
-	hint.modulate = Color(1, 1, 1, 0.6)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(hint)
+	add_hint(box, "Press E to step off the pad")
 
 func _on_plus(stat: String) -> void:
 	GameManager.spend_skill_point(stat)   # refresh arrives via xp_changed
@@ -100,7 +63,9 @@ func _refresh() -> void:
 		return
 	var sp: int = GameManager.skill_points
 	_points_label.text = "Skill points: %d        Level %d" % [sp, GameManager.level]
-	var stats: Dictionary = GameManager.current_run_stats
+	# Show EFFECTIVE stats (base + equipped gear) so the hearts/mana preview matches reality.
+	# Spending still goes to base via spend_skill_point.
+	var stats: Dictionary = GameManager.get_effective_stats()
 	for s in STATS:
 		_value_labels[s].text = str(int(stats.get(s, 0)))
 		_plus_buttons[s].disabled = sp <= 0

@@ -25,7 +25,7 @@ const KILLS_PER_BOX := 6           # every Nth kill drops a Crowd Pleaser box (g
 const CHA_RATINGS_PER := 0.02      # +2% Ratings per CHA point (CHA 10 → +20%)
 
 func _cha_mult() -> float:
-	return 1.0 + int(current_run_stats.get("CHA", 0)) * CHA_RATINGS_PER
+	return 1.0 + (int(current_run_stats.get("CHA", 0)) + int(_item_bonuses.get("CHA", 0))) * CHA_RATINGS_PER
 
 # --- RUN STATE ---
 var current_floor: int = 1
@@ -55,9 +55,48 @@ var current_race: String = "Human"
 var current_class: String = "Brawler"
 var current_run_stats: Dictionary = {}
 
+# --- ITEMS (auto-applied gear bonuses + consumable quick bar) ---
+# Bonuses are tracked per-item in equipped_gear so equip-slots / dropping can subtract them
+# cleanly later. _item_bonuses is the running sum laid on top of current_run_stats.
+var equipped_gear: Array = []        # [{id, tier, bonus:{STR:n,…}}]
+var _item_bonuses: Dictionary = {}   # stat -> summed gear bonus
+var quickbar: Array = []             # [{id, tier}] consumables, used from the quick bar
+
 signal rating_changed(new_value: int)
 signal hype_changed(new_value: float)
 signal floor_changed(floor: int)
+signal items_changed()
+
+# Effective stats = base run-stats (race/class + skill points) + equipped gear bonuses.
+func get_effective_stats() -> Dictionary:
+	var eff: Dictionary = current_run_stats.duplicate()
+	for s in _item_bonuses:
+		eff[s] = int(eff.get(s, 0)) + int(_item_bonuses[s])
+	return eff
+
+# Auto-equip looted gear: bank its per-stat bonus and re-derive the player's vitals.
+func equip_gear(id: String, tier: int) -> void:
+	var bonus: Dictionary = LootData.gear_bonus(id, tier)
+	equipped_gear.append({"id": id, "tier": tier, "bonus": bonus})
+	for s in bonus:
+		_item_bonuses[s] = int(_item_bonuses.get(s, 0)) + int(bonus[s])
+	SignalBus.stat_injected.emit("ITEM", 0)   # Player re-derives effective vitals
+	items_changed.emit()
+
+func add_consumable(id: String, tier: int) -> void:
+	quickbar.append({"id": id, "tier": tier})
+	items_changed.emit()
+
+# Use the oldest consumable in the quick bar on the player.
+func use_consumable() -> void:
+	if quickbar.is_empty():
+		return
+	var p := get_tree().get_first_node_in_group("player")
+	if p == null:
+		return
+	var c: Dictionary = quickbar.pop_front()
+	p.apply_consumable(String(c["id"]), int(c["tier"]))
+	items_changed.emit()
 
 func _ready() -> void:
 	SignalBus.ratings_spike.connect(_on_ratings_spike)
@@ -119,6 +158,9 @@ func start_new_run() -> void:
 	_kill_times.clear()
 	earned_loot_boxes.clear()
 	run_inventory.clear()
+	equipped_gear.clear()
+	_item_bonuses.clear()
+	quickbar.clear()
 	is_run_active = true
 	MetaManager.reset_run_cache()
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)

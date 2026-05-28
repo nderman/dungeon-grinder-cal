@@ -12,6 +12,8 @@ extends CanvasLayer
 @onready var level_label: Label = $Level
 @onready var xp_bar: ProgressBar = $XPBar
 @onready var ticker: Label = $Ticker
+@onready var weapon_label: Label = $Weapon
+@onready var quickbar_label: Label = $QuickBar
 
 const SPIKE_TEXT := {
 	"SPEED_DEMON": "SPEED DEMON!", "NEAR_DEATH": "NEAR DEATH!",
@@ -29,11 +31,23 @@ func _ready() -> void:
 	SignalBus.item_acquired.connect(_on_item)
 	SignalBus.xp_changed.connect(_on_xp)
 	SignalBus.leveled_up.connect(_on_levelup)
+	SignalBus.weapon_changed.connect(func(n): weapon_label.text = n)
+	GameManager.items_changed.connect(_refresh_quickbar)
 	_on_rating(GameManager.run_ratings)
 	_on_hype(GameManager.hype_meter)
 	_on_xp(GameManager.xp, GameManager.xp_to_next(GameManager.level), GameManager.level)
+	_refresh_quickbar()
 	ticker.modulate.a = 0.0
 	_bind_player.call_deferred()
+
+func _refresh_quickbar() -> void:
+	if GameManager.quickbar.is_empty():
+		quickbar_label.text = ""
+		return
+	var names: PackedStringArray = []
+	for c in GameManager.quickbar:
+		names.append(LootData.item_name(c["id"]))
+	quickbar_label.text = "[1] " + ", ".join(names)
 
 # Hearts + initial mana come straight off the player's components.
 var _bound: bool = false
@@ -46,6 +60,8 @@ func _bind_player() -> void:
 		get_tree().create_timer(0.1).timeout.connect(_bind_player)   # spawn race — retry
 		return
 	_bound = true
+	if p.has_method("weapon_mode_name"):
+		weapon_label.text = p.weapon_mode_name()   # seed from the player's actual mode
 	var hc := p.get_node_or_null("HealthComponent")
 	if hc:
 		hc.health_changed.connect(_on_health)
