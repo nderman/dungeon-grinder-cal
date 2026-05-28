@@ -8,6 +8,7 @@ func _ready() -> void:
 	SignalBus.dr_triggered.connect(_on_dr)
 	SignalBus.player_damaged.connect(_on_player_damaged)
 	SignalBus.enemy_cancelled.connect(_on_enemy_cancelled)
+	SignalBus.toast.connect(_on_toast)
 
 func _on_dr(location: Vector2) -> void:
 	_floating_text("CLINK!", location, Color(0.8, 0.9, 1.0))
@@ -18,6 +19,9 @@ func _on_player_damaged(_hearts: int) -> void:
 
 func _on_enemy_cancelled(location: Vector2, ratings: int) -> void:
 	_floating_text("+%d" % ratings, location, Color(1.0, 0.85, 0.2))
+
+func _on_toast(text: String, location: Vector2) -> void:
+	_floating_text(text, location, Color(1.0, 0.8, 0.3))
 
 func _shake(amount: float) -> void:
 	var cam := _camera()

@@ -7,6 +7,7 @@ class_name Teleporter
 
 enum Mode { TO_SAFE_ROOM, FROM_SAFE_ROOM }
 @export var mode: Mode = Mode.TO_SAFE_ROOM
+@export var block_radius: float = 480.0   # Phase-Door won't open with a monster this close
 
 var _player: Node2D = null
 
@@ -26,6 +27,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _player == null or not event.is_action_pressed("interact"):
 		return
 	if mode == Mode.TO_SAFE_ROOM:
+		if not _no_monsters_near():
+			SignalBus.toast.emit("NOT SAFE — clear nearby enemies", global_position)
+			return
 		var entry := get_tree().get_first_node_in_group("safe_room_entry") as Node2D
 		if entry:
 			GameManager.last_safe_room_entrance_pos = global_position
@@ -33,3 +37,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			SignalBus.phasedoor_discovered.emit(global_position)
 	else:
 		_player.global_position = GameManager.last_safe_room_entrance_pos
+
+func _no_monsters_near() -> bool:
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e is Node2D and global_position.distance_to((e as Node2D).global_position) < block_radius:
+			return false
+	return true

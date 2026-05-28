@@ -68,9 +68,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _perform_dash() -> void:
 	_is_dashing = true
 	_can_dash = false
-	# TODO: flip HurtboxComponent monitoring off here for true i-frames.
-	move_comp.execute_dash(velocity.normalized())
+	health_comp.set_invulnerable(true)   # i-frames for the dash window
+	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if dir == Vector2.ZERO:
+		dir = aim_dir
+	move_comp.execute_dash(dir)
 	await get_tree().create_timer(dash_duration).timeout
+	health_comp.set_invulnerable(false)
 	_is_dashing = false
 	await get_tree().create_timer(dash_cooldown).timeout
 	_can_dash = true

@@ -12,6 +12,8 @@ var is_player: bool = false
 # Enemies set this in their scene to self-initialize their pool.
 # The Player leaves it 0 and instead calls initialize_health() from CON.
 @export var configured_hearts: float = 0.0
+@export var iframe_seconds: float = 0.4      # brief post-hit invulnerability (player)
+var _invuln: bool = false
 
 signal health_changed(current: float, maximum: float)
 signal health_depleted
@@ -28,7 +30,7 @@ func initialize_health(heart_count: float) -> void:
 
 # Damage arrives in HEARTS, already filtered through the ProtectionComponent.
 func take_damage(amount: float) -> void:
-	if amount <= 0.0 or current_hearts <= 0.0:
+	if amount <= 0.0 or current_hearts <= 0.0 or _invuln:
 		return
 	current_hearts = clampf(current_hearts - amount, 0.0, max_hearts)
 	health_changed.emit(current_hearts, max_hearts)
@@ -36,6 +38,20 @@ func take_damage(amount: float) -> void:
 		SignalBus.player_damaged.emit(int(ceil(current_hearts)))
 	if current_hearts <= 0.0:
 		_on_cancelled()
+	elif is_player and iframe_seconds > 0.0:
+		_grant_iframes()
+
+func is_invulnerable() -> bool:
+	return _invuln
+
+# Used by the Player to grant i-frames during a Dash.
+func set_invulnerable(v: bool) -> void:
+	_invuln = v
+
+func _grant_iframes() -> void:
+	_invuln = true
+	await get_tree().create_timer(iframe_seconds).timeout
+	_invuln = false
 
 func heal(amount: float) -> void:
 	current_hearts = minf(current_hearts + amount, max_hearts)

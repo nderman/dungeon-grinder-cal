@@ -13,6 +13,7 @@ var current_state: State = State.IDLE
 @export var telegraph_duration: float = 0.3   # Glitch-Goblin baseline
 @export var attack_cooldown: float = 1.2
 @export var damage_hearts: float = 1.0          # mobs 1, bosses 2
+@export var move_speed: float = 240.0           # chase speed (bosses set this low)
 
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
@@ -44,7 +45,7 @@ func _handle_chase(delta: float) -> void:
 	if global_position.distance_to(target.global_position) <= attack_range:
 		_change_state(State.TELEGRAPH)
 	elif move_comp:
-		move_comp.handle_movement(delta, (target.global_position - global_position).normalized())
+		move_comp.handle_movement(delta, (target.global_position - global_position).normalized(), move_speed)
 
 func _change_state(new_state: State) -> void:
 	current_state = new_state

@@ -1,0 +1,35 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://entities/enemies/MeatGrinderGolem.gd" id="1_golem"]
+[ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
+[ext_resource type="Script" path="res://components/MovementComponent.gd" id="3_move"]
+[ext_resource type="Script" path="res://components/AIComponent.gd" id="4_ai"]
+
+[sub_resource type="CircleShape2D" id="cs_golem"]
+radius = 46.0
+
+[node name="MeatGrinderGolem" type="CharacterBody2D" groups=["enemies"]]
+script = ExtResource("1_golem")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.55, 0.12, 0.16, 1)
+polygon = PackedVector2Array(-46, -46, 46, -46, 46, 46, -46, 46)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("cs_golem")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("2_health")
+configured_hearts = 10.0
+
+[node name="MovementComponent" type="Node2D" parent="."]
+script = ExtResource("3_move")
+
+[node name="AIComponent" type="Node2D" parent="."]
+script = ExtResource("4_ai")
+detection_range = 700.0
+attack_range = 110.0
+telegraph_duration = 0.8
+attack_cooldown = 1.4
+damage_hearts = 2.0
+move_speed = 130.0

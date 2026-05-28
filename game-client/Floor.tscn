@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://levels/LevelGenerator.gd" id="1_gen"]
 [ext_resource type="PackedScene" path="res://levels/prefabs/Room.tscn" id="2_room"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://levels/prefabs/SafeRoom.tscn" id="5_safe"]
 [ext_resource type="PackedScene" path="res://entities/Teleporter.tscn" id="6_phase"]
 [ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://entities/enemies/MeatGrinderGolem.tscn" id="8_boss"]
 
 [node name="Floor" type="Node2D"]
 
@@ -17,5 +18,6 @@ enemy_scene = ExtResource("3_enemy")
 player_scene = ExtResource("4_player")
 safe_room_scene = ExtResource("5_safe")
 phase_door_scene = ExtResource("6_phase")
+boss_scene = ExtResource("8_boss")
 
 [node name="CombatHUD" parent="." instance=ExtResource("7_hud")]

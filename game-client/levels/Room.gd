@@ -17,7 +17,11 @@ const DIRS := {
 
 var room_type: String = "Combat"
 var enemies_root: Node2D
-var _doors: Dictionary = {}   # dir -> StaticBody2D plugging the gap (present = closed)
+var _doors: Dictionary = {}          # dir -> StaticBody2D plugging the gap (present = closed)
+var _open_dirs: Array[String] = []   # sides opened to neighbours (for boss lockdown)
+var _barriers: Array[Node] = []      # temporary lockdown barriers across open doors
+var _boss: Node = null
+var _boss_triggered: bool = false
 
 # Call BEFORE the node enters the tree (the generator does) so _ready paints the right floor.
 func setup(type: String) -> void:
@@ -43,6 +47,7 @@ func _floor_color() -> Color:
 	match room_type:
 		"Spawn": return Color(0.12, 0.17, 0.22)
 		"Boss": return Color(0.24, 0.10, 0.13)
+		"MiniBoss": return Color(0.22, 0.15, 0.10)
 		"PhaseDoor": return Color(0.10, 0.20, 0.17)
 		_: return Color(0.14, 0.14, 0.18)
 
@@ -81,8 +86,44 @@ func open_exit(dir: String) -> void:
 	if _doors.has(dir):
 		_doors[dir].queue_free()
 		_doors.erase(dir)
+		if dir not in _open_dirs:
+			_open_dirs.append(dir)
 
 # A random point safely inside the walls (for spawning).
 func interior_point() -> Vector2:
 	var r := (CELL * 0.5) - WALL - 60.0
 	return global_position + Vector2(randf_range(-r, r), randf_range(-r, r))
+
+# --- Boss lockdown: seal the room the moment the player steps in, until the boss falls. ---
+func arm_boss_lock(boss: Node) -> void:
+	_boss = boss
+	var trigger := Area2D.new()
+	var cs := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(CELL - WALL * 4.0, CELL - WALL * 4.0)
+	cs.shape = shape
+	trigger.add_child(cs)
+	add_child(trigger)
+	trigger.body_entered.connect(_on_boss_trigger)
+
+func _on_boss_trigger(body: Node) -> void:
+	if _boss_triggered or not body.is_in_group("player"):
+		return
+	_boss_triggered = true
+	if _boss == null or not is_instance_valid(_boss):
+		return   # boss already beaten — no need to trap anyone
+	lock()
+	var hc := _boss.get_node_or_null("HealthComponent")
+	if hc:
+		hc.health_depleted.connect(unlock)
+	_boss.tree_exited.connect(unlock)   # safety: freed = beaten
+
+func lock() -> void:
+	for dir in _open_dirs:
+		_barriers.append(_add_segment(DIRS[dir] * (CELL * 0.5), dir, GAP, Color(0.9, 0.2, 0.3, 0.85)))
+
+func unlock() -> void:
+	for b in _barriers:
+		if is_instance_valid(b):
+			b.queue_free()
+	_barriers.clear()

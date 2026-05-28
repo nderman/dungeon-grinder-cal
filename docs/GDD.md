@@ -70,6 +70,13 @@ Meat-Grinder's Stage 0/0/0/100 (boss). Spawn/Safe/Exit = 0.
 - **Hazards:** Glitch-Goop (−40% speed, 0.25♥/s) · Lava (1♥/s) · Pits (instant Cancel unless flying).
 - **Traps:** Disintegrator Beams, Data-Spike Landmines, Automated Turrets. Dashing through with
   i-frames = a **Ratings Spike**.
+- **Boss tiers (DCC):** floors hold **multiple bosses**, ranked Neighborhood → Borough →
+  City → Province (F4+) → Country (F6+) → **Floor Boss**. On **Floor 1 bosses are arena-locked**
+  (the room seals on entry until the boss falls); deeper floors they roam. High-CHA can charm
+  lesser bosses (not Country/Floor). Each drops a tier-rarity **Boss Box** + **persistent loot**
+  (a copy for every participant) + a star + an achievement.
+  *MVP:* the generator places ~2 Neighborhood bosses (5♥, scaled-down Golems) + 1 Floor Boss
+  (Meat-Grinder Golem, 10♥, 2 phases); distinct per-tier prefabs + Boss-Box loot are TODO.
 
 ## 8. Loot & Economy
 - Rarity: Trash/Common/Rare/Legendary/Artifact. Rarity = number of **affix slots**

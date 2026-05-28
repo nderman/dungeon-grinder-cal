@@ -31,3 +31,4 @@ signal stat_injected(stat_name: String, new_value: int)
 
 # --- NAVIGATION ---
 signal phasedoor_discovered(location: Vector2)
+signal toast(text: String, location: Vector2)   # transient on-screen notice (FeedbackManager)
