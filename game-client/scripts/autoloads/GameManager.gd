@@ -8,12 +8,18 @@ const GREEN_ROOM_PATH := "res://ui/GreenRoom.tscn"
 
 # Ratings Spike reward table — {hype_pct, ratings} per achievement type.
 const SPIKE_TABLE := {
-	"SPEED_DEMON": {"hype": 10.0, "ratings": 50},
-	"NEAR_DEATH":  {"hype": 25.0, "ratings": 150},
-	"UNTOUCHABLE": {"hype": 5.0,  "ratings": 25},
-	"DRAMA_SPIKE": {"hype": 15.0, "ratings": 100},
-	"FATALITY":    {"hype": 20.0, "ratings": 200},
+	"SPEED_DEMON":   {"hype": 10.0, "ratings": 50},
+	"NEAR_DEATH":    {"hype": 25.0, "ratings": 150},
+	"UNTOUCHABLE":   {"hype": 5.0,  "ratings": 25},
+	"DRAMA_SPIKE":   {"hype": 15.0, "ratings": 100},
+	"FATALITY":      {"hype": 20.0, "ratings": 200},
+	"CROWD_PLEASER": {"hype": 8.0,  "ratings": 75},   # the steady meat-grinder kill drip
 }
+
+# Kill-feat tuning.
+const SPEED_DEMON_KILLS := 3       # kills within the window → Speed Demon
+const SPEED_DEMON_WINDOW := 2.0    # seconds
+const KILLS_PER_BOX := 6           # every Nth kill drops a Crowd Pleaser box (grind reward)
 
 # --- RUN STATE ---
 var current_floor: int = 1
@@ -23,6 +29,8 @@ var is_run_active: bool = false
 var earned_loot_boxes: Array = []     # {tier, source} flagged by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
+var run_kills: int = 0                                    # mobs cancelled this run
+var _kill_times: Array[float] = []                        # recent kill timestamps (speed-demon detector)
 
 # --- PROGRESSION (XP / LEVELS / SKILL POINTS) — the character-growth rail ---
 # Per DCC: kills grant XP; every level hands you 3 stat points to spend, and you may only
@@ -55,6 +63,21 @@ func _ready() -> void:
 func _on_enemy_cancelled(_loc: Vector2, ratings_earned: int) -> void:
 	run_ratings += ratings_earned
 	rating_changed.emit(run_ratings)
+	_track_kill()
+
+# Turns raw kills into the reward drip the "meat grinder" promises: a steady box every
+# KILLS_PER_BOX kills, plus a Speed Demon spike for SPEED_DEMON_KILLS in quick succession.
+# Both route through ratings_spike → AchievementManager grants the box.
+func _track_kill() -> void:
+	run_kills += 1
+	if run_kills % KILLS_PER_BOX == 0:
+		SignalBus.ratings_spike.emit("CROWD_PLEASER")
+	var now := Time.get_ticks_msec() / 1000.0
+	_kill_times.append(now)
+	_kill_times = _kill_times.filter(func(t): return now - t <= SPEED_DEMON_WINDOW)
+	if _kill_times.size() >= SPEED_DEMON_KILLS:
+		_kill_times.clear()   # require a fresh burst, don't re-fire every subsequent kill
+		SignalBus.ratings_spike.emit("SPEED_DEMON")
 
 # Kills feed the XP rail. Banks 3 skill points per level gained (spendable in a Safe Room).
 func add_xp(amount: int) -> void:
@@ -86,11 +109,14 @@ func start_new_run() -> void:
 	xp = 0
 	level = 1
 	skill_points = 0
+	run_kills = 0
+	_kill_times.clear()
 	earned_loot_boxes.clear()
 	run_inventory.clear()
 	is_run_active = true
 	MetaManager.reset_run_cache()
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)
+	SignalBus.run_started.emit()   # resets per-run achievement dedup
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
 
 func advance_floor() -> void:

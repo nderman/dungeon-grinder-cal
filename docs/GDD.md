@@ -86,6 +86,14 @@ Meat-Grinder's Stage 0/0/0/100 (boss). Spawn/Safe/Exit = 0.
 - **Implemented (MVP framework):** `LootData` (box tiers + build-aware roll), `AchievementData`
   + `AchievementManager` (SignalBus events → achievements → boxes), Safe-Room `LootBoxTerminal`
   opens all pending boxes. Boss Boxes / per-tier prefabs / affixes are TODO.
+- **Achievements are the PRIMARY per-run loot source**, with three `scope`s (`AchievementData`):
+  - `run` — once per run, reset on `SignalBus.run_started` (first kill, first phase-door). Per-run drip.
+  - `repeatable` — fires every trigger, no dedup (Speed Demon, Crowd Pleaser, dodges, boss kills).
+  - `lifetime` — once *ever*, persisted to `MetaManager.unlocked_achievements` (meta milestones).
+  - **Kill→loot drip** lives in `GameManager._track_kill`: a `CROWD_PLEASER` box every `KILLS_PER_BOX`
+    (6) kills + a `SPEED_DEMON` spike on `SPEED_DEMON_KILLS` (3) within `SPEED_DEMON_WINDOW` (2s).
+    *Was the bug:* `first_blood` used to be one-time-persisted, so loot dried up after the first-ever
+    kill; the repeatable feats had reward-table entries but **no detector emitting them**.
 - **Director's Algorithm:** loot weights shift toward the player's highest stat / current
   build (gap-fills CON/healing when near death). Human's passive doubles the tailoring.
 - **Currencies (three distinct rails — do not conflate):**

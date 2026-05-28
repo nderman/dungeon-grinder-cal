@@ -24,6 +24,12 @@ var rooms: Dictionary = {}                # Vector2i -> Room
 var order: Array[Vector2i] = []           # walk order; [0] = spawn, back() = boss
 
 func _ready() -> void:
+	# Floor.tscn is the main scene, so a fresh launch lands here without passing through the
+	# Green Room — meaning start_new_run() never ran and current_run_stats is still empty
+	# (Stat-Injection panel shows 0s, "+" no-ops). Start a run if none is active, BEFORE
+	# _spawn_player so the Player shares the populated run-stats dict by reference.
+	if not GameManager.is_run_active:
+		GameManager.start_new_run()
 	_walk()
 	_designate()
 	_instantiate_rooms()

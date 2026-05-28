@@ -5,10 +5,13 @@
 # Register AFTER SignalBus / MetaManager / GameManager / LootData / AchievementData.
 extends Node
 
+var _run_unlocked: Array[String] = []   # "run"-scope achievements already granted this Episode
+
 func _ready() -> void:
 	SignalBus.enemy_cancelled.connect(_on_enemy_cancelled)
 	SignalBus.ratings_spike.connect(_on_spike)
 	SignalBus.phasedoor_discovered.connect(_on_phasedoor)
+	SignalBus.run_started.connect(func(): _run_unlocked.clear())
 
 func _on_enemy_cancelled(_loc: Vector2, _ratings: int) -> void:
 	unlock("first_blood")
@@ -22,17 +25,28 @@ func _on_spike(type: String) -> void:
 		"NEAR_DEATH": unlock("near_death")
 		"UNTOUCHABLE": unlock("untouchable")
 		"FATALITY": unlock("boss_slayer")
+		"CROWD_PLEASER": unlock("crowd_pleaser")
 
-# Award an achievement + its Loot Box. One-time ones persist; repeatable ones re-grant.
+# Award an achievement + its Loot Box. Dedup depends on scope:
+#   run        → once per run (reset on run_started)
+#   lifetime   → once ever (persisted to disk)
+#   repeatable → always grants
 func unlock(id: String) -> void:
 	if not AchievementData.ACHIEVEMENTS.has(id):
 		return
 	var a: Dictionary = AchievementData.ACHIEVEMENTS[id]
-	if not a["repeatable"]:
-		if id in MetaManager.unlocked_achievements:
-			return
-		MetaManager.unlocked_achievements.append(id)
-		MetaManager.save_persistence()
+	match a.get("scope", "repeatable"):
+		"lifetime":
+			if id in MetaManager.unlocked_achievements:
+				return
+			MetaManager.unlocked_achievements.append(id)
+			MetaManager.save_persistence()
+		"run":
+			if id in _run_unlocked:
+				return
+			_run_unlocked.append(id)
+		_:
+			pass   # "repeatable" — no dedup
 	GameManager.earned_loot_boxes.append(int(a["tier"]))
 	SignalBus.achievement_unlocked.emit(a["title"])
 

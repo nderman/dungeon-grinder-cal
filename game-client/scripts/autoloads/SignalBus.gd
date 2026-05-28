@@ -18,6 +18,7 @@ signal hazard_active(hazard_type: String, damage_per_tick: float)
 signal achievement_unlocked(title: String)          # Authorizes a loot box
 signal sponsor_pod_incoming(target_location: Vector2)
 signal hype_threshold_reached(tier_index: int)      # 50% / 75% / 90%
+signal run_started()                                 # fresh Episode — reset per-run achievement dedup
 
 # --- PROGRESSION (XP → LEVELS → SKILL POINTS) ---
 # Distinct from Ratings (audience/loot) and Gold (shops). This is character growth.
