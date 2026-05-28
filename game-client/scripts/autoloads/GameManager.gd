@@ -42,7 +42,7 @@ var level: int = 1
 var skill_points: int = 0              # unspent — banked until you reach a Safe-Room terminal
 
 func xp_to_next(lvl: int) -> int:
-	return XP_PER_LEVEL_BASE * lvl     # L1→80, L2→160, L3→240 …
+	return XP_PER_LEVEL_BASE * maxi(1, lvl)   # L1→80, L2→160, L3→240 … (never 0 → no infinite loop)
 
 # --- ACTIVE CONTRACT ---
 var current_race: String = "Human"

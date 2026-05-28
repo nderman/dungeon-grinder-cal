@@ -77,9 +77,11 @@ func _on_hype(v: float) -> void:
 func _on_xp(current: int, to_next: int, level: int) -> void:
 	xp_bar.max_value = maxf(1.0, to_next)
 	xp_bar.value = current
-	# Show banked, unspent skill points as a ★ pip — your cue to hit a Safe-Room terminal.
+	var txt := "LVL %d" % level
 	var sp: int = GameManager.skill_points
-	level_label.text = "LVL %d   ★%d" % [level, sp] if sp > 0 else "LVL %d" % level
+	if sp > 0:
+		txt += "   ★%d" % sp   # banked, unspent skill points — your cue to hit a Safe-Room terminal
+	level_label.text = txt
 
 func _on_levelup(level: int, _points: int) -> void:
 	_flash_ticker("LEVEL UP!  LVL %d  (+%d pts)" % [level, GameManager.SKILL_POINTS_PER_LEVEL])

@@ -35,19 +35,26 @@ func _ready() -> void:
 func _initialize_contestant() -> void:
 	if not GameManager.current_run_stats.is_empty():
 		current_stats = GameManager.current_run_stats
-	_calculate_vitals()
-	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
+	_derive_vitals(true)   # spawn at full
 
-# A point was injected into a stat (Stat-Injection terminal). Re-apply the derived vitals.
-# In a Safe Room this doubles as a full patch-up — earned, not free.
+# A point was injected into a stat (Stat-Injection terminal). Re-derive vitals but
+# WITHOUT a free heal — gaining CON grants the new heart, it doesn't top off the bar.
 func _on_stat_injected(_stat: String, _new_value: int) -> void:
-	_calculate_vitals()
-	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
+	_derive_vitals(false)
 
-func _calculate_vitals() -> void:
-	health_comp.initialize_health(floor(current_stats["CON"] / 5.0))   # 1 heart / 5 CON
-	protection_comp.base_dr = current_stats["CON"] * ProtectionComponent.DR_PER_CON
-	mana_comp.initialize_mana(int(current_stats["INT"]))               # 5 mana / INT
+# Single source of truth for stat → vitals. full=true sets pools to max (spawn);
+# full=false grows them to the new max while preserving current fill.
+func _derive_vitals(full: bool) -> void:
+	var con := int(current_stats["CON"])
+	var intel := int(current_stats["INT"])
+	if full:
+		health_comp.initialize_health(floor(con / 5.0))   # 1 heart / 5 CON
+		mana_comp.initialize_mana(intel)                   # 5 mana / INT
+	else:
+		health_comp.set_max_hearts(floor(con / 5.0))
+		mana_comp.set_max_mana(intel)
+	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
+	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
 
 func _physics_process(delta: float) -> void:
 	if _is_dashing:

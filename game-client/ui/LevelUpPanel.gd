@@ -15,8 +15,8 @@ func _ready() -> void:
 	visible = false
 	layer = 10
 	_build()
-	# Live-refresh while open: a fresh level mid-stay, or a point just spent.
-	SignalBus.leveled_up.connect(func(_lvl, _pts): _refresh())
+	# Live-refresh while open. xp_changed fires both on level-up (right after leveled_up)
+	# and on every point spent, so this one connection covers all refresh cases.
 	SignalBus.xp_changed.connect(func(_x, _n, _lv): _refresh())
 
 func open() -> void:

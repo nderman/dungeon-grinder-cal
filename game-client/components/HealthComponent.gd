@@ -13,6 +13,7 @@ var is_player: bool = false
 # The Player leaves it 0 and instead calls initialize_health() from CON.
 @export var configured_hearts: float = 0.0
 @export var xp_reward: int = 0               # XP this mob pays on death (bosses set higher)
+@export var ratings_reward: int = 10         # Ratings this mob pays on death (audience rail)
 @export var iframe_seconds: float = 0.4      # brief post-hit invulnerability (player)
 var _invuln: bool = false
 
@@ -27,6 +28,15 @@ func initialize_health(heart_count: float) -> void:
 	max_hearts = maxf(1.0, heart_count)
 	current_hearts = max_hearts
 	is_player = get_parent().is_in_group("player")
+	health_changed.emit(current_hearts, max_hearts)
+
+# Re-derive max from a stat change WITHOUT a free full heal: current grows by however
+# much max grew (you keep the new heart) but the rest of the bar isn't topped off.
+func set_max_hearts(heart_count: float) -> void:
+	var new_max := maxf(1.0, heart_count)
+	var delta := new_max - max_hearts
+	max_hearts = new_max
+	current_hearts = clampf(current_hearts + maxf(0.0, delta), 0.0, max_hearts)
 	health_changed.emit(current_hearts, max_hearts)
 
 # Damage arrives in HEARTS, already filtered through the ProtectionComponent.
@@ -63,7 +73,7 @@ func _on_cancelled() -> void:
 	if is_player:
 		GameManager.end_run()   # Save meta-progression, fade to the Green Room.
 	else:
-		SignalBus.enemy_cancelled.emit(global_position, 10)   # audience/Ratings rail
+		SignalBus.enemy_cancelled.emit(global_position, ratings_reward)   # audience/Ratings rail
 		if xp_reward > 0:
 			SignalBus.xp_awarded.emit(xp_reward)              # character-growth rail
 		get_parent().queue_free()

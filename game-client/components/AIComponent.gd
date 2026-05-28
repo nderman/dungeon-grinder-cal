@@ -43,7 +43,7 @@ func activate() -> void:
 func _on_health_changed(current: float, _maximum: float) -> void:
 	var took_damage := current < _last_health
 	_last_health = current
-	if took_damage and _active and target == null:
+	if took_damage and _active and not is_instance_valid(target):
 		_acquire_player()
 
 func _acquire_player() -> void:
@@ -106,24 +106,28 @@ func _flash_tell() -> void:
 	tw.tween_property(parent, "modulate", Color(1, 0.5, 0.5), telegraph_duration * 0.5)
 
 func _execute_attack() -> void:
-	if lunge and parent != null and is_instance_valid(target):
+	if lunge and is_instance_valid(parent) and is_instance_valid(target):
 		# Commit a forward lunge toward the target — this is what makes the hit land
 		# (a stationary telegraph whiffs against a moving player). Dash to dodge it.
 		var dir := (target.global_position - parent.global_position).normalized()
 		var elapsed := 0.0
 		while elapsed < 0.2:
+			# The mob (or target) can be killed mid-lunge — bail before touching a freed node.
+			if not is_instance_valid(parent) or not is_instance_valid(target):
+				break
 			parent.velocity = dir * lunge_speed
 			parent.move_and_slide()
-			if is_instance_valid(target) and global_position.distance_to(target.global_position) <= attack_range:
+			if global_position.distance_to(target.global_position) <= attack_range:
 				_hit_target()
 				break
 			elapsed += get_physics_process_delta_time()
 			await get_tree().physics_frame
-		if parent != null:
+		if is_instance_valid(parent):
 			parent.velocity = Vector2.ZERO
 	elif is_instance_valid(target) and global_position.distance_to(target.global_position) <= attack_range + 20.0:
 		_hit_target()
-	_change_state(State.COOLDOWN)
+	if is_instance_valid(parent):
+		_change_state(State.COOLDOWN)   # skip if the mob died during the lunge
 
 func _hit_target() -> void:
 	if not is_instance_valid(target):
