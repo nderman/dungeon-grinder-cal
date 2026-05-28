@@ -8,6 +8,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **Stairwell mechanics + better floor design** — figure out how stairwells work as the
+  floor-transition mechanic, and richer floor layout overall. DCC refs:
+  https://dungeon-crawler-carl.fandom.com/wiki/Stairwells ·
+  https://dungeon-crawler-carl.fandom.com/wiki/First_Floor . Pairs with the "make rooms
+  more interesting" item (hazards/cover/shapes). Read the wikis when we build floor v2.
+  *(2026-05-28)*
 - **Weapon-specific stats** — melee range/damage/arc/knockback (and ranged spread/fire-rate)
   should live on the *weapon*, not as hardcoded `MELEE_*` constants on the Player. Needs a
   weapon/item resource the player equips; pairs with inventory + the loot-items-do-things work.
@@ -45,7 +51,19 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 - **`lifetime` achievements** — scope is wired but unused; define meta/collection
   milestones (floor depth, total kills, race/class unlocks).
 
+### Testing
+- **No persistent test harness** — validation is currently headless scene runs + throwaway
+  test scenes (deleted after). New logic (XP curve, CHA mult, vitals-preserve, melee) was
+  proven that way but nothing's checked in. Consider a small headless test runner (or GUT)
+  so stat math has lasting coverage.
+
 ### Architecture / cleanup (from the 2026-05-28 review, deferred)
+- **Invulnerability is a single shared bool** — dash i-frames (`set_invulnerable`) and post-hit
+  i-frames (`HealthComponent._grant_iframes`) both write `_invuln`; a recent hit's timer can
+  end a dash's i-frames early (and vice-versa). Use a refcount or separate dash flag.
+- **Melee knockback teleports** (`e.global_position += shove`) — ignores walls; a big shove can
+  clip an enemy through thin geometry (physics depenetrates next frame, but it's not clean).
+  Route through the enemy's MovementComponent / a velocity impulse, or move_and_collide.
 - **Run-lifecycle at one layer** — boot guard currently lives in `LevelGenerator._ready`
   (bandaid); consider a single entry point / `GameManager.ensure_run()`.
 - **Prune stale persisted achievements** — old saves keep `first_blood`/`phase_finder`

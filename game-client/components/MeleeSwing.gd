@@ -13,6 +13,8 @@ var _progress: float = 1.0            # 0→1 sweep; >=1 means finished (nothing
 const SWEEP_TIME := 0.18
 const BLADE_DEG := 30.0               # angular width of the bright slash band
 
+var _tw: Tween
+
 func _ready() -> void:
 	z_index = 10   # draw the slash above bodies
 
@@ -21,8 +23,10 @@ func play(aim: Vector2, range_px: float, arc_deg: float) -> void:
 	_range = range_px
 	_arc = deg_to_rad(arc_deg)
 	_progress = 0.0
-	var tw := create_tween()
-	tw.tween_method(_advance, 0.0, 1.0, SWEEP_TIME)
+	if _tw and _tw.is_valid():
+		_tw.kill()   # robust if a faster cooldown ever overlaps swings
+	_tw = create_tween()
+	_tw.tween_method(_advance, 0.0, 1.0, SWEEP_TIME)
 
 func _advance(p: float) -> void:
 	_progress = p

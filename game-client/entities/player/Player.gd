@@ -181,10 +181,16 @@ func _melee_attack() -> void:
 		if aim_dir.dot(to_e / dist) < cos_half:
 			continue   # outside the swing arc
 		var hc := e.get_node_or_null("HealthComponent") as HealthComponent
-		if hc:
-			hc.take_damage(dmg)
-		if is_instance_valid(e):
-			e.global_position += (to_e / dist) * knock   # shove back
+		if hc == null:
+			continue
+		# Route through the enemy's DR if it has one — same pipeline as HitboxComponent and
+		# AIComponent._hit_target, so melee doesn't silently bypass Damage Resistance.
+		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
+		var hit: float = prot.handle_incoming_damage(dmg) if prot else dmg
+		hc.take_damage(hit)
+		# Shove survivors only — don't fling a corpse that's queued to free this frame.
+		if is_instance_valid(e) and not e.is_queued_for_deletion():
+			e.global_position += (to_e / dist) * knock
 	SignalBus.spell_cast.emit("Melee", global_position)   # SFX / feedback hook
 	_melee_fx.play(aim_dir, MELEE_RANGE, MELEE_ARC_DEG)   # the visible sweep
 	await get_tree().create_timer(melee_cooldown).timeout
