@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://entities/projectiles/GlitchBolt.gd" id="1_bolt"]
+[ext_resource type="Script" path="res://components/HitboxComponent.gd" id="2_hitbox"]
+
+[sub_resource type="CircleShape2D" id="cs_bolt"]
+radius = 6.0
+
+[node name="GlitchBolt" type="Node2D"]
+script = ExtResource("1_bolt")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.4, 1, 0.9, 1)
+polygon = PackedVector2Array(-7, -3, 7, -3, 7, 3, -7, 3)
+
+[node name="Hitbox" type="Area2D" parent="."]
+script = ExtResource("2_hitbox")
+target_group = &"enemies"
+one_shot = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+shape = SubResource("cs_bolt")

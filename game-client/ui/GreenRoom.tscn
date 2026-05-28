@@ -1,0 +1,7 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="GreenRoom" type="Label"]
+offset_right = 700.0
+offset_bottom = 120.0
+text = "GREEN ROOM — Contestant Cancelled.
+(placeholder: spend Syndication Points / Milestone Tokens here)"

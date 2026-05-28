@@ -1,0 +1,16 @@
+# Git LFS — keep the repo snappy for humans and agents. Large binaries are stored
+# via LFS so clones stay light. Run `git lfs install` once before committing assets.
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.aseprite filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.ttf filter=lfs diff=lfs merge=lfs -text
+
+# Keep GDScript/scenes/text as normal diffable files.
+*.gd text
+*.tscn text
+*.tres text
+*.md text

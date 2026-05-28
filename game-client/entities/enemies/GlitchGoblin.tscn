@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://components/HealthComponent.gd" id="1_health"]
+[ext_resource type="Script" path="res://components/MovementComponent.gd" id="2_move"]
+[ext_resource type="Script" path="res://components/AIComponent.gd" id="3_ai"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_goblin"]
+radius = 14.0
+
+[node name="GlitchGoblin" type="CharacterBody2D" groups=["enemies"]]
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(1, 0.3, 0.3, 1)
+polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_goblin")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("1_health")
+configured_hearts = 1.0
+
+[node name="MovementComponent" type="Node2D" parent="."]
+script = ExtResource("2_move")
+
+[node name="AIComponent" type="Node2D" parent="."]
+script = ExtResource("3_ai")

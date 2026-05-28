@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/prefabs/TestRoom.tscn" id="1_room"]
+[ext_resource type="PackedScene" path="res://entities/player/Player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://entities/enemies/GlitchGoblin.tscn" id="3_goblin"]
+[ext_resource type="PackedScene" path="res://ui/CombatHUD.tscn" id="4_hud"]
+
+[node name="Main" type="Node2D"]
+
+[node name="TestRoom" parent="." instance=ExtResource("1_room")]
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(-150, 0)
+
+[node name="GlitchGoblin" parent="." instance=ExtResource("3_goblin")]
+position = Vector2(150, 0)
+
+[node name="CombatHUD" parent="." instance=ExtResource("4_hud")]

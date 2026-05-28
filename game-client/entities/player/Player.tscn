@@ -1,0 +1,36 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://entities/player/Player.gd" id="1_player"]
+[ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
+[ext_resource type="Script" path="res://components/MovementComponent.gd" id="3_move"]
+[ext_resource type="Script" path="res://components/ProtectionComponent.gd" id="4_prot"]
+[ext_resource type="Script" path="res://components/ManaComponent.gd" id="5_mana"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="Player" type="CharacterBody2D" groups=["player"]]
+script = ExtResource("1_player")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.3, 0.8, 1, 1)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_player")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("2_health")
+
+[node name="MovementComponent" type="Node2D" parent="."]
+script = ExtResource("3_move")
+
+[node name="ProtectionComponent" type="Node2D" parent="."]
+script = ExtResource("4_prot")
+
+[node name="ManaComponent" type="Node2D" parent="."]
+script = ExtResource("5_mana")
+
+[node name="WeaponAnchor" type="Node2D" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="."]

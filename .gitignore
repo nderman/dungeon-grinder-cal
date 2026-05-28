@@ -1,0 +1,24 @@
+# --- Godot 4 (project lives in game-client/) ---
+game-client/.godot/
+game-client/.import/
+game-client/export.cfg
+game-client/export_presets.cfg
+*.translation
+
+# --- Raw art / audio source files: tracked via Git LFS only, never bulk-committed ---
+# /assets-raw holds PSDs, uncompressed audio, etc. Export optimized assets into
+# game-client/assets/ instead. Large binaries go through LFS (see .gitattributes).
+assets-raw/**
+!assets-raw/.gitkeep
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/
+.idea/
+
+# Mono/C# (unused — GDScript only)
+.mono/
+mono_crash.*.json
