@@ -29,13 +29,18 @@ but meta-progression persists for the next "Season."
 - Healing is rare (potions / "Near Death" pity boxes), not floor litter.
 
 ## 4. Stats (baseline 10 each)
-| Stat | Governs |
-|---|---|
-| **STR** | melee damage, knockback |
-| **DEX** | move speed, dash i-frames, accuracy |
-| **INT** | spell damage, **max mana = INT×5**, **regen +2%/INT** |
-| **CON** | **hearts (CON/5)**, **DR (1.5%/CON)** |
-| **CHA** | Ratings gen, shop prices, loot quality |
+| Stat | Governs | Status |
+|---|---|---|
+| **STR** | melee damage, knockback | ✅ melee swing + shove (both STR-scaled); see weapon mode below |
+| **DEX** | move speed, dash i-frames, accuracy | ✅ all three (speed `300+DEX×5`; spread `14°−DEX×0.9`; i-frames `+DEX×0.01s`) |
+| **INT** | spell damage, **max mana = INT×5**, **regen +2%/INT** | ✅ done |
+| **CON** | **hearts (CON/5)**, **DR (1.5%/CON)** | ✅ done |
+| **CHA** | Ratings gen, shop prices, loot quality | ⚠️ Ratings gen done (`×(1+CHA×0.02)` on every payout); shop prices = no shops yet; loot quality = TODO |
+
+**Weapon modes:** the **primary attack button** (`fire`, left-click) performs the **active
+mode** — RANGED (Glitch Bolt, INT-scaled) or MELEE (STR-scaled arc swing + knockback, 96px /
+120° / `0.5×(1+STR×0.1)`♥). **Right-click (`swap_weapon`) toggles** the mode, so a melee build
+never changes which button it presses. *(Active-mode HUD indicator lands with the quick bar — TODO.)*
 
 **Nano-Magic is universal, INT-scaled:** `damage = base × (1 + INT×0.05)`,
 `cost = base × (1 − INT×0.01)`. Spells: Glitch Bolt, Static Chain, Molecular Beam, Gravity Well.

@@ -21,6 +21,12 @@ const SPEED_DEMON_KILLS := 3       # kills within the window → Speed Demon
 const SPEED_DEMON_WINDOW := 2.0    # seconds
 const KILLS_PER_BOX := 6           # every Nth kill drops a Crowd Pleaser box (grind reward)
 
+# CHA → Ratings generation: the audience-appeal stat multiplies every Ratings payout.
+const CHA_RATINGS_PER := 0.02      # +2% Ratings per CHA point (CHA 10 → +20%)
+
+func _cha_mult() -> float:
+	return 1.0 + int(current_run_stats.get("CHA", 0)) * CHA_RATINGS_PER
+
 # --- RUN STATE ---
 var current_floor: int = 1
 var run_ratings: int = 0
@@ -61,7 +67,7 @@ func _ready() -> void:
 # Every kill pays Ratings — the AUDIENCE rail (drives loot drops + fan/sponsor boxes).
 # Character growth rides the separate XP rail (see add_xp); shops will use Gold.
 func _on_enemy_cancelled(_loc: Vector2, ratings_earned: int) -> void:
-	run_ratings += ratings_earned
+	run_ratings += int(round(ratings_earned * _cha_mult()))   # CHA boosts the audience payout
 	rating_changed.emit(run_ratings)
 	_track_kill()
 
@@ -128,7 +134,7 @@ func _on_ratings_spike(type: String) -> void:
 	if not SPIKE_TABLE.has(type):
 		return  # Non-payout spikes (e.g. TELEGRAPH_START, CANCELLED) are handled elsewhere.
 	var payout: Dictionary = SPIKE_TABLE[type]
-	run_ratings += int(payout["ratings"])
+	run_ratings += int(round(payout["ratings"] * _cha_mult()))   # CHA boosts the audience payout
 	hype_meter += float(payout["hype"])
 	rating_changed.emit(run_ratings)
 	_check_hype_thresholds()

@@ -8,6 +8,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **Weapon-specific stats** — melee range/damage/arc/knockback (and ranged spread/fire-rate)
+  should live on the *weapon*, not as hardcoded `MELEE_*` constants on the Player. Needs a
+  weapon/item resource the player equips; pairs with inventory + the loot-items-do-things work.
+  *(2026-05-28)*
+- **Inventory + quick bar** — for items/weapons/potions. Quick bar = the at-a-glance row
+  of equipped weapons + consumables; should also surface the **active weapon mode**
+  (RANGED/MELEE — currently only a transient toast on swap) and bind quick-use slots.
+  Inventory = full holdings screen. *(2026-05-28)*
 - **Make rooms more interesting** — environmental hazards (the Bestiary hazards:
   spikes, gas, etc.), destructible/static **cover** to break line-of-sight, and
   **varied room sizes & shapes** (current rooms are all one 768px square). Procedural
