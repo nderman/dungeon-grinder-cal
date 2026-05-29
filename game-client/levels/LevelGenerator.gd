@@ -32,7 +32,7 @@ const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.7, "tint": Color(
 const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
-var corridors: Array[Rect2] = []
+var corridors: Array = []        # [{rect:Rect2, a:int, b:int}] — a,b = the room indices it links
 var walkable: Array[Rect2] = []
 var edges: Array = []            # MST room-pairs [i, j]
 var degree: Array[int] = []      # connections per room (leaf = 1)
@@ -46,7 +46,9 @@ func _ready() -> void:
 	_collect_rooms(tree)
 	_connect_mst()
 	_designate()
-	walkable = corridors.duplicate()
+	walkable = []
+	for c in corridors:
+		walkable.append(c["rect"])
 	for r in rooms:
 		walkable.append(r["rect"])
 	_build_corridor_floors()
@@ -139,10 +141,19 @@ func _connect_mst() -> void:
 			break
 		in_tree[bj] = true
 		added += 1
-		_carve(rooms[bi]["rect"], rooms[bj]["rect"])
+		_carve(bi, bj)
 		edges.append([bi, bj])
 		degree[bi] += 1
 		degree[bj] += 1
+
+# Does a corridor that links two OTHER rooms pass through room i? (Such a stray corridor would
+# punch an extra doorway and make the room walk-through-able — bad for the boss room.)
+func _has_stray_corridor(i: int) -> bool:
+	var rect: Rect2 = rooms[i]["rect"]
+	for c in corridors:
+		if c["a"] != i and c["b"] != i and rect.intersects(c["rect"]):
+			return true
+	return false
 
 func _adjacency() -> Array:
 	var adj := []
@@ -170,17 +181,18 @@ func _distances(src: int) -> Array:
 				queue.append(nb)
 	return dist
 
-# An L-corridor (horizontal then vertical) between two room centers. Each leg overlaps its
+# An L-corridor (horizontal then vertical) between rooms ai and bj. Each leg overlaps its
 # room interior harmlessly; walls form only on the outside-room portions via edge-sampling.
-func _carve(a: Rect2, b: Rect2) -> void:
-	var ca := a.get_center()
-	var cb := b.get_center()
+# Tagged with the linked room indices so we can detect corridors that stray through OTHER rooms.
+func _carve(ai: int, bj: int) -> void:
+	var ca: Vector2 = rooms[ai]["rect"].get_center()
+	var cb: Vector2 = rooms[bj]["rect"].get_center()
 	var hx0 := minf(ca.x, cb.x)
 	var hx1 := maxf(ca.x, cb.x)
-	corridors.append(Rect2(hx0, ca.y - DOOR * 0.5, hx1 - hx0, DOOR))
+	corridors.append({"rect": Rect2(hx0, ca.y - DOOR * 0.5, hx1 - hx0, DOOR), "a": ai, "b": bj})
 	var vy0 := minf(ca.y, cb.y)
 	var vy1 := maxf(ca.y, cb.y)
-	corridors.append(Rect2(cb.x - DOOR * 0.5, vy0, DOOR, vy1 - vy0))
+	corridors.append({"rect": Rect2(cb.x - DOOR * 0.5, vy0, DOOR, vy1 - vy0), "a": ai, "b": bj})
 
 # --- Room typing -----------------------------------------------------------------------------
 
@@ -200,12 +212,19 @@ func _designate() -> void:
 			best_c = c.x + c.y
 			spawn_i = i
 	rooms[spawn_i]["type"] = "Spawn"
-	# Boss = the leaf FARTHEST (corridor hops) from spawn. Being a leaf, it's a dead-end —
-	# so it's never on the path between spawn and the mob/safe rooms.
+	# Boss = the FARTHEST clean leaf from spawn. "Clean" = no corridor for OTHER rooms strays
+	# through it (an MST leaf can still be physically crossed by an L-corridor between two other
+	# rooms, which would make it walk-through-able and on a path). A clean leaf has exactly its
+	# own single entrance → you only enter it deliberately.
 	var dist := _distances(spawn_i)
+	var clean := []
+	for i in leaves:
+		if i != spawn_i and not _has_stray_corridor(i):
+			clean.append(i)
+	var pool := clean if not clean.is_empty() else leaves
 	var boss_i := spawn_i
 	var best_d := -1
-	for i in (leaves if not leaves.is_empty() else range(rooms.size())):
+	for i in pool:
 		if i != spawn_i and dist[i] > best_d:
 			best_d = dist[i]
 			boss_i = i
@@ -243,7 +262,8 @@ func _designate() -> void:
 
 func _build_corridor_floors() -> void:
 	for c in corridors:
-		add_child(Room.make_floor(PackedVector2Array([c.position, Vector2(c.end.x, c.position.y), c.end, Vector2(c.position.x, c.end.y)]), CORRIDOR_COLOR))
+		var rc: Rect2 = c["rect"]
+		add_child(Room.make_floor(PackedVector2Array([rc.position, Vector2(rc.end.x, rc.position.y), rc.end, Vector2(rc.position.x, rc.end.y)]), CORRIDOR_COLOR))
 
 func _instantiate_rooms() -> void:
 	for r in rooms:
@@ -357,6 +377,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary) -> void:
 	if hc:
 		hc.configured_hearts = tier["hearts"]
 		hc.xp_reward = tier["xp"]
+		hc.set_invulnerable(true)   # can't be sniped while dormant — must enter to fight it
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
 		ai.damage_hearts = tier["damage"]
@@ -404,6 +425,7 @@ func _on_boss_trigger(body: Node, r: Dictionary, boss: Node) -> void:
 		ai.activate()
 	var hc := boss.get_node_or_null("HealthComponent")
 	if hc:
+		hc.set_invulnerable(false)   # the fight's on — boss can now be hurt
 		hc.health_depleted.connect(_unlock_boss.bind(r))
 	boss.tree_exited.connect(_unlock_boss.bind(r))
 

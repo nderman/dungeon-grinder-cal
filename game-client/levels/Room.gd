@@ -9,6 +9,8 @@ class_name Room
 
 const WALL := 24.0
 const COVER_COLOR := Color(0.30, 0.33, 0.42)
+const LOS_LAYER := 2   # collision bit walls/cover also sit on, so LoS rays hit ONLY environment
+                       # (not the player or other mobs, which stay on layer 1)
 const SIDES := {
 	"North": Vector2(0, -1), "South": Vector2(0, 1),
 	"East": Vector2(1, 0), "West": Vector2(-1, 0),
@@ -50,6 +52,7 @@ static func make_floor(corners: PackedVector2Array, color: Color) -> Polygon2D:
 static func make_rect_body(pos: Vector2, block_size: Vector2, color: Color) -> StaticBody2D:
 	var body := StaticBody2D.new()
 	body.position = pos
+	body.collision_layer = 1 | LOS_LAYER   # layer 1 = physics; layer 2 = line-of-sight rays
 	var cs := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
 	shape.size = block_size

@@ -27,7 +27,15 @@ var _last_health: float = 0.0   # tracked to detect "I just took damage" → agg
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
 var _agent: NavigationAgent2D   # paths through doorways instead of beelining into walls
+var _player: CharacterBody2D    # cached so we don't group-scan every frame
 @onready var move_comp: MovementComponent = get_parent().get_node_or_null("MovementComponent")
+
+# Cached player lookup (re-resolves only if the cached node was freed, e.g. respawn).
+func _get_player() -> CharacterBody2D:
+	if not is_instance_valid(_player):
+		var ps := get_tree().get_nodes_in_group("player")
+		_player = ps[0] as CharacterBody2D if not ps.is_empty() else null
+	return _player
 
 func _ready() -> void:
 	parent = get_parent() as CharacterBody2D
@@ -44,17 +52,16 @@ func _ready() -> void:
 		hc.health_changed.connect(_on_health_changed)
 	_change_state(State.IDLE)
 
-# Clear line-of-sight to t? Raycast against walls (everything's on layer 1); the mob's own
-# body is excluded, so a clear shot lands on the player, a blocked one hits a wall first.
+# Clear line-of-sight to t? Raycast against the environment layer ONLY (walls + cover), so
+# other mobs and the player never block the ray — a clear shot hits nothing, a blocked one
+# hits a wall/cover. (Cover correctly breaks LoS, which is the point.)
 func _has_los(t: Node2D) -> bool:
 	if parent == null or not is_instance_valid(t):
 		return false
 	var space := parent.get_world_2d().direct_space_state
 	var q := PhysicsRayQueryParameters2D.create(global_position, t.global_position)
-	q.exclude = [parent.get_rid()]
-	q.collision_mask = 1
-	var hit := space.intersect_ray(q)
-	return hit.is_empty() or hit.get("collider") == t
+	q.collision_mask = Room.LOS_LAYER
+	return space.intersect_ray(q).is_empty()
 
 func activate() -> void:
 	_active = true
@@ -68,10 +75,9 @@ func _on_health_changed(current: float, _maximum: float) -> void:
 		_acquire_player()
 
 func _acquire_player() -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
+	target = _get_player()
+	if target == null:
 		return
-	target = players[0] as CharacterBody2D
 	if current_state == State.IDLE:
 		_change_state(State.CHASE)
 		_rally_nearby()
@@ -106,10 +112,7 @@ func _physics_process(delta: float) -> void:
 		_: pass   # TELEGRAPH/ATTACK/COOLDOWN driven by timers
 
 func _find_target() -> void:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
-		return
-	var p := players[0] as CharacterBody2D
+	var p := _get_player()
 	if p == null:
 		return
 	var d := global_position.distance_to(p.global_position)
