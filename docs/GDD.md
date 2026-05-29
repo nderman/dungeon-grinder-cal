@@ -54,9 +54,15 @@ Glitch-Witch (+4 DEX +3 INT) · Gravity-Glitcher (+4 INT +3 DEX) · Scavenger (+
 Unlock tiers: **Floor 3** → Ogre/Trollkin/Brawler/Bio-Paladin · **Floor 6** → Cat/Aero-Wraith/Technomancer/Gravity-Glitcher · **Floor 9** → legendary tier.
 
 ## 6. World — Open Floor Sorties
-- **Random Walk** over a 2D grid stitches prefab `PackedScene` rooms (~1000px apart).
-- Boss room = furthest-walked tile. **2–3 Phase-Doors** lead to one persistent,
-  sub-dimensional **Safe Room**; exiting returns you to the door you entered.
+- **BSP generator** (`LevelGenerator`): recursively splits the world into varied-size leaves,
+  insets a room in each (sizes + positions vary), connects rooms with a **Minimum Spanning Tree**
+  of L-corridors (trunks with rooms branching off; MST leaves = dead-end rooms). Walls build by
+  **edge-sampling the walkable union** — doorways form automatically where corridors meet rooms.
+- **Boss = the leaf farthest from spawn** → always a dead-end, never on the path to mobs/safe-room.
+  Spawn is also a leaf (start at an end). MiniBosses prefer other leaves (optional detours);
+  Phase-Doors sit on the main path so the **Safe Room** is always reachable without a boss.
+- *Rooms are varied-size **rectangles** for now; L/T + angled shapes = Phase 2. Alternate
+  generators (long-corridor spine, open-world w/ buildings/forests) = TODO (pluggable per floor).*
 - **Cover (live):** Combat rooms pick a random cover layout (`Room._build_cover`: quad
   pillars / diagonal / scattered crates / open). Cover = solid `StaticBody2D` blocks that
   block movement AND bolts (HitboxComponent stops on StaticBody2D, both ways) → snipers must be

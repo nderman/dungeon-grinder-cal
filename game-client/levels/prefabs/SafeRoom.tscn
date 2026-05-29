@@ -8,6 +8,8 @@
 [node name="SafeRoom" type="Node2D"]
 
 [node name="Room" parent="." instance=ExtResource("1_room")]
+room_type = "Safe"
+seal = true
 
 [node name="Entry" type="Marker2D" parent="." groups=["safe_room_entry"]]
 position = Vector2(-200, 0)

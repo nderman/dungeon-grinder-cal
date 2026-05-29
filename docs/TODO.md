@@ -8,6 +8,26 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **Alternate floor-layout generators per level** — so floors feel distinct. Current BSP =
+  dungeon feel. Want e.g. an **open-world** generator: open areas + scattered buildings / forests
+  / ponds, less corridor-y. Like DCC Floor 3 (https://dungeon-crawler-carl.fandom.com/wiki/Third_Floor).
+  Architecture: make the generator pluggable (a `FloorGenerator` interface; pick by floor number /
+  theme). BSP is the first impl. *(2026-05-29)*
+
+- **Minimap with fog-of-war** — corner minimap of the floor; rooms reveal as you explore. **FOW
+  reveal range scales with INT** (smart contestants see more) — gives INT a third role beyond
+  mana/spell dmg. Pairs with the BSP floor layout. *(2026-05-29)*
+- **Bosses drop map info** — killing a boss reveals part/all of the floor map (clears fog around
+  it / reveals the stairs / marks loot). A reward beyond loot + a reason to hunt Neighborhood
+  bosses. Depends on the minimap/FOW system. *(2026-05-29)*
+
+- **Level timer (DCC canon)** — two-stage clock per floor: **time until the stairs open** (can't
+  leave early) and **time until the level collapses** (hard deadline / death if you're still on it).
+  Drives pacing + tension. Ties into stairwell mechanics + the BSP floor rewrite. HUD countdown.
+  *(2026-05-29)*
+- **CON-linked slow regen — NOT built yet** (still just logged below). Confirmed not implemented.
+  *(2026-05-29)*
+
 - **More enemy types** — ✅ Syndicate Sniper (ranged) + melee/ranged spawn mix DONE. Remaining
   GDD §7 roster: **Shield-Bot Cleric** (50% DR-aura support — needs an aura/buff mechanic),
   **Lava-Lung Toad** (area-denial — needs a ground hazard), **Screamer** (0.5♥ swarm). Also the
@@ -37,6 +57,9 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   (Glitch-Goop slow, Lava DoT — needs a damage-over-time Area2D), **destructible cover** (health
   on blocks), and **true varied room sizes/shapes** (still one 768px grid square — would need the
   generator/door system to handle non-uniform cells). *(2026-05-28, cover done 2026-05-29)*
+  - **More cover variety** — currently 4 layouts (quad/diagonal/scatter/open) of same-color square
+    blocks. Want: more layout patterns (corridors-of-cover, central bunker, asymmetric), varied
+    block shapes (long walls/barricades, not just squares), maybe themed per room type. *(2026-05-29)*
   - **Door-aware cover (follow-up):** cover is quadrant-only to keep all door channels clear
     without knowing which open. Could defer cover to the generator's 2nd pass (post-open_exit) to
     allow center-cross cover that leaves only OPEN channels clear — richer layouts.
