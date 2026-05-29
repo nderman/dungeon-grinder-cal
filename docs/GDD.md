@@ -57,6 +57,12 @@ Unlock tiers: **Floor 3** → Ogre/Trollkin/Brawler/Bio-Paladin · **Floor 6** �
 - **Random Walk** over a 2D grid stitches prefab `PackedScene` rooms (~1000px apart).
 - Boss room = furthest-walked tile. **2–3 Phase-Doors** lead to one persistent,
   sub-dimensional **Safe Room**; exiting returns you to the door you entered.
+- **Cover (live):** Combat rooms pick a random cover layout (`Room._build_cover`: quad
+  pillars / diagonal / scattered crates / open). Cover = solid `StaticBody2D` blocks that
+  block movement AND bolts (HitboxComponent stops on StaticBody2D, both ways) → snipers must be
+  flanked, not just out-DPS'd. Blocks stay in the corner quadrants, clear of the central door
+  cross, so inter-room paths never block; spawns avoid cover footprints. *Rooms are still one
+  768px square — true varied sizes/shapes + hazards (Glitch-Goop/Lava) + destructible cover: TODO.*
 - **10 Season-One rooms:** Casting Couch (spawn), Ratings Trap, Crossfire Corridor,
   Sludge Pit, Shield-Bot Sanctuary, Ambush Alley, Hype-Building Hall, Green Room Oasis
   (safe), Meat-Grinder's Stage (boss), The Wrap-Up (exit).

@@ -32,10 +32,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   should live on the *weapon*, not as hardcoded `MELEE_*` constants on the Player. Needs a
   weapon/item resource the player equips; pairs with inventory + the loot-items-do-things work.
   *(2026-05-28)*
-- **Make rooms more interesting** — environmental hazards (the Bestiary hazards:
-  spikes, gas, etc.), destructible/static **cover** to break line-of-sight, and
-  **varied room sizes & shapes** (current rooms are all one 768px square). Procedural
-  room templates instead of one parametric box. *(2026-05-28)*
+- **Make rooms more interesting** — ✅ static **cover** layouts DONE (quad/diagonal/scatter/open
+  per combat room, blocks movement + LoS both ways). Remaining: **environmental hazards**
+  (Glitch-Goop slow, Lava DoT — needs a damage-over-time Area2D), **destructible cover** (health
+  on blocks), and **true varied room sizes/shapes** (still one 768px grid square — would need the
+  generator/door system to handle non-uniform cells). *(2026-05-28, cover done 2026-05-29)*
+  - **Door-aware cover (follow-up):** cover is quadrant-only to keep all door channels clear
+    without knowing which open. Could defer cover to the generator's 2nd pass (post-open_exit) to
+    allow center-cross cover that leaves only OPEN channels clear — richer layouts.
 - **Slow health regen, CON-linked** — like the DCC books
   (https://dungeon-crawler-carl.fandom.com/wiki/Health). Out-of-combat HP slowly
   ticks back; rate scales with CON. Makes CON matter more and replaces the
