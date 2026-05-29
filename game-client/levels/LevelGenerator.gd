@@ -52,6 +52,7 @@ func _ready() -> void:
 	_build_corridor_floors()
 	_instantiate_rooms()
 	_build_walls()
+	_build_navmesh()
 	_populate()
 	_place_safe_room()
 	_spawn_player()
@@ -304,6 +305,20 @@ func _is_walkable(p: Vector2) -> bool:
 		if r.grow(1.0).has_point(p):   # grow 1px so flush shared edges read as walkable (Rect2.has_point excludes far edge)
 			return true
 	return false
+
+# Bake a navigation mesh over the walkable union so mobs path through doorways instead of
+# beelining into walls. Each walkable rect is a traversable outline; baking unions them and
+# insets by the agent radius (kept under DOOR width so corridor mouths stay passable).
+func _build_navmesh() -> void:
+	var src := NavigationMeshSourceGeometryData2D.new()
+	for r in walkable:
+		src.add_traversable_outline(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]))
+	var np := NavigationPolygon.new()
+	np.agent_radius = 22.0
+	NavigationServer2D.bake_from_source_geometry_data(np, src)
+	var region := NavigationRegion2D.new()
+	region.navigation_polygon = np
+	add_child(region)
 
 # --- Populate --------------------------------------------------------------------------------
 

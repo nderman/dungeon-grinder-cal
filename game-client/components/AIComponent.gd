@@ -8,7 +8,8 @@ class_name AIComponent
 enum State { IDLE, CHASE, TELEGRAPH, ATTACK, COOLDOWN }
 var current_state: State = State.IDLE
 
-@export var detection_range: float = 400.0
+@export var detection_range: float = 400.0       # sight range — needs clear line-of-sight
+@export var hearing_radius: float = 140.0         # through-wall aggro only when really close
 @export var alert_radius: float = 260.0          # a freshly-aggroed mob rallies buddies within this
 @export var attack_range: float = 60.0
 @export var telegraph_duration: float = 0.3   # Glitch-Goblin baseline
@@ -25,11 +26,16 @@ var _active: bool = true
 var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
+var _agent: NavigationAgent2D   # paths through doorways instead of beelining into walls
 @onready var move_comp: MovementComponent = get_parent().get_node_or_null("MovementComponent")
 
 func _ready() -> void:
 	parent = get_parent() as CharacterBody2D
 	_active = start_active
+	_agent = NavigationAgent2D.new()
+	_agent.path_desired_distance = 16.0
+	_agent.target_desired_distance = 24.0
+	add_child(_agent)   # child of the AIComponent (same global pos as the mob; safe during _ready)
 	# Aggro-on-damage: a hit drags the mob onto you even from beyond detection_range —
 	# no more free sniping from across the floor.
 	var hc := get_parent().get_node_or_null("HealthComponent")
@@ -37,6 +43,18 @@ func _ready() -> void:
 		_last_health = hc.current_hearts
 		hc.health_changed.connect(_on_health_changed)
 	_change_state(State.IDLE)
+
+# Clear line-of-sight to t? Raycast against walls (everything's on layer 1); the mob's own
+# body is excluded, so a clear shot lands on the player, a blocked one hits a wall first.
+func _has_los(t: Node2D) -> bool:
+	if parent == null or not is_instance_valid(t):
+		return false
+	var space := parent.get_world_2d().direct_space_state
+	var q := PhysicsRayQueryParameters2D.create(global_position, t.global_position)
+	q.exclude = [parent.get_rid()]
+	q.collision_mask = 1
+	var hit := space.intersect_ray(q)
+	return hit.is_empty() or hit.get("collider") == t
 
 func activate() -> void:
 	_active = true
@@ -92,19 +110,30 @@ func _find_target() -> void:
 	if players.is_empty():
 		return
 	var p := players[0] as CharacterBody2D
-	if p and global_position.distance_to(p.global_position) < detection_range:
+	if p == null:
+		return
+	var d := global_position.distance_to(p.global_position)
+	# Wake on close proximity (heard through walls) OR sight within detection_range (clear LoS).
+	if d < hearing_radius or (d < detection_range and _has_los(p)):
 		target = p
 		_change_state(State.CHASE)
 		_rally_nearby()
 
 func _handle_chase(delta: float) -> void:
-	if target == null:
+	if not is_instance_valid(target):
 		_change_state(State.IDLE)
 		return
-	if global_position.distance_to(target.global_position) <= attack_range:
+	# Attack only with a clear shot + in range — no telegraphing/firing through a wall.
+	if global_position.distance_to(target.global_position) <= attack_range and _has_los(target):
 		_change_state(State.TELEGRAPH)
-	elif move_comp:
-		move_comp.handle_movement(delta, (target.global_position - global_position).normalized(), move_speed)
+		return
+	if move_comp:
+		# Path toward the player through doorways rather than beelining into walls.
+		_agent.target_position = target.global_position
+		var step := _agent.get_next_path_position()
+		var dir := (step - global_position)
+		if dir.length() > 1.0:
+			move_comp.handle_movement(delta, dir.normalized(), move_speed)
 
 func _change_state(new_state: State) -> void:
 	current_state = new_state
