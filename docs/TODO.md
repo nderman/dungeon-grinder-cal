@@ -8,6 +8,20 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **More enemy types** — ✅ Syndicate Sniper (ranged) + melee/ranged spawn mix DONE. Remaining
+  GDD §7 roster: **Shield-Bot Cleric** (50% DR-aura support — needs an aura/buff mechanic),
+  **Lava-Lung Toad** (area-denial — needs a ground hazard), **Screamer** (0.5♥ swarm). Also the
+  full per-room spawn-weight table (§6) instead of the flat `ranged_enemy_chance`. Ranged snipers
+  pair with the room-variety/cover item. *(2026-05-28)*
+  - **Cleanup first:** before adding more enemy scenes, extract a **BaseEnemy.tscn** (CharacterBody2D
+    + Health/Movement/AI/HealthBar skeleton) and make Goblin/Sniper/Golem inherited scenes — they're
+    3 copies of the same tree now. (Review flag, 2026-05-29.)
+  - **Sniper feel:** snipers don't maintain distance — they close to `attack_range` then sit still
+    (kiteable, and fire even if you dashed out during the tell since the bolt travels). Consider a
+    minimum standoff in `_handle_chase` + maybe a whiff if you leave range. Playtest first.
+- **More items / weapons / armour** — expand the `LootData` pool. Armour = CON/DR gear; more
+  stat-affinity + flavour variety (cheap: gear auto-applies today). Weapons-as-items needs the
+  weapon data model (see Item depth). *(2026-05-28)*
 - **Stairwell mechanics + better floor design** — figure out how stairwells work as the
   floor-transition mechanic, and richer floor layout overall. DCC refs:
   https://dungeon-crawler-carl.fandom.com/wiki/Stairwells ·

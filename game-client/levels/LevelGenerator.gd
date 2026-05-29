@@ -6,7 +6,9 @@
 extends Node2D
 
 @export var room_scene: PackedScene
-@export var enemy_scene: PackedScene
+@export var enemy_scene: PackedScene             # default (melee) mob
+@export var ranged_enemy_scene: PackedScene      # mixed in at ranged_enemy_chance
+@export var ranged_enemy_chance: float = 0.3
 @export var player_scene: PackedScene
 @export var safe_room_scene: PackedScene
 @export var phase_door_scene: PackedScene
@@ -16,8 +18,10 @@ extends Node2D
 @export var neighborhood_bosses: int = 2   # DCC: a floor has several bosses, not one
 
 # Boss tiers. On Floor 1 every boss is arena-locked (per DCC lore).
-const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.0, "tint": Color(1, 1, 1), "telegraph": 0.55, "speed": 340.0, "xp": 300}
-const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.8, "tint": Color(1.0, 0.7, 0.4), "telegraph": 0.7, "speed": 290.0, "xp": 120}
+# Scale + tint read the tier at a glance: the Floor Boss is a giant deep-red brute; a
+# Neighborhood boss is a smaller orange mini-boss (still clearly bigger than mobs).
+const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.7, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
+const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
 
 var grid: Dictionary = {}                 # Vector2i -> type string
 var rooms: Dictionary = {}                # Vector2i -> Room
@@ -143,9 +147,12 @@ func _spawn_boss(room: Room, tier: Dictionary) -> void:
 	room.arm_boss_lock(b)   # Floor 1: bosses are arena-locked (DCC lore)
 
 func _spawn_enemy(room: Room) -> void:
-	if enemy_scene == null:
+	var scene := enemy_scene
+	if ranged_enemy_scene != null and randf() < ranged_enemy_chance:
+		scene = ranged_enemy_scene   # mix in a ranged mob
+	if scene == null:
 		return
-	var e := enemy_scene.instantiate()
+	var e := scene.instantiate()
 	room.enemies_root.add_child(e)
 	e.global_position = room.interior_point()
 

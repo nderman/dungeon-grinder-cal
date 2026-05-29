@@ -18,6 +18,8 @@ var current_state: State = State.IDLE
 @export var start_active: bool = true           # bosses start dormant until the arena locks
 @export var lunge: bool = true                  # commit a forward lunge on attack so it connects
 @export var lunge_speed: float = 950.0
+@export var ranged: bool = false                # ranged mobs fire a projectile instead of lunging
+@export var projectile_scene: PackedScene       # the bolt a ranged mob launches
 
 var _active: bool = true
 var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
@@ -130,7 +132,9 @@ func _flash_tell() -> void:
 	tw.tween_property(parent, "modulate", Color(1, 0.5, 0.5), telegraph_duration * 0.5)
 
 func _execute_attack() -> void:
-	if lunge and is_instance_valid(parent) and is_instance_valid(target):
+	if ranged:
+		_fire_projectile()
+	elif lunge and is_instance_valid(parent) and is_instance_valid(target):
 		# Commit a forward lunge toward the target — this is what makes the hit land
 		# (a stationary telegraph whiffs against a moving player). Dash to dodge it.
 		var dir := (target.global_position - parent.global_position).normalized()
@@ -163,3 +167,15 @@ func _hit_target() -> void:
 		dmg = prot.handle_incoming_damage(dmg)
 	if health:
 		health.take_damage(dmg)
+
+# Ranged attack: launch a projectile at the target, grouped onto "player" so it damages the
+# contestant (and ignores other mobs + the shooter via the Hitbox group filter).
+func _fire_projectile() -> void:
+	if projectile_scene == null or not is_instance_valid(parent) or not is_instance_valid(target):
+		return
+	var proj := projectile_scene.instantiate()
+	get_tree().current_scene.add_child(proj)
+	proj.global_position = parent.global_position
+	var dir: Vector2 = (target.global_position - parent.global_position).normalized()
+	if proj.has_method("setup"):
+		proj.setup(dir, damage_hearts, &"player")

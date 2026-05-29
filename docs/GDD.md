@@ -72,6 +72,10 @@ Meat-Grinder's Stage 0/0/0/100 (boss). Spawn/Safe/Exit = 0.
   **Shield-Bot Cleric** (support, grants 50% DR aura) · **Lava-Lung Toad** (area-denial, 0.8s tell) ·
   **Screamer** (0.5♥ swarm, no tell). **Boss: Meat-Grinder Golem** (10 segments, 2 phases;
   Phase 2 at 50% adds lava in corner pits, faster slams, chain-slam combo).
+- **Implemented:** Glitch-Goblin (melee lunge) + **Syndicate Sniper** (ranged — `AIComponent.ranged`
+  fires a `GlitchBolt` grouped onto `"player"` after the 1.2s tell; 2♥, approaches to 340px).
+  `LevelGenerator` mixes melee/ranged via `ranged_enemy_chance` (0.3). Shield-Bot Cleric, Lava-Lung
+  Toad, Screamer + the per-room spawn-weight table (§6) are TODO.
 - **Hazards:** Glitch-Goop (−40% speed, 0.25♥/s) · Lava (1♥/s) · Pits (instant Cancel unless flying).
 - **Traps:** Disintegrator Beams, Data-Spike Landmines, Automated Turrets. Dashing through with
   i-frames = a **Ratings Spike**.
