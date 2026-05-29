@@ -8,6 +8,18 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **Stairs + safe-room entrances as WALL DOORS** — instead of a pad in the middle of a room, put
+  them in a wall as a door you walk through (stairs door = locked until stairs open; safe-room
+  door = the phase-door entrance). Needs: pick a wall segment in the chosen room, carve/replace it
+  with a door node, orient it, walk-through to trigger. More immersive than center pads. *(2026-05-29)*
+- **Weapon-gated start** — once the weapon/item system is richer, the player starts with only a
+  **short-range melee/knife** (no ranged bolt or spells) and must *find* ranged weapons + spells as
+  loot. Changes the early game + naturally fixes melee-boss kiting (you can't snipe if you have no
+  ranged). Pairs with weapons-as-items. *(2026-05-29)*
+- **Melee boss is kiteable by a ranged player** — a melee-only boss can't threaten a player who
+  keeps distance + uses cover. Options: a boss gap-closer/ranged attack, or rely on the weapon-gated
+  start (melee-only early). Partly mitigated now by beeline-when-unreachable. *(2026-05-29)*
+
 - **Flavor text + Codex screen (DCC voice)** — a cluster of "Cal" personality work:
   - **Boss-battle start screen** — dramatic intro card when a boss arena locks (name, title,
     snarky Cal commentary), à la DCC boss reveals. Ref: https://dungeon-crawler-carl.fandom.com/wiki/Boss

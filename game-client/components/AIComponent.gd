@@ -136,12 +136,13 @@ func _handle_chase(delta: float) -> void:
 		_change_state(State.TELEGRAPH)
 		return
 	if move_comp:
-		# Path toward the player through doorways rather than beelining into walls.
+		# Path toward the player through doorways. If the navmesh can't reach the player's spot
+		# (too tight for this agent's clearance) or returns no step, BEELINE so a kiting player
+		# behind cover can't sit safely out of reach.
 		_agent.target_position = target.global_position
-		var step := _agent.get_next_path_position()
-		var dir := step - global_position
-		if dir.length() <= 1.0:
-			dir = target.global_position - global_position   # nav gave no path → beeline as a fallback
+		var dir := _agent.get_next_path_position() - global_position
+		if dir.length() <= 1.0 or not _agent.is_target_reachable():
+			dir = target.global_position - global_position
 		if dir.length() > 1.0:
 			move_comp.handle_movement(delta, dir.normalized(), move_speed)
 

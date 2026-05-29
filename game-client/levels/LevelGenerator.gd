@@ -16,11 +16,13 @@ extends Node2D
 @export var boss_scene: PackedScene
 @export var neighborhood_bosses: int = 2         # DCC: a floor has several bosses, not one
 
-# World + BSP tuning.
-const WORLD := Vector2(3800, 2800)
-const MAX_DEPTH := 4
-const MIN_CHILD := 620.0      # don't split if a child would be smaller than this on the split axis
-const ROOM_MARGIN := 80.0     # inset from the leaf → the gap that corridors cross
+# World + BSP tuning. Bigger world + one more split depth = larger floors with more rooms
+# (→ more enemies); bigger ROOM_MARGIN = more space / longer corridors between rooms. Stairs (3)
+# and phase-doors (2) stay capped in _designate/_place_stairs regardless of size.
+const WORLD := Vector2(5200, 3800)
+const MAX_DEPTH := 5
+const MIN_CHILD := 640.0      # don't split if a child would be smaller than this on the split axis
+const ROOM_MARGIN := 120.0    # inset from the leaf → the gap that corridors cross
 const ROOM_MIN := Vector2(380, 360)
 const DOOR := 150.0           # corridor / doorway width
 const WALL := Room.WALL
@@ -31,8 +33,10 @@ const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 # Boss tiers. Scale + tint read the tier at a glance (Floor Boss = giant deep-red brute).
 # "hearts" = the boss's own HP (enemy pool, unscaled); "damage" = damage to the player in HP
 # (×20 of the old per-heart value, matching the player's HP pool).
-const FLOOR_BOSS := {"hearts": 20.0, "damage": 40.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
-const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 20.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
+# damage is HP to the player: 64 ≈ one-shots a base CON-12 player (48 HP) — you must grind CON
+# to survive a hit, or skip the boss via the timer. Bosses are a real gate, not a speed-bump.
+const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
+const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
 var corridors: Array = []        # [{rect:Rect2, a:int, b:int}] — a,b = the room indices it links
@@ -382,12 +386,13 @@ func _build_navmesh() -> void:
 			src.add_obstruction_outline(_rect_outline(cr))   # holes in the mesh where cover is
 	# Mob mesh on the default map.
 	_make_nav_region(src, 22.0, get_world_2d().navigation_map)
-	# Boss mesh on its own map (bigger clearance) — the boss agent uses this. Radius kept moderate
-	# (48) so it doesn't over-carve small cover-filled rooms into an empty mesh.
+	# Boss mesh on its own map — 40px clearance: enough to keep the big boss off walls/cover
+	# without making so many spots unreachable that a kiting player can hide. Beeline fallback
+	# (AIComponent) covers anywhere the mesh still can't reach.
 	boss_nav_map = NavigationServer2D.map_create()
 	NavigationServer2D.map_set_active(boss_nav_map, true)
 	NavigationServer2D.map_set_cell_size(boss_nav_map, NavigationServer2D.map_get_cell_size(get_world_2d().navigation_map))
-	_make_nav_region(src, 48.0, boss_nav_map)
+	_make_nav_region(src, 40.0, boss_nav_map)
 
 # Free the boss nav map when this floor is torn down (descent/death) so the RID doesn't leak.
 func _exit_tree() -> void:
@@ -443,7 +448,9 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	if ai:
 		ai.damage_hearts *= m
 		if dormant:
-			ai.start_active = false   # boss-room adds stay put until the arena locks
+			ai.start_active = false       # boss-room adds stay put until the arena locks…
+			if hc:
+				hc.set_invulnerable(true)   # …and can't be sniped down before you commit
 	room.enemies_root.add_child(e)
 	e.global_position = room.interior_point()
 
@@ -507,17 +514,16 @@ func _on_boss_trigger(body: Node, r: Dictionary, boss: Node) -> void:
 			if bar:
 				barriers.append(bar)
 	r["barriers"] = barriers
-	# Wake the boss AND its dormant adds together, now that the player's sealed in.
+	# The fight's on — wake AND make vulnerable the boss + every dormant add in the arena.
 	for e in r["node"].enemies_root.get_children():
 		var eai: Node = e.get_node_or_null("AIComponent")
 		if eai and eai.has_method("activate"):
 			eai.activate()
-	var ai := boss.get_node_or_null("AIComponent")
-	if ai and ai.has_method("activate"):
-		ai.activate()
+		var ehc: Node = e.get_node_or_null("HealthComponent")
+		if ehc and ehc.has_method("set_invulnerable"):
+			ehc.set_invulnerable(false)
 	var hc := boss.get_node_or_null("HealthComponent")
 	if hc:
-		hc.set_invulnerable(false)   # the fight's on — boss can now be hurt
 		hc.health_depleted.connect(_unlock_boss.bind(r))
 	boss.tree_exited.connect(_unlock_boss.bind(r))
 
