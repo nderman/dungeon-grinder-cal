@@ -8,6 +8,17 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **Flavor text + Codex screen (DCC voice)** — a cluster of "Cal" personality work:
+  - **Boss-battle start screen** — dramatic intro card when a boss arena locks (name, title,
+    snarky Cal commentary), à la DCC boss reveals. Ref: https://dungeon-crawler-carl.fandom.com/wiki/Boss
+  - **Funny achievement text** — punch up the achievement titles/descriptions in Cal's voice.
+  - **Funny monster + equipment descriptions** — flavor blurbs on each enemy/boss + item.
+  - **Bestiary / Achievement / Dungeon-guide screen** — a codex you open to read the above for
+    things you've *encountered* (discovered-gated). Monsters, bosses, weapons, achievements.
+    Pairs with HUD work: https://dungeon-crawler-carl.fandom.com/wiki/Heads-Up_Display_(HUD)
+  - Data model: add `desc`/`title`/`flavor` fields to AchievementData / LootData / enemy defs;
+    track "discovered" set (per save). Reuse the ModalPanel base for the codex screen. *(2026-05-29)*
+
 - **Alternate floor-layout generators per level** — so floors feel distinct. Current BSP =
   dungeon feel. Want e.g. an **open-world** generator: open areas + scattered buildings / forests
   / ponds, less corridor-y. Like DCC Floor 3 (https://dungeon-crawler-carl.fandom.com/wiki/Third_Floor).
