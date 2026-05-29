@@ -208,6 +208,18 @@ func _designate() -> void:
 		if i != spawn_i and dist[i] > best_d:
 			best_d = dist[i]
 			boss_i = i
+	# Fallback: if no distinct leaf was found, take the euclidean-farthest room so a floor with
+	# ≥2 rooms always has a boss (never a no-boss / unbeatable floor).
+	if boss_i == spawn_i and rooms.size() >= 2:
+		var sc: Vector2 = rooms[spawn_i]["rect"].get_center()
+		var bd := -1.0
+		for i in range(rooms.size()):
+			if i == spawn_i:
+				continue
+			var d := sc.distance_to(rooms[i]["rect"].get_center())
+			if d > bd:
+				bd = d
+				boss_i = i
 	if boss_i != spawn_i:
 		rooms[boss_i]["type"] = "Boss"
 	# MiniBosses prefer OTHER leaves (optional dead-end detours); phase-doors go on the main
@@ -217,9 +229,13 @@ func _designate() -> void:
 		if rooms[i]["type"] == "Combat":
 			combat.append(i)
 	combat.sort_custom(func(a, b): return degree[a] < degree[b])   # leaves first
-	for _n in range(mini(neighborhood_bosses, combat.size())):
+	# Scale special rooms to floor size so small floors keep regular mob rooms to grind.
+	var others_n := combat.size()
+	var phasedoors := mini(2 if others_n >= 5 else 1, others_n)
+	var minibosses := mini(neighborhood_bosses, maxi(0, others_n - phasedoors - 1))   # leave ≥1 Combat
+	for _n in range(minibosses):
 		rooms[combat.pop_front()]["type"] = "MiniBoss"   # from the leaf end
-	for _p in range(mini(2, combat.size())):
+	for _p in range(phasedoors):
 		rooms[combat.pop_back()]["type"] = "PhaseDoor"   # from the interior end
 
 # --- Geometry build --------------------------------------------------------------------------
@@ -397,4 +413,11 @@ func _spawn_player() -> void:
 		return
 	var p := player_scene.instantiate()
 	add_child(p)
-	p.global_position = rooms[0]["rect"].get_center()   # Spawn room
+	# Spawn in the room actually typed "Spawn" — NOT rooms[0], which is just the first-collected
+	# room and could be the Boss room (or a populated Combat room).
+	var spawn_rect: Rect2 = rooms[0]["rect"]
+	for r in rooms:
+		if r["type"] == "Spawn":
+			spawn_rect = r["rect"]
+			break
+	p.global_position = spawn_rect.get_center()

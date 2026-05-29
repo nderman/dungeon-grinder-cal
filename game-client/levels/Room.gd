@@ -88,34 +88,39 @@ func _add_block(pos: Vector2, block_size: Vector2, color: Color) -> StaticBody2D
 	add_child(body)
 	return body
 
-# Combat rooms get a random cover layout in the corner quadrants (clear of the central door
-# cross), scaled to the room's size. Other room types stay clear.
+# Combat rooms get a random cover layout in the corner quadrants — placed and sized RELATIVE to
+# the room so cover actually shows up in the varied BSP rooms (a fixed offset skipped most of
+# them). The central cross stays clear-ish so doorways aren't walled. Other room types stay clear.
 func _build_cover() -> void:
 	if room_type != "Combat":
 		return
-	var lo := 220.0                                   # > door half-width: keeps the cross clear
-	var hi_x := size.x * 0.5 - WALL - 95.0
-	var hi_y := size.y * 0.5 - WALL - 95.0
-	if hi_x <= lo or hi_y <= lo:
-		return   # room too small for cover
-	match ["quad", "diagonal", "scatter", "open"].pick_random():
+	var hx := size.x * 0.5
+	var hy := size.y * 0.5
+	if minf(hx, hy) < 150.0:
+		return   # only the genuinely tiny rooms stay clear
+	var bs := clampf(minf(hx, hy) * 0.30, 64.0, 150.0)   # block size scales with the room
+	var max_ox := hx - WALL - bs * 0.5 - 8.0
+	var max_oy := hy - WALL - bs * 0.5 - 8.0
+	if max_ox < 90.0 or max_oy < 90.0:
+		return
+	var ox := clampf(hx * 0.5, 90.0, max_ox)   # quadrant offset, kept inside the walls
+	var oy := clampf(hy * 0.5, 90.0, max_oy)
+	match ["quad", "diagonal", "scatter"].pick_random():   # ('open' rooms return with the cover-variety pass)
 		"quad":
 			for s in [Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)]:
-				_add_cover(Vector2(s.x * lo, s.y * lo), Vector2(130, 130))
+				_add_cover(Vector2(s.x * ox, s.y * oy), Vector2(bs, bs))
 		"diagonal":
-			_add_cover(Vector2(lo, lo), Vector2(150, 150))
-			_add_cover(Vector2(-lo, -lo), Vector2(150, 150))
+			_add_cover(Vector2(ox, oy), Vector2(bs, bs))
+			_add_cover(Vector2(-ox, -oy), Vector2(bs, bs))
 		"scatter":
 			for _i in range(randi_range(3, 5)):
-				var sz := randf_range(90.0, 150.0)
-				_add_cover(_scatter_pos(lo, hi_x, hi_y), Vector2(sz, sz))
+				var sx := 1.0 if randf() < 0.5 else -1.0
+				var sy := 1.0 if randf() < 0.5 else -1.0
+				var px := randf_range(110.0, ox) if ox > 110.0 else ox
+				var py := randf_range(110.0, oy) if oy > 110.0 else oy
+				_add_cover(Vector2(sx * px, sy * py), Vector2(randf_range(80.0, bs), randf_range(80.0, bs)))
 		"open":
 			pass
-
-func _scatter_pos(lo: float, hi_x: float, hi_y: float) -> Vector2:
-	var sx := 1.0 if randf() < 0.5 else -1.0
-	var sy := 1.0 if randf() < 0.5 else -1.0
-	return Vector2(randf_range(lo, hi_x) * sx, randf_range(lo, hi_y) * sy)
 
 func _add_cover(pos: Vector2, block_size: Vector2) -> void:
 	_add_block(pos, block_size, COVER_COLOR)
