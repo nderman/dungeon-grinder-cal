@@ -21,12 +21,14 @@ but meta-progression persists for the next "Season."
   **Syndication Points**. Reaching floors 3/6/9 grants **Milestone Tokens** spent in the
   **Green Room** to unlock one race OR class per token.
 
-## 3. Combat Model ("Small Pool")
-- Health is measured in **hearts**; **1 heart per 5 CON**. Half-heart granularity allowed.
-- Standard mobs deal **1 heart**, bosses **2+**. Brief **i-frames** on the Dash.
-- **Damage Resistance (probabilistic):** `DR% = CON × 1.5 + flat gear DR`, capped **75%**.
-  A successful roll ignores **one** heart (the "Clink!"). Mob 1→0, boss 2→1.
-- Healing is rare (potions / "Near Death" pity boxes), not floor litter.
+## 3. Combat Model (HP pool)
+- Health is a continuous **HP pool = CON × 4** (≈ the old "1 heart / 5 CON" at **20 HP per heart**;
+  shown as a red bar + `HP cur/max`). A pool — not hearts — so heals/regen/damage are granular.
+- Standard mobs deal **20 HP** (1 old heart), bosses **40+**. Brief **i-frames** on the Dash.
+  *(Enemy HP and player weapon damage stay in their own unscaled unit — only the player's pool +
+  what damages/heals it were rescaled ×20, so lethality is unchanged.)*
+- **Damage Resistance (probabilistic):** `DR% = CON × 1.5 + flat gear DR`, capped **75%**. ("Clink!")
+- Healing: potions heal `(1+tier)·20 HP`; CON-linked slow regen is TODO (the pool enables it).
 
 ## 4. Stats (baseline 10 each)
 | Stat | Governs | Status |

@@ -33,12 +33,12 @@ func item_name(id: String) -> String:
 func is_consumable(id: String) -> bool:
 	return ITEMS.get(id, {}).get("kind", "gear") == "consumable"
 
-# Single source of truth for a consumable's effect: {stat, amount}. CON heals (1+tier)
-# hearts; INT restores (1+tier)*10 mana. Used by both apply (Player) and describe (tooltip).
+# Single source of truth for a consumable's effect: {stat, amount}. CON heals (1+tier)·20 HP
+# (20 HP = 1 old heart); INT restores (1+tier)·10 mana. Used by apply (Player) + describe (tooltip).
 func consumable_effect(id: String, tier: int) -> Dictionary:
 	var tags: Array = ITEMS.get(id, {}).get("tags", [])
 	if "CON" in tags:
-		return {"stat": "CON", "amount": 1 + tier}
+		return {"stat": "CON", "amount": (1 + tier) * 20}
 	if "INT" in tags:
 		return {"stat": "INT", "amount": (1 + tier) * 10}
 	return {"stat": "", "amount": 0}
@@ -52,12 +52,12 @@ func gear_bonus(id: String, tier: int) -> Dictionary:
 		out[s] = amount
 	return out
 
-# Human-readable bonus line, e.g. "+3 STR, +3 INT" or "Heal 3♥" / "+30 Mana".
+# Human-readable bonus line, e.g. "+3 STR, +3 INT" or "Heal 40 HP" / "+30 Mana".
 func describe(id: String, tier: int) -> String:
 	if is_consumable(id):
 		var e := consumable_effect(id, tier)
 		match e["stat"]:
-			"CON": return "Heal %d♥" % int(e["amount"])
+			"CON": return "Heal %d HP" % int(e["amount"])
 			"INT": return "+%d Mana" % int(e["amount"])
 			_: return "Consumable"
 	var parts: PackedStringArray = []

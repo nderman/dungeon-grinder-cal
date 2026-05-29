@@ -14,7 +14,7 @@ var current_state: State = State.IDLE
 @export var attack_range: float = 60.0
 @export var telegraph_duration: float = 0.3   # Glitch-Goblin baseline
 @export var attack_cooldown: float = 1.2
-@export var damage_hearts: float = 1.0          # mobs 1, bosses 2
+@export var damage_hearts: float = 20.0         # damage dealt to the player, in HP (20 = 1 old heart)
 @export var move_speed: float = 240.0           # chase speed (bosses set this low)
 @export var start_active: bool = true           # bosses start dormant until the arena locks
 @export var lunge: bool = true                  # commit a forward lunge on attack so it connects
@@ -65,6 +65,11 @@ func _has_los(t: Node2D) -> bool:
 
 func activate() -> void:
 	_active = true
+
+# Route this mob's pathfinding through a specific nav map (the boss uses its own boss-sized mesh).
+func set_nav_map(map: RID) -> void:
+	if _agent:
+		_agent.set_navigation_map(map)
 
 # Damage acquires the player as target regardless of distance. Dormant bosses ignore it
 # (they stay inert until the arena locks); healing (current rising) never aggros.
@@ -134,7 +139,9 @@ func _handle_chase(delta: float) -> void:
 		# Path toward the player through doorways rather than beelining into walls.
 		_agent.target_position = target.global_position
 		var step := _agent.get_next_path_position()
-		var dir := (step - global_position)
+		var dir := step - global_position
+		if dir.length() <= 1.0:
+			dir = target.global_position - global_position   # nav gave no path → beeline as a fallback
 		if dir.length() > 1.0:
 			move_comp.handle_movement(delta, dir.normalized(), move_speed)
 

@@ -4,9 +4,8 @@
 # so it works no matter the _ready order.
 extends CanvasLayer
 
-@onready var hearts: Label = $Hearts
+@onready var health_bar: ProgressBar = $HealthBar
 @onready var mana_bar: ProgressBar = $ManaBar
-@onready var mana_label: Label = $ManaLabel
 @onready var ratings: Label = $Ratings
 @onready var hype_bar: ProgressBar = $HypeBar
 @onready var level_label: Label = $Level
@@ -102,18 +101,12 @@ func _bind_player() -> void:
 		_on_mana(mc.current_mana, mc.max_mana)
 
 func _on_health(current: float, maximum: float) -> void:
-	hearts.text = "HP %s  %s/%s" % [_hearts_glyphs(current, maximum), _fmt(current), _fmt(maximum)]
-
-func _hearts_glyphs(current: float, maximum: float) -> String:
-	var s := ""
-	for i in range(int(ceil(maximum))):
-		s += "♥" if current >= float(i + 1) else "♡"   # the trailing number shows any half
-	return s
+	health_bar.max_value = maxf(1.0, maximum)
+	health_bar.value = current
 
 func _on_mana(current: float, maximum: float) -> void:
 	mana_bar.max_value = maximum
 	mana_bar.value = current
-	mana_label.text = "MANA %d / %d" % [int(current), int(maximum)]
 
 func _on_rating(v: int) -> void:
 	ratings.text = "RATINGS %d" % v
@@ -149,7 +142,3 @@ func _flash_ticker(text: String) -> void:
 	var tw := create_tween()
 	tw.tween_interval(0.6)
 	tw.tween_property(ticker, "modulate:a", 0.0, 0.6)
-
-func _fmt(v: float) -> String:
-	var h := snappedf(v, 0.5)
-	return "%d" % int(roundf(h)) if is_equal_approx(h, roundf(h)) else "%.1f" % h

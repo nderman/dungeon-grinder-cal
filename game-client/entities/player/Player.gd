@@ -84,11 +84,13 @@ func _on_stat_injected(_stat: String, _new_value: int) -> void:
 func _derive_vitals(full: bool) -> void:
 	var con := int(current_stats["CON"])
 	var intel := int(current_stats["INT"])
+	# HP pool = CON × 4 (≈ the old "1 heart / 5 CON" × 20 HP-per-heart). A continuous pool lets
+	# damage/heals/regen be granular and shows as a smooth bar.
 	if full:
-		health_comp.initialize_health(floor(con / 5.0))   # 1 heart / 5 CON
+		health_comp.initialize_health(con * 4)
 		mana_comp.initialize_mana(intel)                   # 5 mana / INT
 	else:
-		health_comp.set_max_hearts(floor(con / 5.0))
+		health_comp.set_max_hearts(con * 4)
 		mana_comp.set_max_mana(intel)
 	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
 	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
@@ -210,9 +212,11 @@ func _melee_attack() -> void:
 		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
 		var hit: float = prot.handle_incoming_damage(dmg) if prot else dmg
 		hc.take_damage(hit)
-		# Shove survivors only — don't fling a corpse that's queued to free this frame.
-		if is_instance_valid(e) and not e.is_queued_for_deletion():
-			e.global_position += (to_e / dist) * knock
+		# Shove survivors only — don't fling a corpse that's queued to free this frame. Big bosses
+		# (scale ≥ 1.3) are too heavy to shove (and shoving them risks nav pockets). move_and_collide
+		# so the shove STOPS at walls — no punting enemies through geometry / out of the map.
+		if is_instance_valid(e) and not e.is_queued_for_deletion() and e is CharacterBody2D and e.scale.x < 1.3:
+			(e as CharacterBody2D).move_and_collide((to_e / dist) * knock)
 	SignalBus.spell_cast.emit("Melee", global_position)   # SFX / feedback hook
 	_melee_fx.play(aim_dir, MELEE_RANGE, MELEE_ARC_DEG)   # the visible sweep
 	await get_tree().create_timer(melee_cooldown).timeout

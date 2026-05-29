@@ -13,7 +13,7 @@ const FLOOR_PATH := "res://Floor.tscn"
 # **collapse** deadline at COLLAPSE_TIME ends the floor (lethal DoT if you're still on it).
 const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (skip-boss path)
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
-const COLLAPSE_DMG := 1.0              # hearts per tick once collapsing
+const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
 const FLOOR_DMG_PER_DEPTH := 0.2       # enemy hearts/damage scale: ×(1 + 0.2·(floor−1))
 

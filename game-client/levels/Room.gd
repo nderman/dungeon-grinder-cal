@@ -130,6 +130,13 @@ func _add_cover(pos: Vector2, block_size: Vector2) -> void:
 	_cover_bodies.append(_add_block(pos, block_size, COVER_COLOR))
 	_cover_rects.append(Rect2(pos - block_size * 0.5 - Vector2(40, 40), block_size + Vector2(80, 80)))
 
+# Cover footprints in WORLD space (for baking nav-mesh obstructions so agents path AROUND cover).
+func cover_world_rects() -> Array:
+	var out := []
+	for r in _cover_rects:
+		out.append(Rect2(global_position + r.position, r.size))
+	return out
+
 # Free any cover blocks near a point (so a stair / feature dropped in after isn't walled off).
 func clear_cover_at(local_pos: Vector2, radius: float) -> void:
 	for b in _cover_bodies:

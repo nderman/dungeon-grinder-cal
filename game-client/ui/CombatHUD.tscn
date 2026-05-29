@@ -5,30 +5,25 @@
 [node name="CombatHUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
 
-[node name="Hearts" type="Label" parent="."]
+[node name="HealthBar" type="ProgressBar" parent="."]
+modulate = Color(1, 0.4, 0.45, 1)
 offset_left = 16.0
-offset_top = 10.0
-offset_right = 480.0
-offset_bottom = 50.0
-theme_override_font_sizes/font_size = 26
-theme_override_colors/font_color = Color(1, 0.45, 0.5, 1)
-text = "HP — / —"
+offset_top = 12.0
+offset_right = 196.0
+offset_bottom = 30.0
+max_value = 60.0
+value = 60.0
+show_percentage = false
 
 [node name="ManaBar" type="ProgressBar" parent="."]
+modulate = Color(0.62, 0.42, 0.95, 1)
 offset_left = 16.0
-offset_top = 42.0
+offset_top = 38.0
 offset_right = 196.0
-offset_bottom = 58.0
+offset_bottom = 54.0
 max_value = 50.0
 value = 50.0
 show_percentage = false
-
-[node name="ManaLabel" type="Label" parent="."]
-offset_left = 204.0
-offset_top = 38.0
-offset_right = 400.0
-offset_bottom = 60.0
-text = "MANA — / —"
 
 [node name="Boxes" type="Label" parent="."]
 offset_left = 16.0

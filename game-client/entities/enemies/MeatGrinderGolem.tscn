@@ -33,7 +33,7 @@ detection_range = 700.0
 attack_range = 110.0
 telegraph_duration = 0.8
 attack_cooldown = 1.4
-damage_hearts = 2.0
+damage_hearts = 40.0
 move_speed = 130.0
 
 [node name="HealthBar" type="Node2D" parent="."]

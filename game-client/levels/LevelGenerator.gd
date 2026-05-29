@@ -29,14 +29,17 @@ const CORRIDOR_COLOR := Color(0.11, 0.11, 0.15)
 const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 
 # Boss tiers. Scale + tint read the tier at a glance (Floor Boss = giant deep-red brute).
-const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.7, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
-const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 1.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
+# "hearts" = the boss's own HP (enemy pool, unscaled); "damage" = damage to the player in HP
+# (×20 of the old per-heart value, matching the player's HP pool).
+const FLOOR_BOSS := {"hearts": 20.0, "damage": 40.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
+const NEIGHBORHOOD_BOSS := {"hearts": 8.0, "damage": 20.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
 var corridors: Array = []        # [{rect:Rect2, a:int, b:int}] — a,b = the room indices it links
 var walkable: Array[Rect2] = []
 var edges: Array = []            # MST room-pairs [i, j]
 var degree: Array[int] = []      # connections per room (leaf = 1)
+var boss_nav_map: RID            # separate, boss-sized nav map (bigger clearance around cover/walls)
 
 func _ready() -> void:
 	# Floor.tscn is the main scene, so a fresh launch lands here without the Green Room —
@@ -366,19 +369,42 @@ func _is_walkable(p: Vector2) -> bool:
 			return true
 	return false
 
-# Bake a navigation mesh over the walkable union so mobs path through doorways instead of
-# beelining into walls. Each walkable rect is a traversable outline; baking unions them and
-# insets by the agent radius (kept under DOOR width so corridor mouths stay passable).
+# Bake navigation meshes over the walkable union, with COVER carved out as obstructions so
+# agents path AROUND cover instead of into it. Two meshes at different agent radii: a small one
+# (default map) for mobs, and a boss-sized one (separate map) so the big boss keeps clearance and
+# never wedges between cover and a wall.
 func _build_navmesh() -> void:
 	var src := NavigationMeshSourceGeometryData2D.new()
 	for r in walkable:
-		src.add_traversable_outline(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]))
+		src.add_traversable_outline(_rect_outline(r))
+	for r in rooms:
+		for cr in r["node"].cover_world_rects():
+			src.add_obstruction_outline(_rect_outline(cr))   # holes in the mesh where cover is
+	# Mob mesh on the default map.
+	_make_nav_region(src, 22.0, get_world_2d().navigation_map)
+	# Boss mesh on its own map (bigger clearance) — the boss agent uses this. Radius kept moderate
+	# (48) so it doesn't over-carve small cover-filled rooms into an empty mesh.
+	boss_nav_map = NavigationServer2D.map_create()
+	NavigationServer2D.map_set_active(boss_nav_map, true)
+	NavigationServer2D.map_set_cell_size(boss_nav_map, NavigationServer2D.map_get_cell_size(get_world_2d().navigation_map))
+	_make_nav_region(src, 48.0, boss_nav_map)
+
+# Free the boss nav map when this floor is torn down (descent/death) so the RID doesn't leak.
+func _exit_tree() -> void:
+	if boss_nav_map.is_valid():
+		NavigationServer2D.free_rid(boss_nav_map)
+
+func _rect_outline(r: Rect2) -> PackedVector2Array:
+	return PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
+
+func _make_nav_region(src: NavigationMeshSourceGeometryData2D, agent_radius: float, map: RID) -> void:
 	var np := NavigationPolygon.new()
-	np.agent_radius = 22.0
+	np.agent_radius = agent_radius
 	NavigationServer2D.bake_from_source_geometry_data(np, src)
 	var region := NavigationRegion2D.new()
 	region.navigation_polygon = np
 	add_child(region)
+	region.set_navigation_map(map)
 
 # --- Populate --------------------------------------------------------------------------------
 
@@ -391,14 +417,18 @@ func _populate() -> void:
 					_spawn_enemy(r["node"])
 			"Boss":
 				_spawn_boss(r, FLOOR_BOSS, true)
+				for _i in range(maxi(0, 4 - GameManager.current_floor)):   # adds, more on lower floors
+					_spawn_enemy(r["node"], true)   # dormant — wake with the boss on lock
 			"MiniBoss":
 				_spawn_boss(r, NEIGHBORHOOD_BOSS, false)
+				for _i in range(maxi(0, 2 - GameManager.current_floor)):
+					_spawn_enemy(r["node"], true)
 			"PhaseDoor":
 				if phase_door_scene:
 					var pd := phase_door_scene.instantiate()
 					r["node"].add_child(pd)
 
-func _spawn_enemy(room: Room) -> void:
+func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var scene := enemy_scene
 	if ranged_enemy_scene != null and randf() < ranged_enemy_chance:
 		scene = ranged_enemy_scene
@@ -412,6 +442,8 @@ func _spawn_enemy(room: Room) -> void:
 	var ai := e.get_node_or_null("AIComponent")
 	if ai:
 		ai.damage_hearts *= m
+		if dormant:
+			ai.start_active = false   # boss-room adds stay put until the arena locks
 	room.enemies_root.add_child(e)
 	e.global_position = room.interior_point()
 
@@ -436,6 +468,8 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	b.scale = Vector2(tier["scale"], tier["scale"])
 	b.modulate = tier["tint"]
 	room.enemies_root.add_child(b)
+	if ai and ai.has_method("set_nav_map") and boss_nav_map.is_valid():
+		ai.set_nav_map(boss_nav_map)   # path with boss-sized clearance (no wedging on cover/walls)
 	b.global_position = room.global_position
 	_arm_boss_lock(r, b)
 	# Killing the Floor Boss opens the (scattered) stairs EARLY — that plus its loot is the
@@ -473,6 +507,11 @@ func _on_boss_trigger(body: Node, r: Dictionary, boss: Node) -> void:
 			if bar:
 				barriers.append(bar)
 	r["barriers"] = barriers
+	# Wake the boss AND its dormant adds together, now that the player's sealed in.
+	for e in r["node"].enemies_root.get_children():
+		var eai: Node = e.get_node_or_null("AIComponent")
+		if eai and eai.has_method("activate"):
+			eai.activate()
 	var ai := boss.get_node_or_null("AIComponent")
 	if ai and ai.has_method("activate"):
 		ai.activate()
