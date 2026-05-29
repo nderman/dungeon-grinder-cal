@@ -94,6 +94,29 @@ max_value = 80.0
 value = 0.0
 show_percentage = false
 
+[node name="Floor" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 8.0
+offset_right = 120.0
+offset_bottom = 30.0
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "FLOOR 1"
+
+[node name="Clock" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -160.0
+offset_top = 32.0
+offset_right = 160.0
+offset_bottom = 58.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.7, 0.85, 1, 1)
+horizontal_alignment = 1
+text = ""
+
 [node name="Ticker" type="Label" parent="."]
 anchor_left = 0.5
 anchor_right = 0.5

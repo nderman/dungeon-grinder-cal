@@ -15,6 +15,8 @@ extends CanvasLayer
 @onready var weapon_label: Label = $Weapon
 @onready var quickbar_label: Label = $QuickBar
 @onready var boxes_label: Label = $Boxes
+@onready var floor_label: Label = $Floor
+@onready var clock_label: Label = $Clock
 
 const SPIKE_TEXT := {
 	"SPEED_DEMON": "SPEED DEMON!", "NEAR_DEATH": "NEAR DEATH!",
@@ -35,6 +37,9 @@ func _ready() -> void:
 	SignalBus.weapon_changed.connect(func(n): weapon_label.text = n)
 	GameManager.items_changed.connect(_refresh_quickbar)
 	GameManager.loot_boxes_changed.connect(_on_boxes)
+	GameManager.floor_clock.connect(_on_clock)
+	GameManager.floor_changed.connect(func(f): floor_label.text = "FLOOR %d" % f)
+	floor_label.text = "FLOOR %d" % GameManager.current_floor
 	_on_rating(GameManager.run_ratings)
 	_on_hype(GameManager.hype_meter)
 	_on_xp(GameManager.xp, GameManager.xp_to_next(GameManager.level), GameManager.level)
@@ -44,6 +49,25 @@ func _ready() -> void:
 	_bind_player.call_deferred()
 
 # Persistent reminder of loot boxes waiting to be opened at the next Safe Room.
+# Stairs-open countdown, then the collapse countdown once stairs are open.
+func _on_clock(elapsed: float, stairs_open: bool) -> void:
+	if not stairs_open:
+		var rem: float = maxf(0.0, GameManager.STAIRS_OPEN_TIME - elapsed)
+		clock_label.text = "STAIRS IN %s" % _mmss(rem)
+		clock_label.modulate = Color(0.7, 0.85, 1, 1)
+	else:
+		var rem: float = GameManager.COLLAPSE_TIME - elapsed
+		if rem <= 0.0:
+			clock_label.text = "FLOOR COLLAPSING!"
+			clock_label.modulate = Color(1, 0.3, 0.3)
+		else:
+			clock_label.text = "COLLAPSE IN %s" % _mmss(rem)
+			clock_label.modulate = Color(1, 0.5, 0.4) if rem < 30.0 else Color(0.95, 0.8, 0.4)
+
+func _mmss(s: float) -> String:
+	var t := int(ceil(s))
+	return "%d:%02d" % [t / 60, t % 60]
+
 func _on_boxes(count: int) -> void:
 	boxes_label.text = "📦 %d loot box%s — open at a Safe Room" % [count, "" if count == 1 else "es"] if count > 0 else ""
 
@@ -78,12 +102,12 @@ func _bind_player() -> void:
 		_on_mana(mc.current_mana, mc.max_mana)
 
 func _on_health(current: float, maximum: float) -> void:
-	hearts.text = "%s   %s / %s" % [_hearts_glyphs(current, maximum), _fmt(current), _fmt(maximum)]
+	hearts.text = "HP %s  %s/%s" % [_hearts_glyphs(current, maximum), _fmt(current), _fmt(maximum)]
 
 func _hearts_glyphs(current: float, maximum: float) -> String:
 	var s := ""
 	for i in range(int(ceil(maximum))):
-		s += "♥" if current >= float(i + 1) else "♡"
+		s += "♥" if current >= float(i + 1) else "♡"   # the trailing number shows any half
 	return s
 
 func _on_mana(current: float, maximum: float) -> void:
@@ -127,4 +151,5 @@ func _flash_ticker(text: String) -> void:
 	tw.tween_property(ticker, "modulate:a", 0.0, 0.6)
 
 func _fmt(v: float) -> String:
-	return str(snappedf(v, 0.5))
+	var h := snappedf(v, 0.5)
+	return "%d" % int(roundf(h)) if is_equal_approx(h, roundf(h)) else "%.1f" % h

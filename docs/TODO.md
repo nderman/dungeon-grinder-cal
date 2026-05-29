@@ -32,10 +32,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   it / reveals the stairs / marks loot). A reward beyond loot + a reason to hunt Neighborhood
   bosses. Depends on the minimap/FOW system. *(2026-05-29)*
 
-- **Level timer (DCC canon)** — two-stage clock per floor: **time until the stairs open** (can't
-  leave early) and **time until the level collapses** (hard deadline / death if you're still on it).
-  Drives pacing + tension. Ties into stairwell mechanics + the BSP floor rewrite. HUD countdown.
-  *(2026-05-29)*
+- **Floor progression — ✅ DONE (2026-05-29):** two-stage clock (stairs open at 120s OR Floor
+  Boss death, whichever first; collapse at 300s = lethal DoT), Stairs node in the boss room
+  (hidden until open), descend → next floor with run-state carryover + depth scaling, HUD clock.
+  *Still TODO:* **enemy spawner** to keep a cleared floor lively while the collapse clock runs;
+  tune the timer lengths; stairwell as a richer transition (animation/screen); per-floor difficulty
+  curve beyond the flat ×(1+0.2·depth).
 - **CON-linked slow regen — NOT built yet** (still just logged below). Confirmed not implemented.
   *(2026-05-29)*
 

@@ -26,6 +26,7 @@ const DOOR := 150.0           # corridor / doorway width
 const WALL := Room.WALL
 const SIDES := Room.SIDES
 const CORRIDOR_COLOR := Color(0.11, 0.11, 0.15)
+const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 
 # Boss tiers. Scale + tint read the tier at a glance (Floor Boss = giant deep-red brute).
 const FLOOR_BOSS := {"hearts": 20.0, "damage": 2.0, "scale": 1.7, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
@@ -42,6 +43,7 @@ func _ready() -> void:
 	# start a run if none is active so current_run_stats is populated before the player spawns.
 	if not GameManager.is_run_active:
 		GameManager.start_new_run()
+	GameManager.begin_floor()   # reset the stairs-open / collapse clock for this floor
 	var tree := _split(Rect2(Vector2.ZERO, WORLD), 0)
 	_collect_rooms(tree)
 	_connect_mst()
@@ -56,6 +58,7 @@ func _ready() -> void:
 	_build_walls()
 	_build_navmesh()
 	_populate()
+	_place_stairs()
 	_place_safe_room()
 	_spawn_player()
 
@@ -154,6 +157,41 @@ func _has_stray_corridor(i: int) -> bool:
 		if c["a"] != i and c["b"] != i and rect.intersects(c["rect"]):
 			return true
 	return false
+
+# Greedily pick k rooms from `pool` (room indices) that are spread out — each pick maximises the
+# minimum distance to the anchor points (spawn/boss/already-placed specials). Keeps exits +
+# safe-room entrances distributed across the floor for the sortie feel.
+func _spread_pick(pool: Array, anchors: Array, k: int) -> Array:
+	var chosen := []
+	var pts := anchors.duplicate()
+	for _i in range(mini(k, pool.size())):
+		var best := -1
+		var best_d := -1.0
+		for idx in pool:
+			if idx in chosen:
+				continue
+			var d := _min_dist(rooms[idx]["rect"].get_center(), pts)
+			if d > best_d:
+				best_d = d
+				best = idx
+		if best == -1:
+			break
+		chosen.append(best)
+		pts.append(rooms[best]["rect"].get_center())
+	return chosen
+
+func _min_dist(c: Vector2, pts: Array) -> float:
+	var m := INF
+	for p in pts:
+		m = minf(m, c.distance_to(p))
+	return m
+
+func _centers_of(types: Array) -> Array:
+	var out := []
+	for r in rooms:
+		if r["type"] in types:
+			out.append(r["rect"].get_center())
+	return out
 
 func _adjacency() -> Array:
 	var adj := []
@@ -254,9 +292,11 @@ func _designate() -> void:
 	var phasedoors := mini(2 if others_n >= 5 else 1, others_n)
 	var minibosses := mini(neighborhood_bosses, maxi(0, others_n - phasedoors - 1))   # leave ≥1 Combat
 	for _n in range(minibosses):
-		rooms[combat.pop_front()]["type"] = "MiniBoss"   # from the leaf end
-	for _p in range(phasedoors):
-		rooms[combat.pop_back()]["type"] = "PhaseDoor"   # from the interior end
+		rooms[combat.pop_front()]["type"] = "MiniBoss"   # mini-arenas at the leaf end
+	# Phase-doors (safe-room entrances) spread across the remaining rooms, away from spawn + boss.
+	var anchors := [rooms[spawn_i]["rect"].get_center(), rooms[boss_i]["rect"].get_center()]
+	for idx in _spread_pick(combat, anchors, phasedoors):
+		rooms[idx]["type"] = "PhaseDoor"
 
 # --- Geometry build --------------------------------------------------------------------------
 
@@ -346,12 +386,13 @@ func _populate() -> void:
 	for r in rooms:
 		match r["type"]:
 			"Combat":
-				for _i in range(randi_range(2, 4)):
+				var extra := int((GameManager.current_floor - 1) / 2)   # more mobs deeper
+				for _i in range(randi_range(2, 4) + extra):
 					_spawn_enemy(r["node"])
 			"Boss":
-				_spawn_boss(r, FLOOR_BOSS)
+				_spawn_boss(r, FLOOR_BOSS, true)
 			"MiniBoss":
-				_spawn_boss(r, NEIGHBORHOOD_BOSS)
+				_spawn_boss(r, NEIGHBORHOOD_BOSS, false)
 			"PhaseDoor":
 				if phase_door_scene:
 					var pd := phase_door_scene.instantiate()
@@ -364,23 +405,31 @@ func _spawn_enemy(room: Room) -> void:
 	if scene == null:
 		return
 	var e := scene.instantiate()
+	var m := GameManager.floor_mult()   # deeper floors → tougher mobs
+	var hc := e.get_node_or_null("HealthComponent")
+	if hc:
+		hc.configured_hearts *= m
+	var ai := e.get_node_or_null("AIComponent")
+	if ai:
+		ai.damage_hearts *= m
 	room.enemies_root.add_child(e)
 	e.global_position = room.interior_point()
 
-func _spawn_boss(r: Dictionary, tier: Dictionary) -> void:
+func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	var room: Room = r["node"]
 	if boss_scene == null:
 		_spawn_enemy(room)
 		return
+	var m := GameManager.floor_mult()   # deeper floors → tougher bosses
 	var b := boss_scene.instantiate()
 	var hc := b.get_node_or_null("HealthComponent")
 	if hc:
-		hc.configured_hearts = tier["hearts"]
+		hc.configured_hearts = tier["hearts"] * m
 		hc.xp_reward = tier["xp"]
 		hc.set_invulnerable(true)   # can't be sniped while dormant — must enter to fight it
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
-		ai.damage_hearts = tier["damage"]
+		ai.damage_hearts = tier["damage"] * m
 		ai.telegraph_duration = tier["telegraph"]
 		ai.move_speed = tier["speed"]
 		ai.start_active = false   # dormant until the arena locks
@@ -389,6 +438,10 @@ func _spawn_boss(r: Dictionary, tier: Dictionary) -> void:
 	room.enemies_root.add_child(b)
 	b.global_position = room.global_position
 	_arm_boss_lock(r, b)
+	# Killing the Floor Boss opens the (scattered) stairs EARLY — that plus its loot is the
+	# reward for fighting it. Skip it and the stairs open on the timer anyway.
+	if is_floor_boss and hc:
+		hc.health_depleted.connect(GameManager.open_stairs)
 
 # Floor-1 bosses are arena-locked (DCC): the room seals the instant the player steps past a
 # doorway, until the boss falls. The trigger is inset so the seal lands just behind the player.
@@ -437,6 +490,35 @@ func _unlock_boss(r: Dictionary) -> void:
 		if is_instance_valid(b):
 			b.queue_free()
 	r["barriers"] = []
+
+# Scatter several stairs across non-boss / non-spawn rooms so the floor has multiple exits
+# reachable WITHOUT the boss (the boss only opens them early). Visible-but-locked until open.
+# Placed on the room's central vertical axis (x=0 → clear of corner cover) and offset down so it
+# misses any center occupant (a phase-door / mini-boss).
+func _place_stairs() -> void:
+	# Only plain Combat rooms (no boss/mini-boss lock, no phase-door clash) hold stairs, and they
+	# spread away from spawn, boss, phase-doors AND mini-bosses so the exits feel distributed.
+	var candidates := []
+	for i in range(rooms.size()):
+		if rooms[i]["type"] == "Combat":
+			candidates.append(i)
+	var anchors := _centers_of(["Spawn", "Boss", "PhaseDoor", "MiniBoss"])
+	var picked := _spread_pick(candidates, anchors, 3)
+	for idx in picked:
+		var r = rooms[idx]
+		var s := STAIRS_SCENE.instantiate()
+		r["node"].add_child(s)
+		s.position = Vector2(0, r["rect"].size.y * 0.25)
+		r["node"].clear_cover_at(s.position, 140.0)   # don't let cover wall off the stair
+	# Guarantee at least one exit: a pathological tiny floor (no plain Combat rooms) gets a stair
+	# in the boss room rather than being unexitable.
+	if picked.is_empty():
+		for r in rooms:
+			if r["type"] == "Boss":
+				var s := STAIRS_SCENE.instantiate()
+				r["node"].add_child(s)
+				s.position = Vector2(0, -r["rect"].size.y * 0.28)
+				break
 
 func _place_safe_room() -> void:
 	if safe_room_scene == null:

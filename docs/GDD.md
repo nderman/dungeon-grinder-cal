@@ -63,6 +63,15 @@ Unlock tiers: **Floor 3** → Ogre/Trollkin/Brawler/Bio-Paladin · **Floor 6** �
   Phase-Doors sit on the main path so the **Safe Room** is always reachable without a boss.
 - *Rooms are varied-size **rectangles** for now; L/T + angled shapes = Phase 2. Alternate
   generators (long-corridor spine, open-world w/ buildings/forests) = TODO (pluggable per floor).*
+- **Floor progression (live):** a two-stage clock per floor (`GameManager`). **Stairs open** at
+  `STAIRS_OPEN_TIME` (120s) elapsed **OR** the instant the **Floor Boss dies** — whichever first.
+  So you can rush the boss for its XP/loot and leave early, or skip it and take the timer-opened
+  stairs (forfeiting the boss rewards). The **floor collapses** at `COLLAPSE_TIME` (300s) — lethal
+  DoT if you're still on it. **~3 stairs** (`Stairs.tscn`) are scattered across non-boss/non-spawn
+  rooms — **always visible but locked** until open (so you can see the exits, but can't leave early
+  without clearing the boss or waiting). The boss only opens them *early*. Stepping on an open stair
+  → `descend()` (floor++, regenerate, **run state carries over**, enemies scale ×`(1+0.2·(floor−1))`
+  + more mobs deeper). HUD shows FLOOR + the stairs/collapse countdown.
 - **Cover (live):** Combat rooms pick a random cover layout (`Room._build_cover`: quad
   pillars / diagonal / scattered crates / open). Cover = solid `StaticBody2D` blocks that
   block movement AND bolts (HitboxComponent stops on StaticBody2D, both ways) → snipers must be

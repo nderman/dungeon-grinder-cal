@@ -5,6 +5,17 @@
 extends Node
 
 const GREEN_ROOM_PATH := "res://ui/GreenRoom.tscn"
+const FLOOR_PATH := "res://Floor.tscn"
+
+# Floor progression (DCC): the **stairs open** at STAIRS_OPEN_TIME elapsed OR the instant the
+# Floor Boss dies — whichever comes first. So you can rush the boss for its XP/loot and leave
+# early, or skip it and take the timer-opened stairs (forfeiting the boss rewards). Either way a
+# **collapse** deadline at COLLAPSE_TIME ends the floor (lethal DoT if you're still on it).
+const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (skip-boss path)
+const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
+const COLLAPSE_DMG := 1.0              # hearts per tick once collapsing
+const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
+const FLOOR_DMG_PER_DEPTH := 0.2       # enemy hearts/damage scale: ×(1 + 0.2·(floor−1))
 
 # Ratings Spike reward table — {hype_pct, ratings} per achievement type.
 const SPIKE_TABLE := {
@@ -38,6 +49,11 @@ var run_inventory: Array = []                             # items pulled from Lo
 var run_kills: int = 0                                    # mobs cancelled this run
 var _kill_times: Array[float] = []                        # recent kill timestamps (speed-demon detector)
 
+# --- FLOOR CLOCK ---
+var floor_elapsed: float = 0.0       # seconds on the current floor
+var stairs_open: bool = false        # can the player descend yet?
+var _collapse_accum: float = 0.0     # collapse-DoT tick accumulator
+
 # --- PROGRESSION (XP / LEVELS / SKILL POINTS) — the character-growth rail ---
 # Per DCC: kills grant XP; every level hands you 3 stat points to spend, and you may only
 # spend them in a Safe Room. Levels reset per run (roguelite); you re-grow each Season.
@@ -67,6 +83,60 @@ signal hype_changed(new_value: float)
 signal floor_changed(floor: int)
 signal items_changed()
 signal loot_boxes_changed(count: int)   # pending boxes waiting to open at a Safe Room
+signal floor_clock(elapsed: float, stairs_open: bool)   # HUD countdown
+signal stairs_opened()                  # stairs are now usable (timer or boss kill)
+
+# Enemy stat multiplier for the current depth (deeper floors hit harder / have more HP).
+func floor_mult() -> float:
+	return 1.0 + FLOOR_DMG_PER_DEPTH * float(current_floor - 1)
+
+# Reset the floor clock — called on every floor load (first floor + each descent).
+func begin_floor() -> void:
+	floor_elapsed = 0.0
+	stairs_open = false
+	_collapse_accum = 0.0
+	floor_clock.emit(floor_elapsed, stairs_open)
+
+# Drives the stairs-open + collapse clock. Only ticks during an active run on a floor.
+func _process(delta: float) -> void:
+	if not is_run_active:
+		return
+	floor_elapsed += delta
+	if not stairs_open and floor_elapsed >= STAIRS_OPEN_TIME:
+		open_stairs()   # timer path (skip-boss)
+	if floor_elapsed >= COLLAPSE_TIME:
+		_tick_collapse(delta)
+	floor_clock.emit(floor_elapsed, stairs_open)
+
+func open_stairs() -> void:
+	if stairs_open:
+		return
+	stairs_open = true
+	stairs_opened.emit()
+	SignalBus.toast.emit("THE STAIRS ARE OPEN", Vector2.ZERO)
+
+# Floor's collapsing and you're still here — lethal DoT until you descend or die.
+func _tick_collapse(delta: float) -> void:
+	_collapse_accum += delta
+	if _collapse_accum < COLLAPSE_INTERVAL:
+		return
+	_collapse_accum = 0.0
+	var p := get_tree().get_first_node_in_group("player")
+	if p == null:
+		return
+	var hc := p.get_node_or_null("HealthComponent")
+	if hc:
+		hc.take_damage(COLLAPSE_DMG)
+
+# Descend to the next floor — keeps run state (XP/level/items), regenerates a deeper floor.
+func descend() -> void:
+	if not stairs_open:
+		return
+	begin_floor()   # reset the clock NOW so collapse can't tick on the descending player, and
+	                # stairs_open=false guards against a second descend() this frame
+	current_floor += 1
+	floor_changed.emit(current_floor)
+	get_tree().change_scene_to_file(FLOOR_PATH)
 
 # Queue a loot box (from an achievement) and ping the HUD so the player knows it's waiting.
 func add_loot_box(tier: int) -> void:
@@ -173,9 +243,6 @@ func start_new_run() -> void:
 	SignalBus.run_started.emit()   # resets per-run achievement dedup
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
 
-func advance_floor() -> void:
-	current_floor += 1
-	floor_changed.emit(current_floor)
 
 # Cal's Note: every entertaining act pays out in Ratings + Hype.
 func _on_ratings_spike(type: String) -> void:

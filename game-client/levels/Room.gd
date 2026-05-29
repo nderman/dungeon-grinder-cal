@@ -22,6 +22,7 @@ const SIDES := {
 var size: Vector2 = Vector2(768, 768)
 var enemies_root: Node2D
 var _cover_rects: Array[Rect2] = []   # local-space footprints so spawns avoid cover
+var _cover_bodies: Array[Node] = []   # the cover StaticBody2Ds (so a stair can clear nearby ones)
 
 # Generator calls this BEFORE add_child so _ready paints the right floor/size.
 func setup(type: String, sz: Vector2) -> void:
@@ -95,8 +96,8 @@ func _add_block(pos: Vector2, block_size: Vector2, color: Color) -> StaticBody2D
 # the room so cover actually shows up in the varied BSP rooms (a fixed offset skipped most of
 # them). The central cross stays clear-ish so doorways aren't walled. Other room types stay clear.
 func _build_cover() -> void:
-	if room_type != "Combat":
-		return
+	if room_type not in ["Combat", "Boss", "MiniBoss"]:
+		return   # combat-ish rooms get cover; Spawn/Safe/PhaseDoor stay clear
 	var hx := size.x * 0.5
 	var hy := size.y * 0.5
 	if minf(hx, hy) < 150.0:
@@ -126,8 +127,14 @@ func _build_cover() -> void:
 			pass
 
 func _add_cover(pos: Vector2, block_size: Vector2) -> void:
-	_add_block(pos, block_size, COVER_COLOR)
+	_cover_bodies.append(_add_block(pos, block_size, COVER_COLOR))
 	_cover_rects.append(Rect2(pos - block_size * 0.5 - Vector2(40, 40), block_size + Vector2(80, 80)))
+
+# Free any cover blocks near a point (so a stair / feature dropped in after isn't walled off).
+func clear_cover_at(local_pos: Vector2, radius: float) -> void:
+	for b in _cover_bodies:
+		if is_instance_valid(b) and b.position.distance_to(local_pos) < radius:
+			b.queue_free()
 
 # A random point inside the walls (for spawning), avoiding cover footprints.
 func interior_point() -> Vector2:
