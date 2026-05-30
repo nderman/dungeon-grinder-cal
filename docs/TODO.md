@@ -15,7 +15,20 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
     old auto-apply-by-id gear.
   - **Phase 2:** weapons as items (equipped weapon drives combat: melee/ranged/fire-rate/spread) +
     weapon-gated start (begin basic, find better).
-  - **Hotbar arrangement:** assign consumables (+ spell shortcuts) to 1–4 slots.
+  - **Hotbar arrangement (player-chosen, NOT auto-ordered):** fixed numbered slots (1–4); the
+    player assigns which consumable/spell/skill goes in each slot and can reorder. Use a specific
+    slot with its key. Current `quickbar` is an auto-FIFO queue (`1` = oldest) — replace with an
+    indexed slot array the player fills from the inventory. *(2026-05-30)*
+- **SKILLS = third ability track (nonmagical, learnable)** — per DCC Skills
+  (https://dungeon-crawler-carl.fandom.com/wiki/Skills): "talents or nonmagical attacks you learn
+  and train." Active (special attacks) or passive (talents). **Level up with use** (cap ~15, like
+  spells); acquired via class/race start, gear, potions, guildhalls, dungeon actions. Stats affect
+  *effectiveness* but not skill leveling. **Shares the learnable + level-with-use mechanic with
+  spells** → build one "Abilities" framework (learn, track level, level-on-use, hotbar-cast/passive)
+  and have Spells (magical, mana) + Skills (nonmagical, maybe stamina/cooldown) as two flavors.
+  ⚠️ **Terminology clash:** our current "skill points" (XP→levels→3 pts spent on STR/DEX/…) are
+  really DCC **attribute points**, NOT Skills — rename to "stat/attribute points" when we build the
+  real Skills system to avoid confusion. *(2026-05-30)*
 - **SPELLS = LEARNABLE (not loot items)** — per DCC Magic & Spells
   (https://dungeon-crawler-carl.fandom.com/wiki/Magic_%26_Spells): learned via **Tomes** (single-use),
   **Sheet Music** (reusable), or **Guildhalls**; everyone starts with a basic Heal. Spells **level up
