@@ -64,11 +64,11 @@ func _set_open(v: bool) -> void:
 	if v == visible:
 		return
 	visible = v
-	open_count += 1 if v else -1
+	open_count = maxi(0, open_count + (1 if v else -1))   # clamp so a desync can't lock out firing
 
 func _exit_tree() -> void:
 	if visible:   # closed by being freed (e.g. floor reload) — don't leak the count
-		open_count -= 1
+		open_count = maxi(0, open_count - 1)
 
 # Override to refresh content each time the panel becomes visible.
 func _on_show() -> void:

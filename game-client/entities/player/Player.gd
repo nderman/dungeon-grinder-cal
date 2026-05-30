@@ -19,6 +19,7 @@ var current_stats: Dictionary = {"STR": 10, "DEX": 10, "INT": 10, "CON": 10, "CH
 @export var dash_duration: float = 0.2
 var _can_dash: bool = true
 var _is_dashing: bool = false
+var _alive: bool = true   # cleared on death so in-flight coroutines (melee sweep) bail
 var aim_dir: Vector2 = Vector2.RIGHT
 
 # Primary fire: a Glitch Bolt projectile (the universal starter spell).
@@ -63,6 +64,7 @@ func _ready() -> void:
 # Death ("Cancelled"): freeze the contestant at once so you can't keep playing during the
 # brief Green-Room cut. GameManager.end_run (fired by HealthComponent) handles the hand-off.
 func _on_death() -> void:
+	_alive = false   # stops an in-flight melee sweep from ticking on a dead player
 	set_physics_process(false)
 	set_process_unhandled_input(false)
 	velocity = Vector2.ZERO
@@ -199,9 +201,13 @@ func _melee_attack() -> void:
 	var already: Array = []   # enemies hit this swing (don't double-hit)
 	var elapsed := 0.0
 	while elapsed < MELEE_SWEEP_TIME:
+		if not _alive or not is_inside_tree():
+			return   # player died / floor changed mid-swing — stop touching the world
 		_melee_tick(swing_aim, already)
 		elapsed += get_physics_process_delta_time()
 		await get_tree().physics_frame
+	if not is_inside_tree():
+		return
 	await get_tree().create_timer(maxf(0.0, melee_cooldown - MELEE_SWEEP_TIME)).timeout
 	_can_melee = true
 
