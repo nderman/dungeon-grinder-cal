@@ -432,6 +432,11 @@ func _populate() -> void:
 				if phase_door_scene:
 					var pd := phase_door_scene.instantiate()
 					r["node"].add_child(pd)
+					var a := _wall_anchor(r["rect"])   # safe-room door set into a wall
+					pd.position = a["pos"]
+					pd.rotation = a["rot"]
+					_upright_label(pd, a["rot"])
+					r["node"].clear_cover_at(pd.position, 140.0)
 
 func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var scene := enemy_scene
@@ -550,20 +555,61 @@ func _place_stairs() -> void:
 	var anchors := _centers_of(["Spawn", "Boss", "PhaseDoor", "MiniBoss"])
 	var picked := _spread_pick(candidates, anchors, 3)
 	for idx in picked:
-		var r = rooms[idx]
-		var s := STAIRS_SCENE.instantiate()
-		r["node"].add_child(s)
-		s.position = Vector2(0, r["rect"].size.y * 0.25)
-		r["node"].clear_cover_at(s.position, 140.0)   # don't let cover wall off the stair
+		_place_stair_door(rooms[idx])
 	# Guarantee at least one exit: a pathological tiny floor (no plain Combat rooms) gets a stair
 	# in the boss room rather than being unexitable.
 	if picked.is_empty():
 		for r in rooms:
 			if r["type"] == "Boss":
-				var s := STAIRS_SCENE.instantiate()
-				r["node"].add_child(s)
-				s.position = Vector2(0, -r["rect"].size.y * 0.28)
+				_place_stair_door(r)
 				break
+
+func _place_stair_door(r: Dictionary) -> void:
+	var s := STAIRS_SCENE.instantiate()
+	r["node"].add_child(s)
+	var a := _wall_anchor(r["rect"])   # stairs door set into a wall, not a pad in the middle
+	s.position = a["pos"]
+	s.rotation = a["rot"]
+	_upright_label(s, a["rot"])
+	r["node"].clear_cover_at(s.position, 140.0)
+
+# Keep a door's text label horizontal even when the door is rotated onto an E/W wall.
+func _upright_label(door: Node, rot: float) -> void:
+	var lbl := door.get_node_or_null("Label")
+	if lbl:
+		lbl.rotation = -rot
+
+# Pick a spot for a wall-mounted door: a side of the room with NO corridor mouth, flush against
+# the inner wall face, plus the rotation that lays the (default-horizontal) door along that wall.
+func _wall_anchor(rect: Rect2) -> Dictionary:
+	var hx := rect.size.x * 0.5
+	var hy := rect.size.y * 0.5
+	var clear := []
+	for side in SIDES:
+		if _edge_spans(rect, side, true).is_empty():   # no corridor opening on this side
+			clear.append(side)
+	var side: String
+	if not clear.is_empty():
+		side = clear.pick_random()
+	else:
+		# Every side has a corridor — put the door on the LEAST-obstructed wall.
+		var best := INF
+		side = "North"
+		for s in SIDES:
+			var span := 0.0
+			for sp in _edge_spans(rect, s, true):
+				span += sp[1] - sp[0]
+			if span < best:
+				best = span
+				side = s
+	# Door is 48px deep (±24); centre it 20px in from the floor edge so its outer face sits flush
+	# in the wall (a few px embedded), not floating in the room.
+	var depth := 20.0
+	match side:
+		"North": return {"pos": Vector2(0, -hy + depth), "rot": 0.0}
+		"South": return {"pos": Vector2(0, hy - depth), "rot": 0.0}
+		"East": return {"pos": Vector2(hx - depth, 0), "rot": PI * 0.5}
+		_: return {"pos": Vector2(-hx + depth, 0), "rot": PI * 0.5}   # West
 
 func _place_safe_room() -> void:
 	if safe_room_scene == null:

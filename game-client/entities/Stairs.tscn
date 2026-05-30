@@ -3,34 +3,34 @@
 [ext_resource type="Script" path="res://entities/Stairs.gd" id="1_stairs"]
 
 [sub_resource type="RectangleShape2D" id="rs_stairs"]
-size = Vector2(110, 110)
+size = Vector2(124, 48)
 
 [node name="Stairs" type="Area2D"]
 script = ExtResource("1_stairs")
 
+[node name="Frame" type="Polygon2D" parent="."]
+color = Color(0.18, 0.16, 0.1, 1)
+polygon = PackedVector2Array(-62, -24, 62, -24, 62, 24, -62, 24)
+
 [node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.95, 0.9, 0.4, 0.95)
-polygon = PackedVector2Array(-55, -55, 55, -55, 55, 55, -55, 55)
+color = Color(0.95, 0.85, 0.35, 0.95)
+polygon = PackedVector2Array(-52, -16, 52, -16, 52, 16, -52, 16)
 
-[node name="Step1" type="Polygon2D" parent="."]
-color = Color(0.2, 0.18, 0.1, 0.9)
-polygon = PackedVector2Array(-40, -28, 40, -28, 40, -14, -40, -14)
+[node name="Down1" type="Polygon2D" parent="."]
+color = Color(0.15, 0.13, 0.08, 0.9)
+polygon = PackedVector2Array(-34, -8, 34, -8, 28, -2, -28, -2)
 
-[node name="Step2" type="Polygon2D" parent="."]
-color = Color(0.2, 0.18, 0.1, 0.9)
-polygon = PackedVector2Array(-40, 0, 40, 0, 40, 14, -40, 14)
-
-[node name="Step3" type="Polygon2D" parent="."]
-color = Color(0.2, 0.18, 0.1, 0.9)
-polygon = PackedVector2Array(-40, 28, 40, 28, 40, 42, -40, 42)
+[node name="Down2" type="Polygon2D" parent="."]
+color = Color(0.1, 0.09, 0.05, 0.9)
+polygon = PackedVector2Array(-28, 2, 28, 2, 22, 9, -22, 9)
 
 [node name="Label" type="Label" parent="."]
 offset_left = -70.0
-offset_top = -84.0
+offset_top = -52.0
 offset_right = 70.0
-offset_bottom = -60.0
+offset_bottom = -28.0
 horizontal_alignment = 1
-text = "STAIRS DOWN"
+text = "STAIRS"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("rs_stairs")

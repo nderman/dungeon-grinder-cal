@@ -73,7 +73,9 @@ Unlock tiers: **Floor 3** → Ogre/Trollkin/Brawler/Bio-Paladin · **Floor 6** �
   rooms — **always visible but locked** until open (so you can see the exits, but can't leave early
   without clearing the boss or waiting). The boss only opens them *early*. Stepping on an open stair
   → `descend()` (floor++, regenerate, **run state carries over**, enemies scale ×`(1+0.2·(floor−1))`
-  + more mobs deeper). HUD shows FLOOR + the stairs/collapse countdown.
+  + more mobs deeper). HUD shows FLOOR + the stairs/collapse countdown. Stairs + safe-room
+  entrances are **doors mounted in interior walls** (corridor-free side, flush) — walk into the
+  stairs door when open; press E at the safe-room door.
 - **Cover (live):** Combat rooms pick a random cover layout (`Room._build_cover`: quad
   pillars / diagonal / scattered crates / open). Cover = solid `StaticBody2D` blocks that
   block movement AND bolts (HitboxComponent stops on StaticBody2D, both ways) → snipers must be

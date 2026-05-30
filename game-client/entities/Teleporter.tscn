@@ -2,15 +2,27 @@
 
 [ext_resource type="Script" path="res://entities/Teleporter.gd" id="1_tp"]
 
-[sub_resource type="CircleShape2D" id="cs_tp"]
-radius = 44.0
+[sub_resource type="RectangleShape2D" id="rs_tp"]
+size = Vector2(124, 48)
 
 [node name="Teleporter" type="Area2D"]
 script = ExtResource("1_tp")
 
+[node name="Frame" type="Polygon2D" parent="."]
+color = Color(0.1, 0.2, 0.22, 1)
+polygon = PackedVector2Array(-62, -24, 62, -24, 62, 24, -62, 24)
+
 [node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.4, 0.9, 1, 0.55)
-polygon = PackedVector2Array(-40, -40, 40, -40, 40, 40, -40, 40)
+color = Color(0.4, 0.9, 1, 0.6)
+polygon = PackedVector2Array(-52, -16, 52, -16, 52, 16, -52, 16)
+
+[node name="Label" type="Label" parent="."]
+offset_left = -80.0
+offset_top = -52.0
+offset_right = 80.0
+offset_bottom = -28.0
+horizontal_alignment = 1
+text = "SAFE ROOM [E]"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("cs_tp")
+shape = SubResource("rs_tp")

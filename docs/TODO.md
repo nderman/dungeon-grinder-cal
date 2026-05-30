@@ -8,10 +8,10 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
-- **Stairs + safe-room entrances as WALL DOORS** — instead of a pad in the middle of a room, put
-  them in a wall as a door you walk through (stairs door = locked until stairs open; safe-room
-  door = the phase-door entrance). Needs: pick a wall segment in the chosen room, carve/replace it
-  with a door node, orient it, walk-through to trigger. More immersive than center pads. *(2026-05-29)*
+- **Stairs + safe-room entrances as WALL DOORS** — ✅ DONE (2026-05-30): both now mount flush on a
+  corridor-free interior wall (`_wall_anchor` picks the side + rotation), rendered as framed doors.
+  Stairs = walk into when open; safe-room = walk up + press E. *Polish later: actual gap in the wall
+  / open animation; orient the door art per wall instead of just rotating the node.*
 - **Weapon-gated start** — once the weapon/item system is richer, the player starts with only a
   **short-range melee/knife** (no ranged bolt or spells) and must *find* ranged weapons + spells as
   loot. Changes the early game + naturally fixes melee-boss kiting (you can't snipe if you have no

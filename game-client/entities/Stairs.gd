@@ -5,7 +5,6 @@
 extends Area2D
 
 @onready var _label: Label = $Label
-@onready var _visual: Polygon2D = $Visual
 var _open: bool = false
 
 func _ready() -> void:

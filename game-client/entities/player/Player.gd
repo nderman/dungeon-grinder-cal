@@ -227,7 +227,8 @@ func _melee_attack() -> void:
 func _enemy_radius(e: Node) -> float:
 	var cs := e.get_node_or_null("CollisionShape2D")
 	if cs is CollisionShape2D and cs.shape is CircleShape2D:
-		return (cs.shape as CircleShape2D).radius
+		var scl := (e as Node2D).scale.x if e is Node2D else 1.0
+		return (cs.shape as CircleShape2D).radius * scl   # scaled bosses are bigger than the raw radius
 	return 0.0
 
 # Use a consumable from the quick bar — CON potions heal hearts, INT batteries restore mana.
