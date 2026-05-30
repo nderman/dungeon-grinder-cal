@@ -8,6 +8,21 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **LOOT & BUILD SYSTEM (big arc, in progress)** — turn loot into an ARPG-style build system:
+  - **Phase 1 (building now):** item INSTANCES (base + **rarity** Common→Legendary, colored +
+    rolled **affixes**), **full-body equip slots** (Head/Chest/Legs/Hands/Weapon/2 Rings),
+    inventory UI to equip/unequip/compare/drop. Effective stats from equipped items. Replaces the
+    old auto-apply-by-id gear.
+  - **Phase 2:** weapons as items (equipped weapon drives combat: melee/ranged/fire-rate/spread) +
+    weapon-gated start (begin basic, find better).
+  - **Hotbar arrangement:** assign consumables (+ spell shortcuts) to 1–4 slots.
+- **SPELLS = LEARNABLE (not loot items)** — per DCC Magic & Spells
+  (https://dungeon-crawler-carl.fandom.com/wiki/Magic_%26_Spells): learned via **Tomes** (single-use),
+  **Sheet Music** (reusable), or **Guildhalls**; everyone starts with a basic Heal. Spells **level up
+  with use** (cap ~15), cost **mana = INT**. Schools (Anguish/Blood/Heirloom). So: a learned-spells
+  set on the contestant (persist?), cast from the hotbar; tomes/sheet-music are the acquisition loot.
+  Separate system from equipment. *(2026-05-30)*
+
 - **Stairs + safe-room entrances as WALL DOORS** — ✅ DONE (2026-05-30): both now mount flush on a
   corridor-free interior wall (`_wall_anchor` picks the side + rotation), rendered as framed doors.
   Stairs = walk into when open; safe-room = walk up + press E. *Polish later: actual gap in the wall

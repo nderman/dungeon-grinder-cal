@@ -120,13 +120,15 @@ Meat-Grinder's Stage 0/0/0/100 (boss). Spawn/Safe/Exit = 0.
 - **Implemented (MVP framework):** `LootData` (box tiers + build-aware roll), `AchievementData`
   + `AchievementManager` (SignalBus events → achievements → boxes), Safe-Room `LootBoxTerminal`
   opens all pending boxes. Boss Boxes / per-tier prefabs / affixes are TODO.
-- **Item system (live):** opened items split by `kind`. **Gear** auto-equips — grants +(1+tier)
-  to each tagged stat, tracked per-item in `GameManager.equipped_gear` (removable, so equip-slots
-  drop in later) and summed into `_item_bonuses`; `get_effective_stats()` = base + gear, which the
-  Player re-derives vitals/combat from. **Consumables** (CON→heal, INT→mana, scaled by tier) stock
-  a **quick bar**, used with key **`1`** (`GameManager.use_consumable`). **Inventory** screen toggles
-  with **`I`** (`InventoryPanel`, read-only list of gear + consumables). HUD shows the quick bar +
-  active weapon mode. *TODO: equip slots, drop/swap, weapons-as-items, affixes, pause-in-combat.*
+- **Item system (live — instance/rarity/affix/slot, Phase 1):** opened boxes `LootData.roll` into
+  **instances**: consumable `{kind,base,tier}` or gear `{kind,base,slot,rarity,affixes:[{stat,amount}]}`.
+  **Rarity** Common→Legendary (colored) = affix count; higher box tier skews higher rarity. Gear
+  bonus = +2 per tagged stat + affixes. **Full-body equip slots** (Head/Chest/Legs/Hands/Weapon/Ring):
+  `GameManager.equipped{slot→inst}` + `bag[]`; `equip/unequip/drop`; `_item_bonuses` recomputed from
+  equipped → `get_effective_stats()` = base + equipped. Loot auto-equips an empty slot, else → bag.
+  **Inventory** (`I`, `InventoryPanel`): equip/unequip/drop buttons, rarity colors, stat lines.
+  **Consumables** → quick bar (`1`). *Phase 2 = weapons-as-items + weapon-gated start; spells =
+  separate learnable system (tomes/sheet-music, level-with-use).*
 - **Achievements are the PRIMARY per-run loot source**, with three `scope`s (`AchievementData`):
   - `run` — once per run, reset on `SignalBus.run_started` (first kill, first phase-door). Per-run drip.
   - `repeatable` — fires every trigger, no dedup (Speed Demon, Crowd Pleaser, dodges, boss kills).

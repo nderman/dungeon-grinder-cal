@@ -1,27 +1,40 @@
 # LootData.gd (Autoload)
-# Loot-box tiers + the item pool, and the Director's Algorithm roll (build-aware).
-# DCC tiers, low→high: Bronze, Silver, Gold, Platinum, Legendary, Celestial.
+# Loot-box tiers + the item pool + the Director's Algorithm roll. Opened items are rolled into
+# INSTANCES: a base item + a RARITY (Common→Legendary) + rolled AFFIXES (extra stat bonuses).
+# Rarity = number of affix slots, so higher-tier boxes drop more "custom" gear. Gear equips into
+# full-body slots (Head/Chest/Legs/Hands/Weapon/Ring); consumables stock the quick bar.
 extends Node
 
 enum Tier { BRONZE, SILVER, GOLD, PLATINUM, LEGENDARY, CELESTIAL }
 const TIER_NAMES := ["Bronze", "Silver", "Gold", "Platinum", "Legendary", "Celestial"]
 
-# id -> { name, tags (stat affinities), min_tier (lowest box that can contain it),
-#         kind (optional: "consumable" — anything else is auto-applied passive gear) }
-# Gear grants +(1+box_tier) to each tagged stat. Consumables (CON→heal, INT→mana) are
-# used from the quick bar; their magnitude also scales with the box tier.
+# Item rarity (number of affixes = rarity index). Colour tints the inventory entry.
+const RARITY_NAMES := ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
+const RARITY_COLORS := [
+	Color(0.85, 0.85, 0.85), Color(0.4, 0.9, 0.45), Color(0.4, 0.65, 1.0),
+	Color(0.75, 0.45, 1.0), Color(1.0, 0.65, 0.25),
+]
+
+const SLOTS := ["Head", "Chest", "Legs", "Hands", "Weapon", "Ring"]
+const STAT_KEYS := ["STR", "DEX", "INT", "CON", "CHA"]
+const BASE_BONUS_PER_TAG := 2   # a gear item's flat bonus to each of its tagged stats
+
+# id -> { name, tags (stat affinities), min_tier, slot (gear) | kind:"consumable" }
 const ITEMS := {
 	"health_potion":       {"name": "Health Potion",                "tags": ["CON"],        "min_tier": 0, "kind": "consumable"},
 	"mana_battery":        {"name": "Mana Battery",                 "tags": ["INT"],        "min_tier": 0, "kind": "consumable"},
-	"spiked_pauldrons":    {"name": "Spiked Pauldrons",             "tags": ["STR"],        "min_tier": 0},
-	"hype_stim":           {"name": "Hype Stim",                    "tags": ["CHA"],        "min_tier": 0},
-	"lead_lined_vest":     {"name": "Lead-Lined Vest",              "tags": ["CON"],        "min_tier": 1},
-	"sponsors_monocle":    {"name": "Sponsor's Monocle",            "tags": ["CHA"],        "min_tier": 1},
-	"overclocked_greaves": {"name": "Overclocked Greaves",          "tags": ["DEX"],        "min_tier": 1},
-	"chain_lightning":     {"name": "Chain Lightning",              "tags": ["INT"],        "min_tier": 2},
-	"hazard_boots":        {"name": "Hazard Boots",                 "tags": ["CON", "DEX"], "min_tier": 2},
-	"gravity_spike":       {"name": "Gravity Spike",                "tags": ["INT"],        "min_tier": 3},
-	"golden_toaster":      {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4},
+	"scrap_helm":          {"name": "Scrap Helm",                   "tags": ["CON"],        "min_tier": 0, "slot": "Head"},
+	"grip_gloves":         {"name": "Grip Gloves",                  "tags": ["STR"],        "min_tier": 0, "slot": "Hands"},
+	"rusty_shiv":          {"name": "Rusty Shiv",                   "tags": ["STR"],        "min_tier": 0, "slot": "Weapon"},
+	"spiked_pauldrons":    {"name": "Spiked Pauldrons",             "tags": ["STR"],        "min_tier": 0, "slot": "Chest"},
+	"hype_stim":           {"name": "Hype Stim",                    "tags": ["CHA"],        "min_tier": 0, "slot": "Ring"},
+	"lead_lined_vest":     {"name": "Lead-Lined Vest",              "tags": ["CON"],        "min_tier": 1, "slot": "Chest"},
+	"sponsors_monocle":    {"name": "Sponsor's Monocle",            "tags": ["CHA"],        "min_tier": 1, "slot": "Head"},
+	"overclocked_greaves": {"name": "Overclocked Greaves",          "tags": ["DEX"],        "min_tier": 1, "slot": "Legs"},
+	"static_coil":         {"name": "Static Coil",                  "tags": ["INT"],        "min_tier": 2, "slot": "Ring"},
+	"hazard_boots":        {"name": "Hazard Boots",                 "tags": ["CON", "DEX"], "min_tier": 2, "slot": "Legs"},
+	"gravity_gauntlet":    {"name": "Gravity Gauntlet",             "tags": ["INT"],        "min_tier": 3, "slot": "Hands"},
+	"golden_toaster":      {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4, "slot": "Weapon"},
 }
 
 func tier_name(t: int) -> String:
@@ -33,8 +46,14 @@ func item_name(id: String) -> String:
 func is_consumable(id: String) -> bool:
 	return ITEMS.get(id, {}).get("kind", "gear") == "consumable"
 
-# Single source of truth for a consumable's effect: {stat, amount}. CON heals (1+tier)·20 HP
-# (20 HP = 1 old heart); INT restores (1+tier)·10 mana. Used by apply (Player) + describe (tooltip).
+func rarity_color(r: int) -> Color:
+	return RARITY_COLORS[clampi(r, 0, RARITY_COLORS.size() - 1)]
+
+func rarity_name(r: int) -> String:
+	return RARITY_NAMES[clampi(r, 0, RARITY_NAMES.size() - 1)]
+
+# --- Consumables (unchanged: CON→heal, INT→mana, scaled by box tier) ---------------------------
+
 func consumable_effect(id: String, tier: int) -> Dictionary:
 	var tags: Array = ITEMS.get(id, {}).get("tags", [])
 	if "CON" in tags:
@@ -43,31 +62,24 @@ func consumable_effect(id: String, tier: int) -> Dictionary:
 		return {"stat": "INT", "amount": (1 + tier) * 10}
 	return {"stat": "", "amount": 0}
 
-# Passive gear bonus: each tagged stat gets +(1 + box tier). Returned as a {stat: amount}
-# dict so the bonus can be subtracted cleanly when equip-slots / dropping arrive.
-func gear_bonus(id: String, tier: int) -> Dictionary:
-	var out: Dictionary = {}
-	var amount := 1 + tier
-	for s in ITEMS.get(id, {}).get("tags", []):
-		out[s] = amount
-	return out
+# --- Rolling -----------------------------------------------------------------------------------
 
-# Human-readable bonus line, e.g. "+3 STR, +3 INT" or "Heal 40 HP" / "+30 Mana".
-func describe(id: String, tier: int) -> String:
-	if is_consumable(id):
-		var e := consumable_effect(id, tier)
-		match e["stat"]:
-			"CON": return "Heal %d HP" % int(e["amount"])
-			"INT": return "+%d Mana" % int(e["amount"])
-			_: return "Consumable"
-	var parts: PackedStringArray = []
-	var b := gear_bonus(id, tier)
-	for s in b:
-		parts.append("+%d %s" % [int(b[s]), s])
-	return ", ".join(parts)
+# Roll an item for a box tier, weighted toward the crawler's build. Returns an INSTANCE dict:
+#   consumable → {kind:"consumable", base, tier}
+#   gear       → {kind:"gear", base, slot, rarity, affixes:[{stat,amount}…]}
+func roll(tier: int, stats: Dictionary) -> Dictionary:
+	var base := _pick_base(tier, stats)
+	if base == "":
+		return {}
+	if is_consumable(base):
+		return {"kind": "consumable", "base": base, "tier": tier}
+	var rarity := _roll_rarity(tier)
+	var affixes := []
+	for _i in range(rarity):
+		affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
+	return {"kind": "gear", "base": base, "slot": ITEMS[base].get("slot", "Trinket"), "rarity": rarity, "affixes": affixes}
 
-# Pick an item fit for the box tier, weighted toward the crawler's build.
-func roll(tier: int, stats: Dictionary) -> String:
+func _pick_base(tier: int, stats: Dictionary) -> String:
 	var top := _top_stat(stats)
 	var pool: Array[String] = []
 	for id in ITEMS:
@@ -81,6 +93,15 @@ func roll(tier: int, stats: Dictionary) -> String:
 			pool.append(id)
 	return "" if pool.is_empty() else pool.pick_random()
 
+# Higher box tiers skew toward higher rarity; capped at the box tier + 1 so a Bronze box can't
+# spit a Legendary. Rarity index = affix count.
+func _roll_rarity(tier: int) -> int:
+	var r := 0
+	var cap := mini(tier + 1, RARITY_NAMES.size() - 1)
+	while r < cap and randf() < 0.45:
+		r += 1
+	return r
+
 func _top_stat(stats: Dictionary) -> String:
 	var best := ""
 	var best_val := -1.0
@@ -89,3 +110,25 @@ func _top_stat(stats: Dictionary) -> String:
 			best_val = float(stats[s])
 			best = s
 	return best
+
+# --- Instance helpers --------------------------------------------------------------------------
+
+# Total stat bonus of a gear instance: flat per-tag base + all affixes. {stat: amount}
+func instance_bonus(inst: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for s in ITEMS.get(inst.get("base", ""), {}).get("tags", []):
+		out[s] = int(out.get(s, 0)) + BASE_BONUS_PER_TAG
+	for af in inst.get("affixes", []):
+		out[af["stat"]] = int(out.get(af["stat"], 0)) + int(af["amount"])
+	return out
+
+func instance_name(inst: Dictionary) -> String:
+	return item_name(inst.get("base", ""))
+
+# "+4 STR, +2 INT"
+func instance_desc(inst: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	var b := instance_bonus(inst)
+	for s in b:
+		parts.append("+%d %s" % [int(b[s]), s])
+	return ", ".join(parts)

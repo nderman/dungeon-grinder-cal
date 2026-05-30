@@ -76,7 +76,7 @@ func _refresh_quickbar() -> void:
 		return
 	var names: PackedStringArray = []
 	for c in GameManager.quickbar:
-		names.append(LootData.item_name(c["id"]))
+		names.append(LootData.item_name(c["base"]))
 	quickbar_label.text = "[1] " + ", ".join(names)
 
 # Hearts + initial mana come straight off the player's components.

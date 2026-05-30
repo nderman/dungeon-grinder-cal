@@ -71,12 +71,13 @@ var current_race: String = "Human"
 var current_class: String = "Brawler"
 var current_run_stats: Dictionary = {}
 
-# --- ITEMS (auto-applied gear bonuses + consumable quick bar) ---
-# Bonuses are tracked per-item in equipped_gear so equip-slots / dropping can subtract them
-# cleanly later. _item_bonuses is the running sum laid on top of current_run_stats.
-var equipped_gear: Array = []        # [{id, tier, bonus:{STR:n,…}}]
-var _item_bonuses: Dictionary = {}   # stat -> summed gear bonus
-var quickbar: Array = []             # [{id, tier}] consumables, used from the quick bar
+# --- ITEMS (full-body equip slots + a bag + consumable quick bar) ---
+# Gear is rolled into INSTANCES (LootData). One item per body slot is equipped; the rest sit in
+# the bag for manual swapping. _item_bonuses is the summed stat bonus from everything equipped.
+var equipped: Dictionary = {}        # slot:String -> gear instance
+var bag: Array = []                  # unequipped gear instances
+var _item_bonuses: Dictionary = {}   # stat -> summed bonus from equipped gear
+var quickbar: Array = []             # [{kind,base,tier}] consumables, used from the quick bar
 
 signal rating_changed(new_value: int)
 signal hype_changed(new_value: float)
@@ -150,17 +151,48 @@ func get_effective_stats() -> Dictionary:
 		eff[s] = int(eff.get(s, 0)) + int(_item_bonuses[s])
 	return eff
 
-# Auto-equip looted gear: bank its per-stat bonus and re-derive the player's vitals.
-func equip_gear(id: String, tier: int) -> void:
-	var bonus: Dictionary = LootData.gear_bonus(id, tier)
-	equipped_gear.append({"id": id, "tier": tier, "bonus": bonus})
-	for s in bonus:
-		_item_bonuses[s] = int(_item_bonuses.get(s, 0)) + int(bonus[s])
+# Looted gear: auto-equip if its slot is empty (friendly first pickup), else to the bag to swap.
+func add_loot_instance(inst: Dictionary) -> void:
+	var slot := String(inst.get("slot", ""))
+	if slot != "" and not equipped.has(slot):
+		equipped[slot] = inst
+		_recompute_bonuses()
+	else:
+		bag.append(inst)
+		items_changed.emit()
+
+# Equip a bag instance into its slot; the displaced item (if any) goes back to the bag.
+func equip(inst: Dictionary) -> void:
+	var slot := String(inst.get("slot", ""))
+	if slot == "":
+		return
+	bag.erase(inst)
+	if equipped.has(slot):
+		bag.append(equipped[slot])
+	equipped[slot] = inst
+	_recompute_bonuses()
+
+func unequip(slot: String) -> void:
+	if equipped.has(slot):
+		bag.append(equipped[slot])
+		equipped.erase(slot)
+		_recompute_bonuses()
+
+func drop(inst: Dictionary) -> void:
+	bag.erase(inst)
+	items_changed.emit()
+
+# Recompute the summed equipped-gear bonus and tell the Player to re-derive vitals.
+func _recompute_bonuses() -> void:
+	_item_bonuses.clear()
+	for slot in equipped:
+		for s in LootData.instance_bonus(equipped[slot]):
+			_item_bonuses[s] = int(_item_bonuses.get(s, 0)) + int(LootData.instance_bonus(equipped[slot])[s])
 	SignalBus.stat_injected.emit("ITEM", 0)   # Player re-derives effective vitals
 	items_changed.emit()
 
-func add_consumable(id: String, tier: int) -> void:
-	quickbar.append({"id": id, "tier": tier})
+func add_consumable(base: String, tier: int) -> void:
+	quickbar.append({"kind": "consumable", "base": base, "tier": tier})
 	items_changed.emit()
 
 # Use the oldest consumable in the quick bar on the player.
@@ -171,7 +203,7 @@ func use_consumable() -> void:
 	if p == null:
 		return
 	var c: Dictionary = quickbar.pop_front()
-	p.apply_consumable(String(c["id"]), int(c["tier"]))
+	p.apply_consumable(String(c["base"]), int(c["tier"]))
 	items_changed.emit()
 
 func _ready() -> void:
@@ -234,7 +266,8 @@ func start_new_run() -> void:
 	_kill_times.clear()
 	earned_loot_boxes.clear()
 	run_inventory.clear()
-	equipped_gear.clear()
+	equipped.clear()
+	bag.clear()
 	_item_bonuses.clear()
 	quickbar.clear()
 	is_run_active = true
