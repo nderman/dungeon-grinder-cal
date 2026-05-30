@@ -6,6 +6,13 @@
 extends CanvasLayer
 class_name ModalPanel
 
+# How many modal panels are open. The player checks this so a click on a panel button (e.g. the
+# Stat-Injection "+") doesn't also fire the weapon (fire is polled, not event-consumed).
+static var open_count: int = 0
+
+static func any_open() -> bool:
+	return open_count > 0
+
 # Builds the backdrop + centered panel and returns the content VBox to fill. Also sets the
 # panel hidden + on the given canvas layer.
 func _build_frame(panel_width: float = 420.0, layer_index: int = 10) -> VBoxContainer:
@@ -45,12 +52,23 @@ func add_hint(box: VBoxContainer, text: String) -> void:
 	box.add_child(l)
 
 func close() -> void:
-	visible = false
+	_set_open(false)
 
 func toggle() -> void:
-	visible = not visible
+	_set_open(not visible)
 	if visible:
 		_on_show()
+
+# Single place that flips visibility AND keeps the open_count in sync.
+func _set_open(v: bool) -> void:
+	if v == visible:
+		return
+	visible = v
+	open_count += 1 if v else -1
+
+func _exit_tree() -> void:
+	if visible:   # closed by being freed (e.g. floor reload) — don't leak the count
+		open_count -= 1
 
 # Override to refresh content each time the panel becomes visible.
 func _on_show() -> void:

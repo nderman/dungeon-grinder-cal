@@ -109,7 +109,9 @@ func _physics_process(delta: float) -> void:
 		if to_mouse.length() > 1.0:
 			aim_dir = to_mouse.normalized()
 	weapon_anchor.rotation = aim_dir.angle()
-	if Input.is_action_pressed("fire"):
+	# Don't fire while a modal (Stat-Injection / inventory) is open — a click on its buttons
+	# shouldn't also trigger the weapon (fire is polled, not consumed by the GUI).
+	if Input.is_action_pressed("fire") and not ModalPanel.any_open():
 		_primary_attack()
 	move_comp.handle_movement(delta, move, base_speed)
 
@@ -183,44 +185,55 @@ func _fire() -> void:
 	await get_tree().create_timer(fire_cooldown).timeout
 	_can_fire = true
 
-# A STR-scaled melee swing (the primary attack while in MELEE mode) — a short arc in the
-# aim direction that hits hard and shoves survivors back. High risk (in their face), high reward.
+const MELEE_SWEEP_TIME := 0.18   # matches the MeleeSwing VFX duration
+
+# A STR-scaled melee swing (the primary attack while in MELEE mode) — a short arc in the aim
+# direction. The hit is sampled across the whole sweep (not just frame 0), so anything the blade
+# passes through — including enemies that step into the arc mid-swing — takes damage once. The arc
+# direction is locked at swing start to match the animation.
 func _melee_attack() -> void:
 	_can_melee = false
+	var swing_aim := aim_dir
+	_melee_fx.play(swing_aim, MELEE_RANGE, MELEE_ARC_DEG)   # the visible sweep
+	SignalBus.spell_cast.emit("Melee", global_position)
+	var already: Array = []   # enemies hit this swing (don't double-hit)
+	var elapsed := 0.0
+	while elapsed < MELEE_SWEEP_TIME:
+		_melee_tick(swing_aim, already)
+		elapsed += get_physics_process_delta_time()
+		await get_tree().physics_frame
+	await get_tree().create_timer(maxf(0.0, melee_cooldown - MELEE_SWEEP_TIME)).timeout
+	_can_melee = true
+
+func _melee_tick(swing_aim: Vector2, already: Array) -> void:
 	var str_stat := int(current_stats["STR"])
 	var dmg := MELEE_BASE_DMG * (1.0 + str_stat * MELEE_DMG_PER_STR)
 	var knock := MELEE_KNOCK_BASE + str_stat * MELEE_KNOCK_PER_STR
 	var cos_half := cos(deg_to_rad(MELEE_ARC_DEG * 0.5))
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if not (e is CharacterBody2D):
+		if not (e is CharacterBody2D) or e in already:
 			continue
 		var to_e: Vector2 = e.global_position - global_position
 		var dist := to_e.length()
 		if dist <= 0.0:
 			continue
-		# Reach the enemy's body edge, not just its centre, so the blade connects with
-		# anything the sweep visibly overlaps (graphic == hit zone).
+		# Reach the enemy's body edge, not just its centre (graphic == hit zone).
 		if dist - _enemy_radius(e) > MELEE_RANGE:
 			continue
-		if aim_dir.dot(to_e / dist) < cos_half:
+		if swing_aim.dot(to_e / dist) < cos_half:
 			continue   # outside the swing arc
 		var hc := e.get_node_or_null("HealthComponent") as HealthComponent
 		if hc == null:
 			continue
-		# Route through the enemy's DR if it has one — same pipeline as HitboxComponent and
-		# AIComponent._hit_target, so melee doesn't silently bypass Damage Resistance.
+		already.append(e)
+		# Route through the enemy's DR (same pipeline as HitboxComponent / AIComponent._hit_target).
 		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
 		var hit: float = prot.handle_incoming_damage(dmg) if prot else dmg
 		hc.take_damage(hit)
-		# Shove survivors only — don't fling a corpse that's queued to free this frame. Big bosses
-		# (scale ≥ 1.3) are too heavy to shove (and shoving them risks nav pockets). move_and_collide
-		# so the shove STOPS at walls — no punting enemies through geometry / out of the map.
-		if is_instance_valid(e) and not e.is_queued_for_deletion() and e is CharacterBody2D and e.scale.x < 1.3:
+		# Shove survivors only (not a corpse). Big bosses (scale ≥ 1.3) are too heavy to shove.
+		# move_and_collide so the shove stops at walls — no punting enemies out of the map.
+		if is_instance_valid(e) and not e.is_queued_for_deletion() and e.scale.x < 1.3:
 			(e as CharacterBody2D).move_and_collide((to_e / dist) * knock)
-	SignalBus.spell_cast.emit("Melee", global_position)   # SFX / feedback hook
-	_melee_fx.play(aim_dir, MELEE_RANGE, MELEE_ARC_DEG)   # the visible sweep
-	await get_tree().create_timer(melee_cooldown).timeout
-	_can_melee = true
 
 # Radius of an enemy's circular collision shape (0 if none) — lets melee reach the body
 # edge rather than only the centre.

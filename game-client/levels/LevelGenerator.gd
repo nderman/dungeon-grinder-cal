@@ -602,9 +602,9 @@ func _wall_anchor(rect: Rect2) -> Dictionary:
 			if span < best:
 				best = span
 				side = s
-	# Door is 48px deep (±24); centre it 20px in from the floor edge so its outer face sits flush
-	# in the wall (a few px embedded), not floating in the room.
-	var depth := 20.0
+	# Door is 48px deep (±24); centre it 8px in from the floor edge so it STRADDLES the wall line
+	# (~16px embedded in the wall, ~32px into the room) — reads as set into the wall, still reachable.
+	var depth := 8.0
 	match side:
 		"North": return {"pos": Vector2(0, -hy + depth), "rot": 0.0}
 		"South": return {"pos": Vector2(0, hy - depth), "rot": 0.0}
