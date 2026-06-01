@@ -34,7 +34,7 @@ const ITEMS := {
 	"hazard_boots":        {"name": "Hazard Boots",                 "tags": ["CON", "DEX"], "min_tier": 2, "slot": "Legs"},
 	"gravity_gauntlet":    {"name": "Gravity Gauntlet",             "tags": ["INT"],        "min_tier": 3, "slot": "Hands"},
 	# --- Weapons (the equipped Weapon-slot item drives the attack via its `weapon` block) ---
-	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.7, "cooldown": 0.40, "range": 90.0, "arc": 120.0, "knock": 40.0}},
+	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.7, "cooldown": 0.34, "range": 58.0, "arc": 46.0, "knock": 24.0}},
 	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.1, "cooldown": 0.52, "range": 104.0, "arc": 120.0, "knock": 64.0}},
 	"cleaver":        {"name": "Bone Cleaver",   "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.7, "cooldown": 0.70, "range": 98.0, "arc": 110.0, "knock": 55.0}},
 	"glitch_pistol":  {"name": "Glitch Pistol",  "tags": ["INT"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.6, "cooldown": 0.28, "spread": 6.0}},
