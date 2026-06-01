@@ -22,33 +22,20 @@ var _is_dashing: bool = false
 var _alive: bool = true   # cleared on death so in-flight coroutines (melee sweep) bail
 var aim_dir: Vector2 = Vector2.RIGHT
 
-# Primary fire: a Glitch Bolt projectile (the universal starter spell).
+# Combat is driven by the EQUIPPED WEAPON (GameManager.equipped["Weapon"] → LootData.weapon_stats).
+# Its `type` (melee/ranged) decides the primary attack; damage/cooldown/range/arc/spread come from
+# the weapon. No weapon → FISTS. STR scales melee, INT scales ranged, DEX tightens spread + i-frames.
 const BOLT_SCENE := preload("res://entities/projectiles/GlitchBolt.tscn")
-@export var fire_cooldown: float = 0.25
 var _can_fire: bool = true
-
-# Melee (STR): a short, strong close-range swing — you must close the gap to use it.
-# Both the damage and the knockback shove scale with STR.
-@export var melee_cooldown: float = 0.5
-const MELEE_RANGE := 96.0
-const MELEE_ARC_DEG := 120.0
-const MELEE_BASE_DMG := 0.5         # hearts, before STR scaling
-const MELEE_DMG_PER_STR := 0.1      # STR 10 → ×2.0 = 1.0 heart
-const MELEE_KNOCK_BASE := 48.0      # px shove on hit
-const MELEE_KNOCK_PER_STR := 4.0    # STR 10 → +40px
 var _can_melee: bool = true
+const MELEE_DMG_PER_STR := 0.1      # +10% melee damage per STR
+const MELEE_KNOCK_PER_STR := 4.0    # +4px knockback per STR
+const RANGED_DMG_PER_INT := 0.05    # +5% ranged damage per INT
+const SPREAD_PER_DEX := 0.9         # DEX tightens the weapon's base spread
+const DASH_IFRAME_PER_DEX := 0.01   # +0.1s i-frames at DEX 10
+const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the MeleeSwing VFX)
 var _melee_fx: MeleeSwing            # reused sweep VFX, created on spawn
 var _inventory_panel: InventoryPanel  # toggled with the inventory key
-
-# Weapon mode — the PRIMARY attack button performs whichever mode is active, so going
-# melee doesn't change which button you press. Right-click swaps modes.
-enum WeaponMode { RANGED, MELEE }
-var weapon_mode: WeaponMode = WeaponMode.RANGED
-
-# DEX: accuracy (bolt spread shrinks as DEX rises) + dash i-frames (extend with DEX).
-const MAX_SPREAD_DEG := 14.0
-const SPREAD_PER_DEX := 0.9         # DEX ≈ 16 → near-zero spread
-const DASH_IFRAME_PER_DEX := 0.01   # +0.1s i-frames at DEX 10
 
 func _ready() -> void:
 	add_to_group("player")
@@ -120,8 +107,6 @@ func _physics_process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("dash") and _can_dash:
 		_perform_dash()
-	elif event.is_action_pressed("swap_weapon"):
-		_swap_weapon()
 	elif event.is_action_pressed("use_item"):
 		GameManager.use_consumable()
 	elif event.is_action_pressed("inventory"):
@@ -129,23 +114,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("nano"):
 		execute_nano_magic("glitch_bolt")
 
-# The primary attack button fires the ACTIVE weapon mode (each mode self-gates on its
-# own cooldown), so a melee build keeps the same button — it just swings instead of shoots.
+# The equipped weapon's type decides the attack — ranged weapons fire, melee weapons swing.
+func _current_weapon() -> Dictionary:
+	var w: Dictionary = GameManager.equipped.get("Weapon", {})
+	return LootData.weapon_stats(String(w["base"])) if not w.is_empty() else LootData.FISTS
+
 func _primary_attack() -> void:
-	if weapon_mode == WeaponMode.MELEE:
-		if _can_melee:
-			_melee_attack()
-	elif _can_fire:
-		_fire()
-
-func weapon_mode_name() -> String:
-	return "MELEE" if weapon_mode == WeaponMode.MELEE else "RANGED"
-
-func _swap_weapon() -> void:
-	weapon_mode = WeaponMode.RANGED if weapon_mode == WeaponMode.MELEE else WeaponMode.MELEE
-	var n := weapon_mode_name()
-	SignalBus.toast.emit("Weapon: " + n, global_position)
-	SignalBus.weapon_changed.emit(n)   # persistent HUD indicator
+	var w := _current_weapon()
+	if w["type"] == "ranged":
+		if _can_fire:
+			_fire(w)
+	elif _can_melee:
+		_melee_attack(w)
 
 func _perform_dash() -> void:
 	_is_dashing = true
@@ -177,45 +157,43 @@ func execute_nano_magic(spell_id: String) -> void:
 		SignalBus.spell_cast.emit(spell["name"], global_position)
 		_cast_effect(spell["effect_type"], scaled_damage)
 
-# Left-click: a FREE basic Glitch Bolt (a weapon, not a spell — no mana cost).
-func _fire() -> void:
+# Fire the equipped ranged weapon: damage scales with INT, spread = weapon base tightened by DEX.
+func _fire(w: Dictionary) -> void:
 	_can_fire = false
 	var int_stat := int(current_stats["INT"])
-	var dmg: float = NanoMagicLibrary.SPELLS["glitch_bolt"]["damage"] * (1.0 + int_stat * 0.05)
-	_spawn_projectile(dmg)
-	SignalBus.spell_cast.emit("Glitch Bolt", global_position)
-	await get_tree().create_timer(fire_cooldown).timeout
+	var dmg: float = float(w["damage"]) * (1.0 + int_stat * RANGED_DMG_PER_INT)
+	_spawn_projectile(dmg, float(w.get("spread", 6.0)))
+	SignalBus.spell_cast.emit("Shot", global_position)
+	await get_tree().create_timer(float(w["cooldown"])).timeout
 	_can_fire = true
 
-const MELEE_SWEEP_TIME := 0.18   # matches the MeleeSwing VFX duration
-
-# A STR-scaled melee swing (the primary attack while in MELEE mode) — a short arc in the aim
-# direction. The hit is sampled across the whole sweep (not just frame 0), so anything the blade
-# passes through — including enemies that step into the arc mid-swing — takes damage once. The arc
-# direction is locked at swing start to match the animation.
-func _melee_attack() -> void:
+# Swing the equipped melee weapon — a short arc in the aim direction. The hit is sampled across
+# the whole sweep (not just frame 0), so anything the blade passes through (incl. enemies stepping
+# into the arc mid-swing) takes damage once. Arc/damage/cooldown come from the weapon.
+func _melee_attack(w: Dictionary) -> void:
 	_can_melee = false
 	var swing_aim := aim_dir
-	_melee_fx.play(swing_aim, MELEE_RANGE, MELEE_ARC_DEG)   # the visible sweep
+	_melee_fx.play(swing_aim, float(w["range"]), float(w["arc"]))   # the visible sweep
 	SignalBus.spell_cast.emit("Melee", global_position)
 	var already: Array = []   # enemies hit this swing (don't double-hit)
 	var elapsed := 0.0
 	while elapsed < MELEE_SWEEP_TIME:
 		if not _alive or not is_inside_tree():
 			return   # player died / floor changed mid-swing — stop touching the world
-		_melee_tick(swing_aim, already)
+		_melee_tick(w, swing_aim, already)
 		elapsed += get_physics_process_delta_time()
 		await get_tree().physics_frame
 	if not is_inside_tree():
 		return
-	await get_tree().create_timer(maxf(0.0, melee_cooldown - MELEE_SWEEP_TIME)).timeout
+	await get_tree().create_timer(maxf(0.0, float(w["cooldown"]) - MELEE_SWEEP_TIME)).timeout
 	_can_melee = true
 
-func _melee_tick(swing_aim: Vector2, already: Array) -> void:
+func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array) -> void:
 	var str_stat := int(current_stats["STR"])
-	var dmg := MELEE_BASE_DMG * (1.0 + str_stat * MELEE_DMG_PER_STR)
-	var knock := MELEE_KNOCK_BASE + str_stat * MELEE_KNOCK_PER_STR
-	var cos_half := cos(deg_to_rad(MELEE_ARC_DEG * 0.5))
+	var dmg := float(w["damage"]) * (1.0 + str_stat * MELEE_DMG_PER_STR)
+	var knock := float(w["knock"]) + str_stat * MELEE_KNOCK_PER_STR
+	var melee_range := float(w["range"])
+	var cos_half := cos(deg_to_rad(float(w["arc"]) * 0.5))
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not (e is CharacterBody2D) or e in already:
 			continue
@@ -224,7 +202,7 @@ func _melee_tick(swing_aim: Vector2, already: Array) -> void:
 		if dist <= 0.0:
 			continue
 		# Reach the enemy's body edge, not just its centre (graphic == hit zone).
-		if dist - _enemy_radius(e) > MELEE_RANGE:
+		if dist - _enemy_radius(e) > melee_range:
 			continue
 		if swing_aim.dot(to_e / dist) < cos_half:
 			continue   # outside the swing arc
@@ -261,19 +239,19 @@ func apply_consumable(id: String, tier: int) -> void:
 func _cast_effect(effect_type: String, damage: float) -> void:
 	match effect_type:
 		"projectile":
-			_spawn_projectile(damage)
+			_spawn_projectile(damage, 6.0)
 		_:
 			pass  # TODO: chain_lightning / beam / aoe_pull effects
 
-func _spawn_projectile(damage: float) -> void:
+func _spawn_projectile(damage: float, base_spread: float) -> void:
 	var bolt := BOLT_SCENE.instantiate()
 	get_tree().current_scene.add_child(bolt)
 	bolt.global_position = weapon_anchor.global_position
-	bolt.setup(_spread_dir(), damage)
+	bolt.setup(_spread_dir(base_spread), damage)
 
-# DEX → accuracy: low DEX scatters shots within a cone; high DEX fires near-true.
-func _spread_dir() -> Vector2:
+# DEX → accuracy: the weapon's base spread cone tightens as DEX rises; high DEX fires near-true.
+func _spread_dir(base_spread: float) -> Vector2:
 	var dex := int(current_stats["DEX"])
-	var half := deg_to_rad(maxf(0.0, MAX_SPREAD_DEG - dex * SPREAD_PER_DEX))
+	var half := deg_to_rad(maxf(0.0, base_spread - dex * SPREAD_PER_DEX))
 	return aim_dir.rotated(randf_range(-half, half))
 

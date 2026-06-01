@@ -273,6 +273,10 @@ func start_new_run() -> void:
 	is_run_active = true
 	MetaManager.reset_run_cache()
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)
+	# Weapon-gated start: begin with a basic melee weapon only — no ranged, no spells. Find/equip
+	# ranged weapons (and learn spells) as you progress.
+	equipped["Weapon"] = {"kind": "gear", "base": "rusty_shiv", "slot": "Weapon", "rarity": 0, "affixes": []}
+	_recompute_bonuses()
 	SignalBus.run_started.emit()   # resets per-run achievement dedup
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
 

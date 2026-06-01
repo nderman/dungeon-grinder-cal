@@ -25,7 +25,6 @@ const ITEMS := {
 	"mana_battery":        {"name": "Mana Battery",                 "tags": ["INT"],        "min_tier": 0, "kind": "consumable"},
 	"scrap_helm":          {"name": "Scrap Helm",                   "tags": ["CON"],        "min_tier": 0, "slot": "Head"},
 	"grip_gloves":         {"name": "Grip Gloves",                  "tags": ["STR"],        "min_tier": 0, "slot": "Hands"},
-	"rusty_shiv":          {"name": "Rusty Shiv",                   "tags": ["STR"],        "min_tier": 0, "slot": "Weapon"},
 	"spiked_pauldrons":    {"name": "Spiked Pauldrons",             "tags": ["STR"],        "min_tier": 0, "slot": "Chest"},
 	"hype_stim":           {"name": "Hype Stim",                    "tags": ["CHA"],        "min_tier": 0, "slot": "Ring"},
 	"lead_lined_vest":     {"name": "Lead-Lined Vest",              "tags": ["CON"],        "min_tier": 1, "slot": "Chest"},
@@ -34,8 +33,21 @@ const ITEMS := {
 	"static_coil":         {"name": "Static Coil",                  "tags": ["INT"],        "min_tier": 2, "slot": "Ring"},
 	"hazard_boots":        {"name": "Hazard Boots",                 "tags": ["CON", "DEX"], "min_tier": 2, "slot": "Legs"},
 	"gravity_gauntlet":    {"name": "Gravity Gauntlet",             "tags": ["INT"],        "min_tier": 3, "slot": "Hands"},
-	"golden_toaster":      {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4, "slot": "Weapon"},
+	# --- Weapons (the equipped Weapon-slot item drives the attack via its `weapon` block) ---
+	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.7, "cooldown": 0.40, "range": 90.0, "arc": 120.0, "knock": 40.0}},
+	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.1, "cooldown": 0.52, "range": 104.0, "arc": 120.0, "knock": 64.0}},
+	"cleaver":        {"name": "Bone Cleaver",   "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.7, "cooldown": 0.70, "range": 98.0, "arc": 110.0, "knock": 55.0}},
+	"glitch_pistol":  {"name": "Glitch Pistol",  "tags": ["INT"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.6, "cooldown": 0.28, "spread": 6.0}},
+	"scrap_smg":      {"name": "Scrap SMG",      "tags": ["DEX"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.35, "cooldown": 0.12, "spread": 16.0}},
+	"rail_spike":     {"name": "Rail Spike",     "tags": ["DEX"], "min_tier": 3, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 1.8, "cooldown": 0.85, "spread": 2.0}},
+	"golden_toaster": {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4, "slot": "Weapon", "weapon": {"type": "melee", "damage": 2.6, "cooldown": 0.6, "range": 112.0, "arc": 130.0, "knock": 80.0}},
 }
+
+# The attack you have with no weapon equipped (a weak melee jab). Also the template for `weapon`.
+const FISTS := {"type": "melee", "damage": 0.4, "cooldown": 0.45, "range": 80.0, "arc": 110.0, "knock": 25.0}
+
+func weapon_stats(base: String) -> Dictionary:
+	return ITEMS.get(base, {}).get("weapon", FISTS)
 
 func tier_name(t: int) -> String:
 	return TIER_NAMES[clampi(t, 0, TIER_NAMES.size() - 1)]
@@ -125,10 +137,14 @@ func instance_bonus(inst: Dictionary) -> Dictionary:
 func instance_name(inst: Dictionary) -> String:
 	return item_name(inst.get("base", ""))
 
-# "+4 STR, +2 INT"
+# "melee 1.7 dmg · +4 STR, +2 INT"  (weapon line first if it's a weapon)
 func instance_desc(inst: Dictionary) -> String:
 	var parts: PackedStringArray = []
+	var base := String(inst.get("base", ""))
+	if ITEMS.get(base, {}).has("weapon"):
+		var w: Dictionary = ITEMS[base]["weapon"]
+		parts.append("%s %.1f dmg" % [w["type"], w["damage"]])
 	var b := instance_bonus(inst)
 	for s in b:
 		parts.append("+%d %s" % [int(b[s]), s])
-	return ", ".join(parts)
+	return " · ".join(parts)

@@ -39,10 +39,12 @@ but meta-progression persists for the next "Season."
 | **CON** | **hearts (CON/5)**, **DR (1.5%/CON)** | ✅ done |
 | **CHA** | Ratings gen, shop prices, loot quality | ⚠️ Ratings gen done (`×(1+CHA×0.02)` on every payout); shop prices = no shops yet; loot quality = TODO |
 
-**Weapon modes:** the **primary attack button** (`fire`, left-click) performs the **active
-mode** — RANGED (Glitch Bolt, INT-scaled) or MELEE (STR-scaled arc swing + knockback, 96px /
-120° / `0.5×(1+STR×0.1)`♥). **Right-click (`swap_weapon`) toggles** the mode, so a melee build
-never changes which button it presses. *(Active-mode HUD indicator lands with the quick bar — TODO.)*
+**Weapons drive the attack (live):** the **equipped Weapon-slot item** decides the primary attack —
+its `weapon.type` is `melee` (STR-scaled arc swing + knockback) or `ranged` (INT-scaled projectile,
+DEX tightens spread). Damage / cooldown / range / arc / spread come from the weapon; no weapon →
+**Fists**. **Weapon-gated start:** you begin with only a basic **Rusty Shiv** (melee) — find/equip
+ranged weapons (Glitch Pistol, Scrap SMG, Rail Spike) to get ranged. HUD shows the equipped weapon.
+*(The old right-click melee/ranged toggle is gone — your weapon is your mode.)*
 
 **Nano-Magic is universal, INT-scaled:** `damage = base × (1 + INT×0.05)`,
 `cost = base × (1 − INT×0.01)`. Spells: Glitch Bolt, Static Chain, Molecular Beam, Gravity Well.

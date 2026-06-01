@@ -30,7 +30,6 @@ signal leveled_up(level: int, skill_points: int)     # +3 points banked; spend i
 signal spell_cast(spell_name: String, location: Vector2)
 signal mana_updated(current: float, max: float)
 signal mana_depleted()
-signal weapon_changed(mode_name: String)   # RANGED ↔ MELEE swap, for the HUD
 
 # --- SAFE ROOM & TERMINAL ---
 signal box_opened(rarity: String)

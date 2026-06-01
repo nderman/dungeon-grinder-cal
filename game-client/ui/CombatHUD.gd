@@ -33,8 +33,8 @@ func _ready() -> void:
 	SignalBus.item_acquired.connect(_on_item)
 	SignalBus.xp_changed.connect(_on_xp)
 	SignalBus.leveled_up.connect(_on_levelup)
-	SignalBus.weapon_changed.connect(func(n): weapon_label.text = n)
 	GameManager.items_changed.connect(_refresh_quickbar)
+	GameManager.items_changed.connect(_refresh_weapon)
 	GameManager.loot_boxes_changed.connect(_on_boxes)
 	GameManager.floor_clock.connect(_on_clock)
 	GameManager.floor_changed.connect(func(f): floor_label.text = "FLOOR %d" % f)
@@ -43,9 +43,18 @@ func _ready() -> void:
 	_on_hype(GameManager.hype_meter)
 	_on_xp(GameManager.xp, GameManager.xp_to_next(GameManager.level), GameManager.level)
 	_refresh_quickbar()
+	_refresh_weapon()
 	_on_boxes(GameManager.earned_loot_boxes.size())
 	ticker.modulate.a = 0.0
 	_bind_player.call_deferred()
+
+# Show the equipped weapon's name + type (e.g. "Rusty Shiv (melee)").
+func _refresh_weapon() -> void:
+	var w: Dictionary = GameManager.equipped.get("Weapon", {})
+	if w.is_empty():
+		weapon_label.text = "Fists (melee)"
+	else:
+		weapon_label.text = "%s (%s)" % [LootData.item_name(w["base"]), LootData.weapon_stats(w["base"])["type"]]
 
 # Persistent reminder of loot boxes waiting to be opened at the next Safe Room.
 # Stairs-open countdown, then the collapse countdown once stairs are open.
@@ -90,8 +99,7 @@ func _bind_player() -> void:
 		get_tree().create_timer(0.1).timeout.connect(_bind_player)   # spawn race — retry
 		return
 	_bound = true
-	if p.has_method("weapon_mode_name"):
-		weapon_label.text = p.weapon_mode_name()   # seed from the player's actual mode
+	_refresh_weapon()   # seed the equipped-weapon label
 	var hc := p.get_node_or_null("HealthComponent")
 	if hc:
 		hc.health_changed.connect(_on_health)
