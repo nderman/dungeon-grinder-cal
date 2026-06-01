@@ -8,6 +8,27 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **STAT RESCALE to DCC magnitudes (balance pass)** — ref https://dungeon-crawler-carl.fandom.com/wiki/Player_Stats
+  DCC: new humans start **3–5** per stat (4=average, 9–10=peak human ever, 100=milestone). We start
+  at **base 10 + class (→12–15)** = "peak human at spawn", and each +1 level-up point is trivial
+  (15→16). Rescale to small numbers so **leveling matters** (4→5 = +25%).
+  - **Plan:** base 10→~4; class/race bonuses scaled down (Brawler +5/+2 → ~+3/+1); then multiply
+    every per-stat COEFFICIENT by ~2.5 so starting HP/mana/DR/damage stay ~the same, but each point
+    is now a bigger fraction → impactful growth.
+  - **Wide range, high ceiling:** stats should climb to **100+ on deep floors** (DCC's 100 = the
+    "double future gains" milestone). That's balanced because enemies scale with depth (`floor_mult`),
+    so a 100-STR player on floor 15 faces ramped enemies — not trivializing. Implies the run grants
+    enough attribute points over many floors to reach triple digits; derived formulas must stay sane
+    across the WHOLE 4→100+ range (HP/DR caps, diminishing returns, or linear-but-matched-to-floor).
+    DR already caps at 75%; HP/damage need to scale cleanly to 100-stat without breaking.
+  - **Touches (re-derive each to hold start outputs):** base stats (MetaManager `BASE_STATS`),
+    `RaceData`/`ClassData` bonuses; HP=`CON×4`, mana=`INT×5`, DR=`CON×1.5%` (Player/Protection),
+    melee `MELEE_DMG_PER_STR`, ranged `RANGED_DMG_PER_INT`, `SPREAD_PER_DEX`, `DASH_IFRAME_PER_DEX`,
+    `CHA_RATINGS_PER`, the `100`-base milestone (future). Attribute-points-per-level (3) may want
+    lowering (1–2) since each point now matters more.
+  - ⚠️ **Resets the recent melee/HP tuning** — do as ONE deliberate pass + fresh playtest, not
+    interleaved with micro-tuning. *(2026-06-01)*
+
 - **LOOT & BUILD SYSTEM (big arc, in progress)** — turn loot into an ARPG-style build system:
   - **Phase 1 (building now):** item INSTANCES (base + **rarity** Common→Legendary, colored +
     rolled **affixes**), **full-body equip slots** (Head/Chest/Legs/Hands/Weapon/2 Rings),
