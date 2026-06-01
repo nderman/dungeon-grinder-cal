@@ -7,10 +7,13 @@ class_name InventoryPanel
 
 var _list: VBoxContainer
 
+const ROW_FONT := 17
+
 func _ready() -> void:
-	var box := _build_frame(520.0, 11)
+	var box := _build_frame(660.0, 11)
 	add_title(box, "INVENTORY")
 	_list = VBoxContainer.new()
+	_list.add_theme_constant_override("separation", 6)
 	box.add_child(_list)
 	add_hint(box, "Press I to close")
 	GameManager.items_changed.connect(func(): if visible: _refresh())
@@ -48,7 +51,8 @@ func _slot_row(slot: String, text: String, color: Color, btn: String, cb: Callab
 	var lbl := Label.new()
 	lbl.text = "%-7s %s" % [slot, text]
 	lbl.modulate = color
-	lbl.custom_minimum_size.x = 380
+	lbl.add_theme_font_size_override("font_size", ROW_FONT)
+	lbl.custom_minimum_size.x = 470
 	row.add_child(lbl)
 	if btn != "":
 		var b := Button.new()
@@ -64,7 +68,8 @@ func _bag_row(inst: Dictionary) -> void:
 	var lbl := Label.new()
 	lbl.text = "%s %s (%s) → %s" % [LootData.rarity_name(int(inst.get("rarity", 0))), LootData.instance_name(inst), LootData.instance_desc(inst), inst.get("slot", "")]
 	lbl.modulate = LootData.rarity_color(int(inst.get("rarity", 0)))
-	lbl.custom_minimum_size.x = 360
+	lbl.add_theme_font_size_override("font_size", ROW_FONT)
+	lbl.custom_minimum_size.x = 470
 	row.add_child(lbl)
 	var eq := Button.new()
 	eq.text = "Equip"
@@ -88,11 +93,12 @@ func _drop(inst: Dictionary) -> void:
 func _header(t: String) -> void:
 	var l := Label.new()
 	l.text = t
-	l.add_theme_font_size_override("font_size", 20)
+	l.add_theme_font_size_override("font_size", 22)
 	l.modulate = Color(0.6, 0.9, 1.0)
 	_list.add_child(l)
 
 func _line(t: String) -> void:
 	var l := Label.new()
 	l.text = t
+	l.add_theme_font_size_override("font_size", ROW_FONT)
 	_list.add_child(l)

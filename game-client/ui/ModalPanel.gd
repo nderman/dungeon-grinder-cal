@@ -19,7 +19,7 @@ func _build_frame(panel_width: float = 420.0, layer_index: int = 10) -> VBoxCont
 	visible = false
 	layer = layer_index
 	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.6)
+	dim.color = Color(0, 0, 0, 0.78)   # darken the game behind for contrast
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP   # swallow clicks behind the panel
 	add_child(dim)
@@ -30,10 +30,18 @@ func _build_frame(panel_width: float = 420.0, layer_index: int = 10) -> VBoxCont
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(panel_width, 0)
+	# Solid, padded, bordered background so the text reads cleanly over the game.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.09, 0.09, 0.13, 0.99)
+	sb.set_content_margin_all(20)
+	sb.set_border_width_all(2)
+	sb.border_color = Color(0.4, 0.45, 0.62)
+	sb.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", sb)
 	center.add_child(panel)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	return box
 
