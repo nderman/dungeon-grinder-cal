@@ -44,8 +44,10 @@ func _ready() -> void:
 
 # id -> { name, tags (stat affinities), min_tier, slot (gear) | kind:"consumable" }
 const ITEMS := {
-	"health_potion":       {"name": "Health Potion",                "tags": ["CON"],        "min_tier": 0, "kind": "consumable"},
-	"mana_battery":        {"name": "Mana Battery",                 "tags": ["INT"],        "min_tier": 0, "kind": "consumable"},
+	"health_potion":       {"name": "Health Potion",                "tags": ["CON"],        "min_tier": 0, "kind": "consumable", "potion": true},
+	"greater_health_potion": {"name": "Greater Health Potion",      "tags": ["CON"],        "min_tier": 2, "kind": "consumable", "potion": true},
+	"mana_battery":        {"name": "Mana Battery",                 "tags": ["INT"],        "min_tier": 0, "kind": "consumable", "potion": true},
+	"antidote":            {"name": "Antidote",                     "tags": [],             "min_tier": 1, "kind": "consumable"},
 	"scrap_helm":          {"name": "Scrap Helm",                   "tags": ["CON"],        "min_tier": 0, "slot": "Head"},
 	"grip_gloves":         {"name": "Grip Gloves",                  "tags": ["STR"],        "min_tier": 0, "slot": "Hands"},
 	"spiked_pauldrons":    {"name": "Spiked Pauldrons",             "tags": ["STR"],        "min_tier": 0, "slot": "Chest"},
@@ -93,15 +95,21 @@ func rarity_color(r: int) -> Color:
 func rarity_name(r: int) -> String:
 	return RARITY_NAMES[clampi(r, 0, RARITY_NAMES.size() - 1)]
 
-# --- Consumables (unchanged: CON→heal, INT→mana, scaled by box tier) ---------------------------
+# --- Consumables (effect + amount scale with box tier) -----------------------------------------
 
+# {effect: "heal"|"mana"|"cure_poison", amount}. Higher box tiers brew stronger potions.
 func consumable_effect(id: String, tier: int) -> Dictionary:
-	var tags: Array = ITEMS.get(id, {}).get("tags", [])
-	if "CON" in tags:
-		return {"stat": "CON", "amount": (1 + tier) * 20}
-	if "INT" in tags:
-		return {"stat": "INT", "amount": (1 + tier) * 10}
-	return {"stat": "", "amount": 0}
+	match id:
+		"health_potion":         return {"effect": "heal", "amount": (1 + tier) * 20}
+		"greater_health_potion": return {"effect": "heal", "amount": (1 + tier) * 45}
+		"mana_battery":          return {"effect": "mana", "amount": (1 + tier) * 10}
+		"antidote":              return {"effect": "cure_poison", "amount": 0}
+	return {"effect": "", "amount": 0}
+
+# Potions share the DCC "potion sickness" cool-down — drink one before it's up and you get Poisoned.
+# The antidote (the cure) is deliberately exempt, so it can never re-poison you while clearing it.
+func is_potion(id: String) -> bool:
+	return bool(ITEMS.get(id, {}).get("potion", false))
 
 # --- Rolling -----------------------------------------------------------------------------------
 

@@ -16,6 +16,7 @@ extends CanvasLayer
 @onready var boxes_label: Label = $Boxes
 @onready var floor_label: Label = $Floor
 @onready var clock_label: Label = $Clock
+var _potion_cd: Label   # code-built potion-sickness cool-down indicator (above the quick bar)
 
 const SPIKE_TEXT := {
 	"SPEED_DEMON": "SPEED DEMON!", "NEAR_DEATH": "NEAR DEATH!",
@@ -46,7 +47,31 @@ func _ready() -> void:
 	_refresh_weapon()
 	_on_boxes(GameManager.earned_loot_boxes.size())
 	ticker.modulate.a = 0.0
+	_build_potion_cd()
 	_bind_player.call_deferred()
+
+# A code-built sickness indicator sitting just above the quick bar. Shows the remaining potion
+# cool-down (drink before it clears → Poisoned); hidden when a potion is safe to drink.
+func _build_potion_cd() -> void:
+	_potion_cd = Label.new()
+	_potion_cd.anchor_top = 1.0
+	_potion_cd.anchor_bottom = 1.0
+	_potion_cd.offset_left = 16.0
+	_potion_cd.offset_top = -58.0
+	_potion_cd.offset_right = 600.0
+	_potion_cd.offset_bottom = -34.0
+	_potion_cd.add_theme_font_size_override("font_size", 14)
+	_potion_cd.modulate = Color(1.0, 0.55, 0.3)
+	_potion_cd.visible = false
+	add_child(_potion_cd)
+
+func _process(_delta: float) -> void:
+	var rem := GameManager.potion_cooldown_remaining()
+	if rem > 0.0:
+		_potion_cd.visible = true
+		_potion_cd.text = "⚠ Potion sickness  %.1fs" % rem
+	elif _potion_cd.visible:
+		_potion_cd.visible = false
 
 # Show the equipped weapon's name + type (e.g. "Rusty Shiv (melee)").
 func _refresh_weapon() -> void:

@@ -42,14 +42,25 @@ func set_max_hearts(heart_count: float) -> void:
 func take_damage(amount: float) -> void:
 	if amount <= 0.0 or current_hearts <= 0.0 or _invuln:
 		return
+	_deal(amount)
+	if is_player and current_hearts > 0.0 and iframe_seconds > 0.0:
+		_grant_iframes()
+
+# Damage-over-time (poison): bypasses i-frames AND armour — it's already inside you. Still counts
+# toward death and the HUD, but never grants the post-hit i-frame window a normal hit would.
+func apply_dot(amount: float) -> void:
+	if amount <= 0.0 or current_hearts <= 0.0:
+		return
+	_deal(amount)
+
+# Shared HP mutation: clamp, signal the HUD, fire death. Callers decide DR/i-frame policy.
+func _deal(amount: float) -> void:
 	current_hearts = clampf(current_hearts - amount, 0.0, max_hearts)
 	health_changed.emit(current_hearts, max_hearts)
 	if is_player:
 		SignalBus.player_damaged.emit(int(ceil(current_hearts)))
 	if current_hearts <= 0.0:
 		_on_cancelled()
-	elif is_player and iframe_seconds > 0.0:
-		_grant_iframes()
 
 func is_invulnerable() -> bool:
 	return _invuln

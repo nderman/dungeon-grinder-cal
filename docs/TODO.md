@@ -8,6 +8,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **POTION SICKNESS (done 2026-06-01)** — DCC cool-down model: any potion starts a CON-scaled
+  cool-down (`12 − 0.4·CON`, floored 2.5s); drinking another potion (any kind) before it clears
+  inflicts **Poison** (DoT ~4%/s of max HP for 5s, bypasses armour + i-frames). The drink still
+  works — risk/reward, not a block. New bases: **Greater Health Potion** (tier 2+, ~2.25× heal) and
+  **Antidote** (cures Poison, exempt from the cool-down). Runs start with 2 Health Potions. HUD shows
+  a "⚠ Potion sickness Ns" indicator above the quick bar. **Caveat:** quick bar is still FIFO, so you
+  can't yet pick the antidote on demand — fixed by the player-assigned hotbar (abilities arc).
+
 - **INVENTORY UI OVERHAUL (done 2026-06-01)** — `InventoryPanel` rebuilt as a two-column paper-doll
   (equip slots, click to remove) + bag grid (click to equip, ✕ to drop), rarity-framed cards,
   effective-stats + quick-bar readout, and **compare-on-hover** (net per-stat delta vs the item it'd

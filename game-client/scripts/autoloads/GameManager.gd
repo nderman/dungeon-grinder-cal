@@ -225,6 +225,21 @@ func add_consumable(base: String, tier: int) -> void:
 	quickbar.append({"kind": "consumable", "base": base, "tier": tier})
 	items_changed.emit()
 
+# DCC potion sickness: after any potion there's a cool-down; higher CON shortens it. Drink a potion
+# while it's still ticking and the player is Poisoned (the Player handles the debuff).
+const POTION_CD_BASE := 12.0       # seconds at low CON
+const POTION_CD_PER_CON := 0.4     # shaved per CON point
+const POTION_CD_MIN := 2.5         # floor — a hardy crawler still can't chain-chug instantly
+var _potion_ready_at: float = 0.0  # wall-clock (s) the next potion is safe
+
+func potion_cooldown_seconds() -> float:
+	var con := int(get_effective_stats().get("CON", 4))
+	return maxf(POTION_CD_MIN, POTION_CD_BASE - con * POTION_CD_PER_CON)
+
+# Seconds until a potion is safe again (0 = ready). Drives the HUD sickness indicator.
+func potion_cooldown_remaining() -> float:
+	return maxf(0.0, _potion_ready_at - Time.get_ticks_msec() / 1000.0)
+
 # Use the oldest consumable in the quick bar on the player.
 func use_consumable() -> void:
 	if quickbar.is_empty():
@@ -233,7 +248,13 @@ func use_consumable() -> void:
 	if p == null:
 		return
 	var c: Dictionary = quickbar.pop_front()
-	p.apply_consumable(String(c["base"]), int(c["tier"]))
+	var base := String(c["base"])
+	var sick := false
+	if LootData.is_potion(base):
+		var now := Time.get_ticks_msec() / 1000.0
+		sick = now < _potion_ready_at   # still on cool-down → this drink poisons you
+		_potion_ready_at = now + potion_cooldown_seconds()
+	p.apply_consumable(base, int(c["tier"]), sick)
 	items_changed.emit()
 
 func _ready() -> void:
@@ -310,6 +331,7 @@ func start_new_run() -> void:
 	bag.clear()
 	_item_bonuses.clear()
 	quickbar.clear()
+	_potion_ready_at = 0.0
 	is_run_active = true
 	MetaManager.reset_run_cache()
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)
@@ -317,6 +339,9 @@ func start_new_run() -> void:
 	# ranged weapons (and learn spells) as you progress.
 	equipped["Weapon"] = {"kind": "gear", "base": "rusty_shiv", "slot": "Weapon", "rarity": 0, "affixes": []}
 	_recompute_bonuses()
+	# A couple of starter heals so the early floors aren't a dry no-potion grind.
+	quickbar.append({"kind": "consumable", "base": "health_potion", "tier": 0})
+	quickbar.append({"kind": "consumable", "base": "health_potion", "tier": 0})
 	SignalBus.run_started.emit()   # resets per-run achievement dedup
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
 

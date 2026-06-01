@@ -39,6 +39,14 @@ const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the Melee
 var _melee_fx: MeleeSwing            # reused sweep VFX, created on spawn
 var _inventory_panel: InventoryPanel  # toggled with the inventory key
 
+# Potion sickness: drinking a potion before its cool-down (GameManager) ends inflicts Poison —
+# a DoT that ticks a % of max HP, ignoring armour/i-frames. Antidote clears it.
+const POISON_DURATION := 5.0
+const POISON_INTERVAL := 1.0
+const POISON_PCT_PER_TICK := 0.04    # ~20% of max HP over the full 5s if left untreated
+var _poison_ticks: int = 0
+var _poison_accum: float = 0.0
+
 func _ready() -> void:
 	add_to_group("player")
 	_initialize_contestant()
@@ -87,6 +95,7 @@ func _derive_vitals(full: bool) -> void:
 	base_speed = 300.0 + (current_stats["DEX"] * 12.5)
 
 func _physics_process(delta: float) -> void:
+	_tick_poison(delta)
 	if _is_dashing:
 		move_comp.apply_dash_friction(delta)
 		return
@@ -233,11 +242,39 @@ func _enemy_radius(e: Node) -> float:
 
 # Use a consumable from the quick bar — CON potions heal hearts, INT batteries restore mana.
 # Magnitude scales with the box tier the item came from.
-func apply_consumable(id: String, tier: int) -> void:
+# The effect still applies even when sickness is induced (DCC: the potion works, you just get
+# Poisoned for double-dipping). induces_sickness comes from GameManager's potion cool-down.
+func apply_consumable(id: String, tier: int, induces_sickness: bool = false) -> void:
 	var e := LootData.consumable_effect(id, tier)
-	match e["stat"]:
-		"CON": health_comp.heal(int(e["amount"]))
-		"INT": mana_comp.restore_mana(int(e["amount"]))
+	match e.get("effect", ""):
+		"heal": health_comp.heal(int(e["amount"]))
+		"mana": mana_comp.restore_mana(int(e["amount"]))
+		"cure_poison":
+			if _poison_ticks > 0:
+				_clear_poison()
+			else:
+				SignalBus.toast.emit("Nothing to cure.", global_position)
+	if induces_sickness:
+		_apply_poison()
+
+func _apply_poison() -> void:
+	_poison_ticks = int(POISON_DURATION / POISON_INTERVAL)
+	_poison_accum = 0.0
+	SignalBus.toast.emit("Potion Sickness — Poisoned!", global_position)
+
+func _clear_poison() -> void:
+	_poison_ticks = 0
+	SignalBus.toast.emit("Antidote — cured!", global_position)
+
+# Ticks poison damage on the interval; a % of max HP so it scales with the contestant.
+func _tick_poison(delta: float) -> void:
+	if _poison_ticks <= 0 or not _alive:
+		return
+	_poison_accum += delta
+	if _poison_accum >= POISON_INTERVAL:
+		_poison_accum -= POISON_INTERVAL
+		_poison_ticks -= 1
+		health_comp.apply_dot(health_comp.max_hearts * POISON_PCT_PER_TICK)
 
 func _cast_effect(effect_type: String, damage: float) -> void:
 	match effect_type:
