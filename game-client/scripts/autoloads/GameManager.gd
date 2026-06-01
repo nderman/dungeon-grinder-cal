@@ -24,13 +24,16 @@ const SPIKE_TABLE := {
 	"UNTOUCHABLE":   {"hype": 5.0,  "ratings": 25},
 	"DRAMA_SPIKE":   {"hype": 15.0, "ratings": 100},
 	"FATALITY":      {"hype": 20.0, "ratings": 200},
-	"CROWD_PLEASER": {"hype": 8.0,  "ratings": 75},   # the steady meat-grinder kill drip
+	"CROWD_PLEASER": {"hype": 8.0,  "ratings": 75},   # multi-kill: 2+ cancelled in one blow (gore-pop)
 }
 
-# Kill-feat tuning.
+# Kill-feat tuning. Two independent detectors run on the same kill stream:
+#   Speed Demon — sequential tempo (kills in quick succession)
+#   Multi-Kill  — one blow wiping a group (kills in a single-swing window)
 const SPEED_DEMON_KILLS := 3       # kills within the window → Speed Demon
 const SPEED_DEMON_WINDOW := 2.0    # seconds
-const KILLS_PER_BOX := 6           # every Nth kill drops a Crowd Pleaser box (grind reward)
+const MULTIKILL_KILLS := 2         # kills inside one blow → Crowd Pleaser (multi-kill flex)
+const MULTIKILL_WINDOW := 0.3      # seconds — tight enough to mean "the same attack"
 
 # CHA → Ratings generation: the audience-appeal stat multiplies every Ratings payout.
 const CHA_RATINGS_PER := 0.05      # +5% Ratings per CHA point (DCC scale: CHA 4 → +20%, as before)
@@ -48,6 +51,7 @@ var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door s
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
 var run_kills: int = 0                                    # mobs cancelled this run
 var _kill_times: Array[float] = []                        # recent kill timestamps (speed-demon detector)
+var _blow_times: Array[float] = []                        # tight-window kill timestamps (multi-kill detector)
 
 # --- FLOOR CLOCK ---
 var floor_elapsed: float = 0.0       # seconds on the current floor
@@ -218,14 +222,23 @@ func _on_enemy_cancelled(_loc: Vector2, ratings_earned: int) -> void:
 	rating_changed.emit(run_ratings)
 	_track_kill()
 
-# Turns raw kills into the reward drip the "meat grinder" promises: a steady box every
-# KILLS_PER_BOX kills, plus a Speed Demon spike for SPEED_DEMON_KILLS in quick succession.
-# Both route through ratings_spike → AchievementManager grants the box.
+# Turns kills into show-off feats the audience pays for. Two independent detectors on the same
+# stream: Speed Demon (a fast sequential burst) and Multi-Kill/Crowd Pleaser (a group wiped in one
+# blow). Each fires at most once per burst — Speed Demon clears its window, Multi-Kill fires only on
+# the exact threshold kill — so neither spams every later kill. Both route through ratings_spike →
+# AchievementManager grants the box (floor-gated).
 func _track_kill() -> void:
 	run_kills += 1
-	if run_kills % KILLS_PER_BOX == 0:
-		SignalBus.ratings_spike.emit("CROWD_PLEASER")
 	var now := Time.get_ticks_msec() / 1000.0
+
+	_blow_times.append(now)
+	_blow_times = _blow_times.filter(func(t): return now - t <= MULTIKILL_WINDOW)
+	# Fire once, on the kill that *reaches* the threshold — a bigger blow (3rd, 4th kill) pushes
+	# size past it without re-firing, so one blow = one feat. The window self-clears once kills
+	# stop landing inside it, re-arming the next discrete group.
+	if _blow_times.size() == MULTIKILL_KILLS:
+		SignalBus.ratings_spike.emit("CROWD_PLEASER")
+
 	_kill_times.append(now)
 	_kill_times = _kill_times.filter(func(t): return now - t <= SPEED_DEMON_WINDOW)
 	if _kill_times.size() >= SPEED_DEMON_KILLS:
@@ -264,6 +277,7 @@ func start_new_run() -> void:
 	skill_points = 0
 	run_kills = 0
 	_kill_times.clear()
+	_blow_times.clear()
 	earned_loot_boxes.clear()
 	run_inventory.clear()
 	equipped.clear()

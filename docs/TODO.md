@@ -8,6 +8,21 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **INVENTORY UI OVERHAUL** — current `InventoryPanel` is a dense text list (equipped block + bag
+  rows with Equip/Unequip/Drop). Hard to read in-window. Want a real ARPG screen: slot grid/paper-
+  doll for equipped, item icons or clearer rarity framing, compare-on-hover (delta vs equipped),
+  maybe drag-to-equip. Pairs with the player-assigned hotbar work. *(2026-06-01)*
+- **JEWELLERY / TRINKET SLOTS** — extend equip slots beyond the single Ring. DCC-ish accessory
+  layer: e.g. **2× Ring + Amulet/Neck + Trinket/Charm**. Add to `LootData.SLOTS`, give them their
+  own affix-heavy bases (jewellery = pure stat/affix, no armour), surface in the inventory paper-
+  doll. Accessories are the natural home for the fancier affixes (Burn/Leech/etc.). *(2026-06-01)*
+
+- **ACHIEVEMENT LOOT CADENCE (done 2026-06-01)** — repeatable feats now floor-gated (tutorial drip
+  floors 1-3 pay everything, deeper demands higher-tier feats, boss kills always pay); below-
+  threshold feats heckle instead of paying. `crowd_pleaser` retargeted from every-Nth-kill grind to
+  a **Multi-Kill** flex (2+ cancelled in one ~0.3s blow). Still TODO: capricious "bone" payout +
+  crude DCC names (see Flavor-text cluster below).
+
 - **STAT RESCALE to DCC magnitudes (balance pass)** — ref https://dungeon-crawler-carl.fandom.com/wiki/Player_Stats
   DCC: new humans start **3–5** per stat (4=average, 9–10=peak human ever, 100=milestone). We start
   at **base 10 + class (→12–15)** = "peak human at spawn", and each +1 level-up point is trivial

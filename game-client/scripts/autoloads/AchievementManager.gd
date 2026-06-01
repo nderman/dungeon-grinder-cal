@@ -30,7 +30,7 @@ func _on_spike(type: String) -> void:
 # Award an achievement + its Loot Box. Dedup depends on scope:
 #   run        → once per run (reset on run_started)
 #   lifetime   → once ever (persisted to disk)
-#   repeatable → always grants
+#   repeatable → always fires, but the BOX is floor-gated (see below)
 func unlock(id: String) -> void:
 	if not AchievementData.ACHIEVEMENTS.has(id):
 		return
@@ -46,10 +46,36 @@ func unlock(id: String) -> void:
 				return
 			_run_unlocked.append(id)
 		_:
-			pass   # "repeatable" — no dedup
+			# Repeatable performance feats are the loot drip. The System spoils rookies (DCC canon:
+			# floors 1-3 spam low-tier boxes to get them experimenting), then raises its standards —
+			# a small feat that paid a box up top earns only a heckle once you're deep. Real
+			# milestones (run/lifetime) are exempt: a first is always a first, at any depth.
+			if int(a["tier"]) < _min_rewarded_tier():
+				SignalBus.achievement_unlocked.emit("%s — %s" % [a["title"], _heckle()])
+				return
 	GameManager.add_loot_box(int(a["tier"]))
 	# Name the box tier so the ticker tells you what you actually won.
 	SignalBus.achievement_unlocked.emit("%s — %s Box" % [a["title"], LootData.tier_name(int(a["tier"]))])
+
+# The System's boredom threshold: the lowest box tier it still bothers awarding for a *repeat*
+# feat at the current depth. Floors 1-3 reward everything (tutorial drip); it demands bigger feats
+# the deeper you go, so the early-game loot fountain tapers into "impress me" without ever drying up
+# (boss kills are tier 2 and always pay).
+func _min_rewarded_tier() -> int:
+	var f: int = GameManager.current_floor
+	if f <= 3:
+		return 0
+	elif f <= 6:
+		return 1
+	return 2
+
+const HECKLES: Array[String] = [
+	"seen it.", "the audience yawns.", "cute, no box.",
+	"do better.", "old news.", "unimpressed.", "try harder, meatbag.",
+]
+
+func _heckle() -> String:
+	return HECKLES.pick_random()
 
 # Safe-Room only: open every pending box at once, low tier -> high (DCC).
 func open_all_boxes(stats: Dictionary) -> void:
