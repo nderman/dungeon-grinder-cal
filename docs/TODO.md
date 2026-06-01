@@ -80,7 +80,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
     map (the "what it is"); *Neighborhood Map* → clears FOW in the boss area (this = "killing a boss
     reveals the map" reward); *Ping* spell / *Pathfinder* skill → extend detection range. Ties into the
     Abilities framework + INT.
-  - Sizable system (per-enemy visibility rendering + a minimap node + the reveal items). *(2026-06-01)*
+  - **Dark areas + dynamic lighting** — some rooms/zones are unlit; the player carries a light
+    radius (torch/scanner), and there are placed light sources. This *is* the visibility mechanic:
+    **Light2D (player + sources) + LightOccluder2D on every wall** → you can't see into the dark or
+    past walls, enemies in the dark are unseen until they enter your light (or show as a blip via the
+    sense radius). Adds the creepy "what's in the dark?" feel and gives the FOW/LoS hiding for free.
+    Light radius could scale with INT / a light item. Pairs with — and may be the cleanest impl of —
+    the visibility system above. (Walls are code-built rects, so adding occluders is mechanical.)
+  - Sizable system (lighting/occluders + per-enemy visibility + a minimap node + reveal items). *(2026-06-01)*
 
 - **Floor progression — ✅ DONE (2026-05-29):** two-stage clock (stairs open at 120s OR Floor
   Boss death, whichever first; collapse at 300s = lethal DoT), Stairs node in the boss room
