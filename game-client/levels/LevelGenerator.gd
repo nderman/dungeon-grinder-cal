@@ -44,6 +44,7 @@ var walkable: Array[Rect2] = []
 var edges: Array = []            # MST room-pairs [i, j]
 var degree: Array[int] = []      # connections per room (leaf = 1)
 var boss_nav_map: RID            # separate, boss-sized nav map (bigger clearance around cover/walls)
+var _boss_locks: Array = []      # [{zone:Rect2, room:Dictionary, boss:Node}] — un-sealed boss arenas, polled each frame
 
 func _ready() -> void:
 	# Floor.tscn is the main scene, so a fresh launch lands here without the Green Room —
@@ -490,21 +491,33 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 		hc.health_depleted.connect(GameManager.open_stairs)
 
 # Floor-1 bosses are arena-locked (DCC): the room seals the instant the player steps past a
-# doorway, until the boss falls. The trigger is inset so the seal lands just behind the player.
+# doorway, until the boss falls. The lock zone is inset so the seal lands just behind the player,
+# but only by a fraction of the room so a small arena can't shrink it to a patch the player skirts.
+# Polled each physics frame (not an Area2D.body_entered) — a fast dash or odd entry angle used to
+# slip the one-shot signal and leave the arena un-sealed.
 func _arm_boss_lock(r: Dictionary, boss: Node) -> void:
 	var rect: Rect2 = r["rect"]
-	var trigger := Area2D.new()
-	var cs := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = (rect.size - Vector2(168, 168)).max(Vector2(80, 80))
-	cs.shape = shape
-	trigger.add_child(cs)
-	add_child(trigger)
-	trigger.global_position = rect.get_center()
-	trigger.body_entered.connect(_on_boss_trigger.bind(r, boss))
+	var inset := Vector2(minf(80.0, rect.size.x * 0.35), minf(80.0, rect.size.y * 0.35))
+	var zone := Rect2(rect.position + inset, rect.size - inset * 2.0)
+	_boss_locks.append({"zone": zone, "room": r, "boss": boss})
 
-func _on_boss_trigger(body: Node, r: Dictionary, boss: Node) -> void:
-	if r.get("locked", false) or not body.is_in_group("player"):
+# Watch every un-sealed boss arena; lock the instant the player is inside its zone. Deterministic
+# (position test) so it can never miss the way the old enter-signal could.
+func _physics_process(_delta: float) -> void:
+	if _boss_locks.is_empty():
+		return
+	var player: Node2D = get_tree().get_first_node_in_group("player")
+	if player == null:
+		return
+	var pos := player.global_position
+	for i in range(_boss_locks.size() - 1, -1, -1):
+		var lock: Dictionary = _boss_locks[i]
+		if (lock["zone"] as Rect2).has_point(pos):
+			_boss_locks.remove_at(i)
+			_lock_boss_arena(lock["room"], lock["boss"])
+
+func _lock_boss_arena(r: Dictionary, boss: Node) -> void:
+	if r.get("locked", false):
 		return
 	r["locked"] = true
 	if not is_instance_valid(boss):
