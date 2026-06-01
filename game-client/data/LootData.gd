@@ -34,13 +34,13 @@ const ITEMS := {
 	"hazard_boots":        {"name": "Hazard Boots",                 "tags": ["CON", "DEX"], "min_tier": 2, "slot": "Legs"},
 	"gravity_gauntlet":    {"name": "Gravity Gauntlet",             "tags": ["INT"],        "min_tier": 3, "slot": "Hands"},
 	# --- Weapons (the equipped Weapon-slot item drives the attack via its `weapon` block) ---
-	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.7, "cooldown": 0.34, "range": 58.0, "arc": 46.0, "knock": 24.0}},
-	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.1, "cooldown": 0.52, "range": 104.0, "arc": 120.0, "knock": 64.0}},
-	"cleaver":        {"name": "Bone Cleaver",   "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.7, "cooldown": 0.70, "range": 98.0, "arc": 110.0, "knock": 55.0}},
+	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.55, "cooldown": 0.34, "range": 58.0, "arc": 46.0, "knock": 24.0}},
+	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.8, "cooldown": 0.52, "range": 84.0, "arc": 96.0, "knock": 60.0}},
+	"cleaver":        {"name": "Bone Cleaver",   "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.15, "cooldown": 0.70, "range": 92.0, "arc": 100.0, "knock": 55.0}},
 	"glitch_pistol":  {"name": "Glitch Pistol",  "tags": ["INT"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.6, "cooldown": 0.28, "spread": 6.0}},
 	"scrap_smg":      {"name": "Scrap SMG",      "tags": ["DEX"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.35, "cooldown": 0.12, "spread": 16.0}},
 	"rail_spike":     {"name": "Rail Spike",     "tags": ["DEX"], "min_tier": 3, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 1.8, "cooldown": 0.85, "spread": 2.0}},
-	"golden_toaster": {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4, "slot": "Weapon", "weapon": {"type": "melee", "damage": 2.6, "cooldown": 0.6, "range": 112.0, "arc": 130.0, "knock": 80.0}},
+	"golden_toaster": {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4, "slot": "Weapon", "weapon": {"type": "melee", "damage": 1.8, "cooldown": 0.6, "range": 108.0, "arc": 120.0, "knock": 80.0}},
 }
 
 # The attack you have with no weapon equipped (a weak melee jab). Also the template for `weapon`.
