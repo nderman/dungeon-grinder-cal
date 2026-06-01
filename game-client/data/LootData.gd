@@ -2,7 +2,8 @@
 # Loot-box tiers + the item pool + the Director's Algorithm roll. Opened items are rolled into
 # INSTANCES: a base item + a RARITY (Common→Legendary) + rolled AFFIXES (extra stat bonuses).
 # Rarity = number of affix slots, so higher-tier boxes drop more "custom" gear. Gear equips into
-# full-body slots (Head/Chest/Legs/Hands/Weapon/Ring); consumables stock the quick bar.
+# full-body + accessory slots (Weapon/Head/Chest/Legs/Hands/Amulet/2×Ring/Trinket); consumables
+# stock the quick bar.
 extends Node
 
 enum Tier { BRONZE, SILVER, GOLD, PLATINUM, LEGENDARY, CELESTIAL }
@@ -15,9 +16,31 @@ const RARITY_COLORS := [
 	Color(0.75, 0.45, 1.0), Color(1.0, 0.65, 0.25),
 ]
 
-const SLOTS := ["Head", "Chest", "Legs", "Hands", "Weapon", "Ring"]
+# Equip-slot KEYS (paper-doll positions). Several accessories let you wear more than one item of a
+# type, so a key isn't always the item `slot` it accepts — see SLOT_ACCEPTS.
+const SLOTS := ["Weapon", "Head", "Chest", "Legs", "Hands", "Amulet", "Ring", "Ring 2", "Trinket"]
+# Equip-slot key → the item `slot` type it accepts. Defaults to the key itself (see slot_accepts).
+const SLOT_ACCEPTS := {"Ring 2": "Ring"}
 const STAT_KEYS := ["STR", "DEX", "INT", "CON", "CHA"]
 const BASE_BONUS_PER_TAG := 2   # a gear item's flat bonus to each of its tagged stats
+
+# Which item `slot` type fits in this equip-slot key (e.g. "Ring 2" accepts a "Ring").
+func slot_accepts(slot_key: String) -> String:
+	return SLOT_ACCEPTS.get(slot_key, slot_key)
+
+func _ready() -> void:
+	# Data guard (debug-only, stripped in release): every gear item's slot must be accepted by some
+	# equip-slot key, or the item would silently land in the bag forever, un-equippable.
+	for id in ITEMS:
+		var s: String = ITEMS[id].get("slot", "")
+		if s == "":
+			continue   # consumable — no slot
+		var ok := false
+		for key in SLOTS:
+			if slot_accepts(key) == s:
+				ok = true
+				break
+		assert(ok, "LootData: item '%s' has slot '%s' with no matching key in SLOTS" % [id, s])
 
 # id -> { name, tags (stat affinities), min_tier, slot (gear) | kind:"consumable" }
 const ITEMS := {
@@ -33,6 +56,12 @@ const ITEMS := {
 	"static_coil":         {"name": "Static Coil",                  "tags": ["INT"],        "min_tier": 2, "slot": "Ring"},
 	"hazard_boots":        {"name": "Hazard Boots",                 "tags": ["CON", "DEX"], "min_tier": 2, "slot": "Legs"},
 	"gravity_gauntlet":    {"name": "Gravity Gauntlet",             "tags": ["INT"],        "min_tier": 3, "slot": "Hands"},
+	# --- Jewellery / trinkets (no armour value — pure stat + affix carriers) ---
+	"lucky_charm":         {"name": "Lucky Charm",                 "tags": ["CHA"],        "min_tier": 0, "slot": "Trinket"},
+	"power_band":          {"name": "Power Band",                  "tags": ["STR"],        "min_tier": 1, "slot": "Ring"},
+	"neural_amulet":       {"name": "Neural Amulet",               "tags": ["INT"],        "min_tier": 1, "slot": "Amulet"},
+	"vigor_pendant":       {"name": "Vigor Pendant",               "tags": ["CON"],        "min_tier": 2, "slot": "Amulet"},
+	"adrenaline_chip":     {"name": "Adrenaline Chip",             "tags": ["DEX"],        "min_tier": 2, "slot": "Trinket"},
 	# --- Weapons (the equipped Weapon-slot item drives the attack via its `weapon` block) ---
 	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.55, "cooldown": 0.34, "range": 58.0, "arc": 46.0, "knock": 24.0}},
 	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.8, "cooldown": 0.52, "range": 84.0, "arc": 96.0, "knock": 60.0}},

@@ -8,14 +8,17 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
-- **INVENTORY UI OVERHAUL** — current `InventoryPanel` is a dense text list (equipped block + bag
-  rows with Equip/Unequip/Drop). Hard to read in-window. Want a real ARPG screen: slot grid/paper-
-  doll for equipped, item icons or clearer rarity framing, compare-on-hover (delta vs equipped),
-  maybe drag-to-equip. Pairs with the player-assigned hotbar work. *(2026-06-01)*
-- **JEWELLERY / TRINKET SLOTS** — extend equip slots beyond the single Ring. DCC-ish accessory
-  layer: e.g. **2× Ring + Amulet/Neck + Trinket/Charm**. Add to `LootData.SLOTS`, give them their
-  own affix-heavy bases (jewellery = pure stat/affix, no armour), surface in the inventory paper-
-  doll. Accessories are the natural home for the fancier affixes (Burn/Leech/etc.). *(2026-06-01)*
+- **INVENTORY UI OVERHAUL (done 2026-06-01)** — `InventoryPanel` rebuilt as a two-column paper-doll
+  (equip slots, click to remove) + bag grid (click to equip, ✕ to drop), rarity-framed cards,
+  effective-stats + quick-bar readout, and **compare-on-hover** (net per-stat delta vs the item it'd
+  replace, via `GameManager.resolve_equip_slot` — single source of truth with equip()). Columns sit
+  in a viewport-height-capped `ScrollContainer` so a tall inventory scrolls instead of overflowing.
+  Still TODO: item icons, drag-to-equip. Pairs with the player-assigned hotbar work.
+- **JEWELLERY / TRINKET SLOTS (done 2026-06-01)** — `LootData.SLOTS` now Weapon/Head/Chest/Legs/
+  Hands/Amulet/**Ring/Ring 2**/Trinket. `SLOT_ACCEPTS` maps duplicate keys ("Ring 2"→"Ring");
+  `GameManager.slots_for_item()` routes equips to the first open matching slot (else swap). 5
+  jewellery bases (no armour, pure stat/affix carriers) — the home for future Burn/Leech affixes.
+  A debug `assert` in `LootData._ready` guards that every item slot is equippable.
 
 - **ACHIEVEMENT LOOT CADENCE (done 2026-06-01)** — repeatable feats now floor-gated (tutorial drip
   floors 1-3 pay everything, deeper demands higher-tier feats, boss kills always pay); below-

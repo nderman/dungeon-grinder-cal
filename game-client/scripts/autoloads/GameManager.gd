@@ -155,25 +155,51 @@ func get_effective_stats() -> Dictionary:
 		eff[s] = int(eff.get(s, 0)) + int(_item_bonuses[s])
 	return eff
 
-# Looted gear: auto-equip if its slot is empty (friendly first pickup), else to the bag to swap.
-func add_loot_instance(inst: Dictionary) -> void:
-	var slot := String(inst.get("slot", ""))
-	if slot != "" and not equipped.has(slot):
-		equipped[slot] = inst
-		_recompute_bonuses()
-	else:
-		bag.append(inst)
-		items_changed.emit()
+# Equip-slot keys that accept this item's type, in paper-doll order (e.g. a "Ring" fits both
+# "Ring" and "Ring 2"). Empty if the item has no slot or no slot accepts it.
+func slots_for_item(inst: Dictionary) -> Array:
+	var t := String(inst.get("slot", ""))
+	if t == "":
+		return []
+	var out: Array = []
+	for key in LootData.SLOTS:
+		if LootData.slot_accepts(key) == t:
+			out.append(key)
+	return out
 
-# Equip a bag instance into its slot; the displaced item (if any) goes back to the bag.
-func equip(inst: Dictionary) -> void:
-	var slot := String(inst.get("slot", ""))
-	if slot == "":
+# Looted gear: auto-equip into the first OPEN slot of its type (friendly first pickup), else bag.
+func add_loot_instance(inst: Dictionary) -> void:
+	for key in slots_for_item(inst):
+		if not equipped.has(key):
+			equipped[key] = inst
+			_recompute_bonuses()
+			return
+	bag.append(inst)
+	items_changed.emit()
+
+# The equip-slot an item would occupy: an `into` override if valid, else the first EMPTY matching
+# slot, else the first matching slot (a swap). "" if nothing accepts it. Single source of truth so
+# the inventory's compare preview always names the slot equip() will actually use.
+func resolve_equip_slot(inst: Dictionary, into: String = "") -> String:
+	var keys := slots_for_item(inst)
+	if keys.is_empty():
+		return ""
+	if into in keys:
+		return into
+	for key in keys:
+		if not equipped.has(key):
+			return String(key)
+	return String(keys[0])
+
+# Equip a bag instance into its resolved slot; if that slot was full, its occupant goes to the bag.
+func equip(inst: Dictionary, into: String = "") -> void:
+	var target := resolve_equip_slot(inst, into)
+	if target == "":
 		return
 	bag.erase(inst)
-	if equipped.has(slot):
-		bag.append(equipped[slot])
-	equipped[slot] = inst
+	if equipped.has(target):
+		bag.append(equipped[target])
+	equipped[target] = inst
 	_recompute_bonuses()
 
 func unequip(slot: String) -> void:
