@@ -28,11 +28,13 @@ var aim_dir: Vector2 = Vector2.RIGHT
 const BOLT_SCENE := preload("res://entities/projectiles/GlitchBolt.tscn")
 var _can_fire: bool = true
 var _can_melee: bool = true
-const MELEE_DMG_PER_STR := 0.05     # +5% melee damage per STR (in line with ranged's per-INT)
-const MELEE_KNOCK_PER_STR := 4.0    # +4px knockback per STR
-const RANGED_DMG_PER_INT := 0.05    # +5% ranged damage per INT
-const SPREAD_PER_DEX := 0.9         # DEX tightens the weapon's base spread
-const DASH_IFRAME_PER_DEX := 0.01   # +0.1s i-frames at DEX 10
+# Coefficients are on the DCC stat scale (start ~4-7): chosen so a starting build's outputs match
+# the old base-10 balance, but each point now matters ~2.5× more and stats climb to 100+.
+const MELEE_DMG_PER_STR := 0.107    # STR 7 → ×1.75 melee (held from the old STR 15 ×1.75)
+const MELEE_KNOCK_PER_STR := 8.0    # +8px knockback per STR (was 4 at the old scale)
+const RANGED_DMG_PER_INT := 0.125   # INT 4 → ×1.5 ranged (held from old INT 10 ×1.5)
+const SPREAD_PER_DEX := 1.1         # DEX tightens the weapon's base spread (DEX ~8 ≈ old DEX 10)
+const DASH_IFRAME_PER_DEX := 0.025  # +0.1s i-frames at DEX 4
 const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the MeleeSwing VFX)
 var _melee_fx: MeleeSwing            # reused sweep VFX, created on spawn
 var _inventory_panel: InventoryPanel  # toggled with the inventory key
@@ -73,16 +75,16 @@ func _on_stat_injected(_stat: String, _new_value: int) -> void:
 func _derive_vitals(full: bool) -> void:
 	var con := int(current_stats["CON"])
 	var intel := int(current_stats["INT"])
-	# HP pool = CON × 4 (≈ the old "1 heart / 5 CON" × 20 HP-per-heart). A continuous pool lets
-	# damage/heals/regen be granular and shows as a smooth bar.
+	# HP pool = CON × 10 on the DCC stat scale (CON ~5 at start → ~50 HP, same as before; grows a
+	# lot as CON climbs). Mana = INT × 12 (INT ~4 → ~48). A continuous pool keeps heals/regen granular.
 	if full:
-		health_comp.initialize_health(con * 4)
-		mana_comp.initialize_mana(intel)                   # 5 mana / INT
+		health_comp.initialize_health(con * 10)
+		mana_comp.initialize_mana(intel)
 	else:
-		health_comp.set_max_hearts(con * 4)
+		health_comp.set_max_hearts(con * 10)
 		mana_comp.set_max_mana(intel)
 	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
-	base_speed = 300.0 + (current_stats["DEX"] * 5.0)
+	base_speed = 300.0 + (current_stats["DEX"] * 12.5)
 
 func _physics_process(delta: float) -> void:
 	if _is_dashing:
@@ -151,9 +153,9 @@ func execute_nano_magic(spell_id: String) -> void:
 		return
 	var spell: Dictionary = NanoMagicLibrary.SPELLS[spell_id]
 	var int_stat: int = int(current_stats["INT"])
-	var scaled_cost: float = spell["mana_cost"] * (1.0 - (int_stat * 0.01))
+	var scaled_cost: float = spell["mana_cost"] * (1.0 - (int_stat * 0.025))
 	if mana_comp.consume_mana(scaled_cost):
-		var scaled_damage: float = spell["damage"] * (1.0 + (int_stat * 0.05))
+		var scaled_damage: float = spell["damage"] * (1.0 + (int_stat * 0.125))
 		SignalBus.spell_cast.emit(spell["name"], global_position)
 		_cast_effect(spell["effect_type"], scaled_damage)
 

@@ -22,21 +22,22 @@ but meta-progression persists for the next "Season."
   **Green Room** to unlock one race OR class per token.
 
 ## 3. Combat Model (HP pool)
-- Health is a continuous **HP pool = CON × 4** (≈ the old "1 heart / 5 CON" at **20 HP per heart**;
-  shown as a red bar + `HP cur/max`). A pool — not hearts — so heals/regen/damage are granular.
-- Standard mobs deal **20 HP** (1 old heart), bosses **40+**. Brief **i-frames** on the Dash.
-  *(Enemy HP and player weapon damage stay in their own unscaled unit — only the player's pool +
-  what damages/heals it were rescaled ×20, so lethality is unchanged.)*
-- **Damage Resistance (probabilistic):** `DR% = CON × 1.5 + flat gear DR`, capped **75%**. ("Clink!")
+- Health is a continuous **HP pool = CON × 10** (DCC stat scale: CON ~5 at start → ~50 HP, climbs
+  a lot as CON grows; shown as a red bar). A pool, not hearts, so heals/regen/damage are granular.
+- Standard mobs deal **20 HP**, bosses **40+**. Brief **i-frames** on the Dash. *(Enemy HP + player
+  weapon damage are in their own unscaled unit; only the player pool + what hits it are HP-scaled.)*
+- **Damage Resistance (probabilistic):** `DR% = CON × 3.6 + flat gear DR`, capped **75%**. ("Clink!")
 - Healing: potions heal `(1+tier)·20 HP`; CON-linked slow regen is TODO (the pool enables it).
 
-## 4. Stats (baseline 10 each)
+## 4. Stats (DCC scale: base 4 = average human, → 100+ deep)
+Base **4** each + race/class bonuses (Brawler → STR 7, CON 5). Small numbers so each level-up
+point matters (~+25% at low values); climb to 100+ on deep floors against ramped enemies.
 | Stat | Governs | Status |
 |---|---|---|
-| **STR** | melee damage, knockback | ✅ melee swing + shove (both STR-scaled); see weapon mode below |
-| **DEX** | move speed, dash i-frames, accuracy | ✅ all three (speed `300+DEX×5`; spread `14°−DEX×0.9`; i-frames `+DEX×0.01s`) |
-| **INT** | spell damage, **max mana = INT×5**, **regen +2%/INT** | ✅ done |
-| **CON** | **hearts (CON/5)**, **DR (1.5%/CON)** | ✅ done |
+| **STR** | melee damage, knockback | ✅ melee swing + shove (`dmg ×(1+STR·0.107)`) |
+| **DEX** | move speed, dash i-frames, accuracy | ✅ speed `300+DEX·12.5`; spread `base−DEX·1.1`; i-frames `+DEX·0.025s` |
+| **INT** | ranged/spell damage, **mana = INT×12**, **regen +5%/INT** | ✅ done |
+| **CON** | **HP = CON×10**, **DR 3.6%/CON** | ✅ done |
 | **CHA** | Ratings gen, shop prices, loot quality | ⚠️ Ratings gen done (`×(1+CHA×0.02)` on every payout); shop prices = no shops yet; loot quality = TODO |
 
 **Weapons drive the attack (live):** the **equipped Weapon-slot item** decides the primary attack —

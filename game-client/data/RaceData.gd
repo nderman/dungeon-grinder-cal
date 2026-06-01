@@ -9,19 +9,19 @@ const RACES := {
 		"passive": "Viewer's Choice: stronger build-aware loot tailoring (2.0x vs 1.5x).",
 	},
 	"Ogre": {
-		"bonuses": {"CON": 5},
+		"bonuses": {"CON": 3},
 		"passive": "Ponderous Might: 100% melee knockback; move speed -20%.",
 	},
 	"Cat": {
-		"bonuses": {"DEX": 5, "CHA": 2},
+		"bonuses": {"DEX": 3, "CHA": 1},
 		"passive": "Audience Darling: faster Hype gen; chance to Hiss-stun adjacent mobs.",
 	},
 	"Trollkin": {
-		"bonuses": {"STR": 5},
+		"bonuses": {"STR": 3},
 		"passive": "Biological Patch: regen 1 heart after 10s without taking damage.",
 	},
 	"AeroWraith": {
-		"bonuses": {"DEX": 5},
+		"bonuses": {"DEX": 3},
 		"passive": "Phasing Flight: ignore floor hazards; dash briefly through walls.",
 	},
 }

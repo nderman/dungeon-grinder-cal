@@ -33,7 +33,7 @@ const SPEED_DEMON_WINDOW := 2.0    # seconds
 const KILLS_PER_BOX := 6           # every Nth kill drops a Crowd Pleaser box (grind reward)
 
 # CHA → Ratings generation: the audience-appeal stat multiplies every Ratings payout.
-const CHA_RATINGS_PER := 0.02      # +2% Ratings per CHA point (CHA 10 → +20%)
+const CHA_RATINGS_PER := 0.05      # +5% Ratings per CHA point (DCC scale: CHA 4 → +20%, as before)
 
 func _cha_mult() -> float:
 	return 1.0 + (int(current_run_stats.get("CHA", 0)) + int(_item_bonuses.get("CHA", 0))) * CHA_RATINGS_PER

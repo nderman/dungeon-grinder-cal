@@ -7,7 +7,7 @@ extends Node
 const SAVE_PATH := "user://meta_progression.cfg"
 
 # Baseline stats every contestant starts from before race/class bonuses.
-const BASE_STATS := {"STR": 10, "DEX": 10, "INT": 10, "CON": 10, "CHA": 10}
+const BASE_STATS := {"STR": 4, "DEX": 4, "INT": 4, "CON": 4, "CHA": 4}   # DCC: 4 = average human, climbs to 100+ deep
 
 # --- PERSISTENT (cross-run) ---
 var syndication_points: int = 0

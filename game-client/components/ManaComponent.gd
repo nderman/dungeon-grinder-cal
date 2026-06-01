@@ -11,18 +11,18 @@ var base_regen_rate: float = 5.0   # mana/sec
 var current_regen_rate: float = 5.0
 
 func initialize_mana(int_stat: int) -> void:
-	max_mana = int_stat * 5.0
+	max_mana = int_stat * 12.0   # DCC scale: INT ~4 → ~48 (held from the old INT×5 at INT 10)
 	current_mana = max_mana
-	current_regen_rate = base_regen_rate * (1.0 + (int_stat * 0.02))
+	current_regen_rate = base_regen_rate * (1.0 + (int_stat * 0.05))
 	SignalBus.mana_updated.emit(current_mana, max_mana)
 
 # Grow the pool from an INT change without a free refill (mirrors HealthComponent.set_max_hearts).
 func set_max_mana(int_stat: int) -> void:
-	var new_max := int_stat * 5.0
+	var new_max := int_stat * 12.0
 	var delta := new_max - max_mana
 	max_mana = new_max
 	current_mana = clampf(current_mana + maxf(0.0, delta), 0.0, max_mana)
-	current_regen_rate = base_regen_rate * (1.0 + (int_stat * 0.02))
+	current_regen_rate = base_regen_rate * (1.0 + (int_stat * 0.05))
 	SignalBus.mana_updated.emit(current_mana, max_mana)
 
 func _physics_process(delta: float) -> void:
