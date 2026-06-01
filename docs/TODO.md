@@ -65,12 +65,22 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   Architecture: make the generator pluggable (a `FloorGenerator` interface; pick by floor number /
   theme). BSP is the first impl. *(2026-05-29)*
 
-- **Minimap with fog-of-war** — corner minimap of the floor; rooms reveal as you explore. **FOW
-  reveal range scales with INT** (smart contestants see more) — gives INT a third role beyond
-  mana/spell dmg. Pairs with the BSP floor layout. *(2026-05-29)*
-- **Bosses drop map info** — killing a boss reveals part/all of the floor map (clears fog around
-  it / reveals the stairs / marks loot). A reward beyond loot + a reason to hunt Neighborhood
-  bosses. Depends on the minimap/FOW system. *(2026-05-29)*
+- **MAP & HIDDEN INFORMATION (big arc)** — core DCC "what's out there?" tension; right now the
+  top-down view reveals every enemy, which kills exploration. Ref: https://dungeon-crawler-carl.fandom.com/wiki/Map
+  - **Main top-down view — visibility/FOW:** enemies OUTSIDE line-of-sight aren't drawn. Within a
+    **sense radius** (scales with INT / a Pathfinder-style skill) an out-of-sight enemy shows only as
+    a **red blip / faint outline** — you detect *something's there* but not *what*. Full sprite only
+    with clear LoS. Impl: reuse the wall LoS raycast (we have `AIComponent._has_los`; do the reverse
+    for player vision) per-enemy each frame to set sprite visible / blip / hidden — OR Light2D +
+    LightOccluder2D on walls for a true vision cone. Unexplored geometry dimmed/fogged.
+  - **Minimap (corner):** shows only EXPLORED areas (fog of war); creatures as **dots** — red = mobs/
+    bosses, green = you, white = friendly, X = corpses; **safe rooms always visible** even unexplored.
+    Reveal expands faster when moving fast. Rooms mark explored as you enter.
+  - **Reveal upgrades (loot + abilities, DCC):** *Field Guide* item → reveals mob **type/level** on the
+    map (the "what it is"); *Neighborhood Map* → clears FOW in the boss area (this = "killing a boss
+    reveals the map" reward); *Ping* spell / *Pathfinder* skill → extend detection range. Ties into the
+    Abilities framework + INT.
+  - Sizable system (per-enemy visibility rendering + a minimap node + the reveal items). *(2026-06-01)*
 
 - **Floor progression — ✅ DONE (2026-05-29):** two-stage clock (stairs open at 120s OR Floor
   Boss death, whichever first; collapse at 300s = lethal DoT), Stairs node in the boss room
