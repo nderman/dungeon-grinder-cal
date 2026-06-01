@@ -1,7 +1,6 @@
 # HealthComponent.gd
-# The "Small Pool" heart system + permadeath ("Cancelled") state.
-# Hearts are stored as float to support half-heart weapon/spell damage (0.5, 1.5).
-# 1 heart per 5 CON is computed by the Player and passed to initialize_health().
+# Continuous HP pool + permadeath ("Cancelled") state. (Vars named *_hearts for history; they're
+# HP now.) The Player passes HP = CON×10 to initialize_health(); enemies set configured_hearts.
 extends Node2D
 class_name HealthComponent
 

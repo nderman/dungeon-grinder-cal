@@ -1,5 +1,5 @@
 # RaceData.gd (Autoload)
-# Race stat modifiers (applied on top of MetaManager.BASE_STATS = 10 each) + passives.
+# Race stat modifiers (applied on top of MetaManager.BASE_STATS = 4 each, DCC scale) + passives.
 # Source: MVP Master Design — "Define the starting stats for the initial player races".
 extends Node
 

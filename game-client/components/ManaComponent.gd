@@ -1,7 +1,7 @@
 # ManaComponent.gd
 # Passive energy pool for universal Nano-Magic. INT drives both depth and refill rate.
-#   max_mana = INT * 5     (10 INT = 50)
-#   regen    = base * (1 + INT * 0.02)
+#   max_mana = INT * 12    (DCC scale: INT 4 ≈ 48)
+#   regen    = base * (1 + INT * 0.05)
 extends Node2D
 class_name ManaComponent
 
@@ -34,7 +34,7 @@ func _physics_process(delta: float) -> void:
 
 func consume_mana(amount: float) -> bool:
 	if current_mana >= amount:
-		current_mana -= amount
+		current_mana = clampf(current_mana - amount, 0.0, max_mana)   # clamp guards against a negative cost adding/overflowing mana
 		SignalBus.mana_updated.emit(current_mana, max_mana)
 		return true
 	SignalBus.mana_depleted.emit()   # HUD glitch + Cal's snark

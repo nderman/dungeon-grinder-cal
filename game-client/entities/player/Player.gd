@@ -6,7 +6,7 @@
 extends CharacterBody2D
 
 var base_speed: float = 300.0
-var current_stats: Dictionary = {"STR": 10, "DEX": 10, "INT": 10, "CON": 10, "CHA": 10}
+var current_stats: Dictionary = {"STR": 4, "DEX": 4, "INT": 4, "CON": 4, "CHA": 4}   # fallback (test bench); real stats come from GameManager
 
 @onready var health_comp: HealthComponent = $HealthComponent
 @onready var move_comp: MovementComponent = $MovementComponent
@@ -153,7 +153,8 @@ func execute_nano_magic(spell_id: String) -> void:
 		return
 	var spell: Dictionary = NanoMagicLibrary.SPELLS[spell_id]
 	var int_stat: int = int(current_stats["INT"])
-	var scaled_cost: float = spell["mana_cost"] * (1.0 - (int_stat * 0.025))
+	# Floor the discount so high INT can't drive cost to zero/negative (which would ADD mana).
+	var scaled_cost: float = spell["mana_cost"] * maxf(0.1, 1.0 - int_stat * 0.025)
 	if mana_comp.consume_mana(scaled_cost):
 		var scaled_damage: float = spell["damage"] * (1.0 + (int_stat * 0.125))
 		SignalBus.spell_cast.emit(spell["name"], global_position)

@@ -1,8 +1,8 @@
 # NanoMagicLibrary.gd (Autoload)
 # Universal spell definitions. Any contestant can cast; INT scales impact.
-# Scaling (applied in Player.execute_nano_magic):
-#   damage = base_damage * (1 + INT * 0.05)
-#   cost   = mana_cost   * (1 - INT * 0.01)
+# Scaling (applied in Player.execute_nano_magic, DCC stat scale):
+#   damage = base_damage * (1 + INT * 0.125)
+#   cost   = mana_cost   * max(0.1, 1 - INT * 0.025)   # floored so high INT can't zero/negate cost
 extends Node
 
 const SPELLS := {
