@@ -37,7 +37,11 @@ const SPREAD_PER_DEX := 1.1         # DEX tightens the weapon's base spread (DEX
 const DASH_IFRAME_PER_DEX := 0.025  # +0.1s i-frames at DEX 4
 const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the MeleeSwing VFX)
 var _melee_fx: MeleeSwing            # reused sweep VFX, created on spawn
+var _ability_fx: AbilityFx           # reused ability VFX (nova ring / heal pulse / blink streak)
 var _inventory_panel: InventoryPanel  # toggled with the inventory key
+var _abilities_panel: AbilitiesPanel  # toggled with the abilities key
+var _class_panel: ClassSelectPanel    # floor-3 class pick (DCC); created only when owed
+var _ability_cd_until: Dictionary = {}   # ability id -> wall-clock (s) it's castable again
 
 # Potion sickness: drinking a potion before its cool-down (GameManager) ends inflicts Poison —
 # a DoT that ticks a % of max HP, ignoring armour/i-frames. Antidote clears it.
@@ -54,9 +58,18 @@ func _ready() -> void:
 	SignalBus.stat_injected.connect(_on_stat_injected)
 	_melee_fx = MeleeSwing.new()
 	add_child(_melee_fx)
+	_ability_fx = AbilityFx.new()
+	add_child(_ability_fx)
 	_inventory_panel = InventoryPanel.new()
 	add_child(_inventory_panel)
+	_abilities_panel = AbilitiesPanel.new()
+	add_child(_abilities_panel)
 	health_comp.health_depleted.connect(_on_death)
+	# DCC: reaching Floor 3 classless → the System makes you pick a class now (mandatory modal).
+	if GameManager.needs_class_selection():
+		_class_panel = ClassSelectPanel.new()
+		add_child(_class_panel)
+		_class_panel.toggle()
 
 # Death ("Cancelled"): freeze the contestant at once so you can't keep playing during the
 # brief Green-Room cut. GameManager.end_run (fired by HealthComponent) handles the hand-off.
@@ -116,14 +129,20 @@ func _physics_process(delta: float) -> void:
 	move_comp.handle_movement(delta, move, base_speed)
 
 func _unhandled_input(event: InputEvent) -> void:
+	# A pending Floor-3 class pick is mandatory: freeze actions (and other panels) until it's made.
+	# Movement still works (it's polled), but you can't dash/cast/use/open menus behind the modal.
+	if GameManager.needs_class_selection():
+		return
 	if event.is_action_pressed("dash") and _can_dash:
 		_perform_dash()
 	elif event.is_action_pressed("use_item"):
 		GameManager.use_consumable()
 	elif event.is_action_pressed("inventory"):
 		_inventory_panel.toggle()
+	elif event.is_action_pressed("abilities"):
+		_abilities_panel.toggle()
 	elif event.is_action_pressed("nano"):
-		execute_nano_magic("glitch_bolt")
+		cast_active_ability()
 
 # The equipped weapon's type decides the attack — ranged weapons fire, melee weapons swing.
 func _current_weapon() -> Dictionary:
@@ -156,18 +175,70 @@ func _perform_dash() -> void:
 	await get_tree().create_timer(dash_cooldown).timeout
 	_can_dash = true
 
-# Universal spell cast — INT scales damage up and cost down.
-func execute_nano_magic(spell_id: String) -> void:
-	if not NanoMagicLibrary.SPELLS.has(spell_id):
+# Cast the currently-SELECTED active ability (the Q key). Spells gate on mana, every ability gates
+# on its own cooldown; effectiveness scales with the ability's stat and its use-earned level.
+func cast_active_ability() -> void:
+	var id := GameManager.selected_ability
+	if id == "" or not AbilityLibrary.has_ability(id):
 		return
-	var spell: Dictionary = NanoMagicLibrary.SPELLS[spell_id]
-	var int_stat: int = int(current_stats["INT"])
-	# Floor the discount so high INT can't drive cost to zero/negative (which would ADD mana).
-	var scaled_cost: float = spell["mana_cost"] * maxf(0.1, 1.0 - int_stat * 0.025)
-	if mana_comp.consume_mana(scaled_cost):
-		var scaled_damage: float = spell["damage"] * (1.0 + (int_stat * 0.125))
-		SignalBus.spell_cast.emit(spell["name"], global_position)
-		_cast_effect(spell["effect_type"], scaled_damage)
+	var a := AbilityLibrary.get_ability(id)
+	var now := Time.get_ticks_msec() / 1000.0
+	if now < float(_ability_cd_until.get(id, 0.0)):
+		return   # still on cooldown
+	var cost := float(a.get("mana_cost", 0.0))
+	if cost > 0.0:
+		if mana_comp.current_mana < cost:
+			SignalBus.mana_depleted.emit()
+			return
+		mana_comp.consume_mana(cost)
+	_ability_cd_until[id] = now + float(a.get("cooldown", 0.5))
+	GameManager.register_ability_use(id)
+	SignalBus.spell_cast.emit(String(a["name"]), global_position)
+	_apply_ability(a, GameManager.ability_level(id))
+
+# Resolve an ability's magnitude (base × scaling-stat × use-level) and run its effect + VFX.
+func _apply_ability(a: Dictionary, level: int) -> void:
+	var stat := int(current_stats.get(String(a.get("scale", "INT")), 4))
+	var value := float(a.get("power", 0.0)) * (1.0 + stat * AbilityLibrary.SCALE_PER_STAT) * AbilityLibrary.power_mult(level)
+	# Spell casts read cool blue, skills warm orange — so the burst tells you what just fired.
+	var col := Color(0.55, 0.8, 1.0) if String(a.get("kind", "skill")) == "spell" else Color(1.0, 0.62, 0.3)
+	match String(a.get("effect", "")):
+		"projectile":
+			_spawn_projectile(value, 6.0)
+		"nova":
+			var radius := float(a.get("radius", 160.0))
+			_ability_nova(value, radius, float(a.get("stun", 0.0)))
+			_ability_fx.play_nova(radius, col)
+		"self_heal":
+			health_comp.heal(value)
+			_ability_fx.play_pulse(Color(0.4, 1.0, 0.5))
+		"blink":
+			var from := global_position
+			_ability_blink(float(a.get("reach", 240.0)))
+			_ability_fx.play_streak(from - global_position, Color(0.7, 0.8, 1.0))
+
+# AoE burst centred on the player: damages every enemy within radius (through its DR), like melee.
+# stun_seconds > 0 also briefly freezes each mob hit (crowd control, e.g. Ground Slam).
+func _ability_nova(damage: float, radius: float, stun_seconds: float = 0.0) -> void:
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not (e is CharacterBody2D):
+			continue
+		if e.global_position.distance_to(global_position) - _enemy_radius(e) > radius:
+			continue
+		var hc := e.get_node_or_null("HealthComponent") as HealthComponent
+		if hc == null:
+			continue
+		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
+		hc.take_damage(prot.handle_incoming_damage(damage) if prot else damage)
+		if stun_seconds > 0.0:
+			var ai := e.get_node_or_null("AIComponent")
+			if ai and ai.has_method("stun"):
+				ai.stun(stun_seconds)
+
+# Phase toward the aim direction. move_and_collide repositions the body, stopping at the first
+# wall, so you can't blink out of the map.
+func _ability_blink(reach: float) -> void:
+	move_and_collide(aim_dir * reach)
 
 # Fire the equipped ranged weapon: damage scales with INT, spread = weapon base tightened by DEX.
 func _fire(w: Dictionary) -> void:
@@ -240,10 +311,9 @@ func _enemy_radius(e: Node) -> float:
 		return (cs.shape as CircleShape2D).radius * scl   # scaled bosses are bigger than the raw radius
 	return 0.0
 
-# Use a consumable from the quick bar — CON potions heal hearts, INT batteries restore mana.
-# Magnitude scales with the box tier the item came from.
-# The effect still applies even when sickness is induced (DCC: the potion works, you just get
-# Poisoned for double-dipping). induces_sickness comes from GameManager's potion cool-down.
+# Use a consumable from the quick bar: heal / restore mana / cure poison (effect from LootData),
+# magnitude scaled by the box tier. The effect still applies even when sickness is induced (DCC: the
+# potion works, you just get Poisoned for double-dipping); induces_sickness comes from GameManager.
 func apply_consumable(id: String, tier: int, induces_sickness: bool = false) -> void:
 	var e := LootData.consumable_effect(id, tier)
 	match e.get("effect", ""):
@@ -254,6 +324,12 @@ func apply_consumable(id: String, tier: int, induces_sickness: bool = false) -> 
 				_clear_poison()
 			else:
 				SignalBus.toast.emit("Nothing to cure.", global_position)
+		"learn":
+			var aid := String(e.get("ability", ""))
+			if GameManager.learn_ability(aid):
+				SignalBus.toast.emit("Learned %s!" % AbilityLibrary.ability_name(aid), global_position)
+			else:
+				SignalBus.toast.emit("%s already known." % AbilityLibrary.ability_name(aid), global_position)
 	if induces_sickness:
 		_apply_poison()
 
@@ -275,13 +351,6 @@ func _tick_poison(delta: float) -> void:
 		_poison_accum -= POISON_INTERVAL
 		_poison_ticks -= 1
 		health_comp.apply_dot(health_comp.max_hearts * POISON_PCT_PER_TICK)
-
-func _cast_effect(effect_type: String, damage: float) -> void:
-	match effect_type:
-		"projectile":
-			_spawn_projectile(damage, 6.0)
-		_:
-			pass  # TODO: chain_lightning / beam / aoe_pull effects
 
 func _spawn_projectile(damage: float, base_spread: float) -> void:
 	var bolt := BOLT_SCENE.instantiate()

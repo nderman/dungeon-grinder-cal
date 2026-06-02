@@ -83,7 +83,14 @@ var bag: Array = []                  # unequipped gear instances
 var _item_bonuses: Dictionary = {}   # stat -> summed bonus from equipped gear
 var quickbar: Array = []             # [{kind,base,tier}] consumables, used from the quick bar
 
+# Learnable active abilities (AbilityLibrary). Hybrid model: the class starter is re-granted every
+# run (permanent identity); tomes found mid-crawl are learned per-run. Abilities level by USE.
+var known_abilities: Array[String] = []   # AbilityLibrary ids the contestant can cast this run
+var selected_ability: String = ""         # the one the cast key (Q) fires
+var ability_uses: Dictionary = {}          # id -> times cast this run (drives level-on-use)
+
 signal rating_changed(new_value: int)
+signal abilities_changed()              # known set / selection / level changed (HUD + panel)
 signal hype_changed(new_value: float)
 signal floor_changed(floor: int)
 signal items_changed()
@@ -240,6 +247,76 @@ func potion_cooldown_seconds() -> float:
 func potion_cooldown_remaining() -> float:
 	return maxf(0.0, _potion_ready_at - Time.get_ticks_msec() / 1000.0)
 
+# --- Abilities (learnable spells + skills) -----------------------------------------------------
+
+# Learn an ability; the first one learned auto-becomes the active cast. No-op if unknown/duplicate.
+func learn_ability(id: String) -> bool:
+	if not AbilityLibrary.has_ability(id) or id in known_abilities:
+		return false
+	known_abilities.append(id)
+	if selected_ability == "":
+		selected_ability = id
+	abilities_changed.emit()
+	return true
+
+# Bind the cast key to a known ability.
+func select_ability(id: String) -> void:
+	if id in known_abilities and id != selected_ability:
+		selected_ability = id
+		abilities_changed.emit()
+
+# Tally a cast; emit only when it crosses a level boundary (HUD/panel refresh).
+func register_ability_use(id: String) -> void:
+	var before := ability_level(id)
+	ability_uses[id] = int(ability_uses.get(id, 0)) + 1
+	if ability_level(id) > before:
+		abilities_changed.emit()
+
+func ability_level(id: String) -> int:
+	return AbilityLibrary.level_for_uses(int(ability_uses.get(id, 0)))
+
+# --- Class (chosen on Floor 3, DCC) ------------------------------------------------------------
+
+const CLASS_FLOOR := 3   # the floor the System makes you pick a class
+
+# True while the crawler still owes the System a class pick (Floor 3+, none chosen).
+func needs_class_selection() -> bool:
+	return current_class == "" and current_floor >= CLASS_FLOOR
+
+# Lock in a class mid-run: stack its stat bonuses onto the live stats (re-deriving vitals) and grant
+# its starter ability. Permanent for the crawl. Only an UNLOCKED class can be chosen (roguelite
+# meta-gate). No-op if already classed or the class isn't unlocked.
+func choose_class(c: String) -> void:
+	if current_class != "" or not ClassData.CLASSES.has(c) or c not in MetaManager.unlocked_classes:
+		return
+	current_class = c
+	for s in ClassData.get_bonuses(c):
+		current_run_stats[s] = int(current_run_stats.get(s, 0)) + int(ClassData.get_bonuses(c)[s])
+		SignalBus.stat_injected.emit(s, int(current_run_stats[s]))   # Player re-derives HP/mana/etc.
+	var starter := ClassData.get_starter_ability(c)
+	learn_ability(starter)
+	if starter != "":
+		select_ability(starter)   # bind the class's signature ability to the cast key (its headline)
+	SignalBus.toast.emit("CLASS UNLOCKED: %s" % c, Vector2.ZERO)
+
+# Change race mid-run (Floor 3, DCC: most keep Human). Applies the DELTA between the old and new
+# race bonuses so spent attribute points are preserved. Only an UNLOCKED race can be picked.
+func choose_race(r: String) -> void:
+	if r == current_race or not RaceData.RACES.has(r) or r not in MetaManager.unlocked_races:
+		return
+	var old_b := RaceData.get_bonuses(current_race)
+	var new_b := RaceData.get_bonuses(r)
+	var keys := {}   # union of both races' stat keys — robust if a race ever boosts a non-base stat
+	for s in old_b: keys[s] = true
+	for s in new_b: keys[s] = true
+	for s in keys:
+		var delta := int(new_b.get(s, 0)) - int(old_b.get(s, 0))
+		if delta != 0:
+			current_run_stats[s] = int(current_run_stats.get(s, 0)) + delta
+			SignalBus.stat_injected.emit(s, int(current_run_stats[s]))
+	current_race = r
+	SignalBus.toast.emit("RACE: %s" % r, Vector2.ZERO)
+
 # Use the oldest consumable in the quick bar on the player.
 func use_consumable() -> void:
 	if quickbar.is_empty():
@@ -332,11 +409,17 @@ func start_new_run() -> void:
 	_item_bonuses.clear()
 	quickbar.clear()
 	_potion_ready_at = 0.0
+	known_abilities.clear()
+	selected_ability = ""
+	ability_uses.clear()
 	is_run_active = true
 	MetaManager.reset_run_cache()
-	current_run_stats = MetaManager.get_current_contestant_stats(current_race, current_class)
+	# DCC: crawlers are CLASSLESS for the first two floors. Stats are race + base only; the class
+	# (its stat bonuses + starter ability) is chosen on Floor 3 via choose_class().
+	current_class = ""
+	current_run_stats = MetaManager.get_current_contestant_stats(current_race, "")
 	# Weapon-gated start: begin with a basic melee weapon only — no ranged, no spells. Find/equip
-	# ranged weapons (and learn spells) as you progress.
+	# ranged weapons (and learn spells/skills) as you progress.
 	equipped["Weapon"] = {"kind": "gear", "base": "rusty_shiv", "slot": "Weapon", "rarity": 0, "affixes": []}
 	_recompute_bonuses()
 	# A couple of starter heals so the early floors aren't a dry no-potion grind.

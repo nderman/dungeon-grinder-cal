@@ -48,6 +48,10 @@ const ITEMS := {
 	"greater_health_potion": {"name": "Greater Health Potion",      "tags": ["CON"],        "min_tier": 2, "kind": "consumable", "potion": true},
 	"mana_battery":        {"name": "Mana Battery",                 "tags": ["INT"],        "min_tier": 0, "kind": "consumable", "potion": true},
 	"antidote":            {"name": "Antidote",                     "tags": [],             "min_tier": 1, "kind": "consumable"},
+	# Tomes teach an AbilityLibrary ability when used (per-run). The `ability` field flags them.
+	"tome_blink":          {"name": "Tome: Blink",                 "tags": ["DEX"],        "min_tier": 1, "kind": "consumable", "ability": "blink"},
+	"tome_ground_slam":    {"name": "Tome: Ground Slam",           "tags": ["STR"],        "min_tier": 1, "kind": "consumable", "ability": "ground_slam"},
+	"tome_singularity":    {"name": "Tome: Null-G Singularity",    "tags": ["INT"],        "min_tier": 3, "kind": "consumable", "ability": "singularity"},
 	"scrap_helm":          {"name": "Scrap Helm",                   "tags": ["CON"],        "min_tier": 0, "slot": "Head"},
 	"grip_gloves":         {"name": "Grip Gloves",                  "tags": ["STR"],        "min_tier": 0, "slot": "Hands"},
 	"spiked_pauldrons":    {"name": "Spiked Pauldrons",             "tags": ["STR"],        "min_tier": 0, "slot": "Chest"},
@@ -97,8 +101,12 @@ func rarity_name(r: int) -> String:
 
 # --- Consumables (effect + amount scale with box tier) -----------------------------------------
 
-# {effect: "heal"|"mana"|"cure_poison", amount}. Higher box tiers brew stronger potions.
+# {effect: "heal"|"mana"|"cure_poison"|"learn", amount, ability?}. Higher tiers brew stronger
+# potions; a tome (has an `ability` field) teaches that ability.
 func consumable_effect(id: String, tier: int) -> Dictionary:
+	var it: Dictionary = ITEMS.get(id, {})
+	if it.has("ability"):
+		return {"effect": "learn", "ability": String(it["ability"]), "amount": 0}
 	match id:
 		"health_potion":         return {"effect": "heal", "amount": (1 + tier) * 20}
 		"greater_health_potion": return {"effect": "heal", "amount": (1 + tier) * 45}

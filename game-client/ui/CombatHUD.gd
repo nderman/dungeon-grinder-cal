@@ -17,6 +17,7 @@ extends CanvasLayer
 @onready var floor_label: Label = $Floor
 @onready var clock_label: Label = $Clock
 var _potion_cd: Label   # code-built potion-sickness cool-down indicator (above the quick bar)
+var _ability_label: Label   # code-built "Q: <active ability>" readout
 
 const SPIKE_TEXT := {
 	"SPEED_DEMON": "SPEED DEMON!", "NEAR_DEATH": "NEAR DEATH!",
@@ -48,7 +49,30 @@ func _ready() -> void:
 	_on_boxes(GameManager.earned_loot_boxes.size())
 	ticker.modulate.a = 0.0
 	_build_potion_cd()
+	_build_ability_label()
+	GameManager.abilities_changed.connect(_refresh_ability)
+	_refresh_ability()
 	_bind_player.call_deferred()
+
+# "Q: <ability> Lv N" readout, just above the potion-sickness indicator (bottom-left action stack).
+func _build_ability_label() -> void:
+	_ability_label = Label.new()
+	_ability_label.anchor_top = 1.0
+	_ability_label.anchor_bottom = 1.0
+	_ability_label.offset_left = 16.0
+	_ability_label.offset_top = -82.0
+	_ability_label.offset_right = 600.0
+	_ability_label.offset_bottom = -58.0
+	_ability_label.add_theme_font_size_override("font_size", 14)
+	_ability_label.modulate = Color(0.7, 0.85, 1.0)
+	add_child(_ability_label)
+
+func _refresh_ability() -> void:
+	var id := GameManager.selected_ability
+	if id == "":
+		_ability_label.text = "Q: (no ability)"
+	else:
+		_ability_label.text = "Q: %s  Lv %d" % [AbilityLibrary.ability_name(id), GameManager.ability_level(id)]
 
 # A code-built sickness indicator sitting just above the quick bar. Shows the remaining potion
 # cool-down (drink before it clears → Poisoned); hidden when a potion is safe to drink.

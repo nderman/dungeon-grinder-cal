@@ -23,6 +23,8 @@ var current_state: State = State.IDLE
 @export var projectile_scene: PackedScene       # the bolt a ranged mob launches
 
 var _active: bool = true
+var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
+var _stun_tw: Tween             # active stun-flash tween, killed before re-stunning
 var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
@@ -65,6 +67,27 @@ func _has_los(t: Node2D) -> bool:
 
 func activate() -> void:
 	_active = true
+
+# Crowd control (Ground Slam etc.): freeze the mob's chase/attack drive for `seconds`. Stacks by
+# taking the later expiry, halts current movement, and flashes a cyan tell.
+func stun(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	_stun_until = maxf(_stun_until, Time.get_ticks_msec() / 1000.0 + seconds)
+	if is_instance_valid(parent):
+		parent.velocity = Vector2.ZERO
+		_flash_stun(seconds)
+
+func is_stunned() -> bool:
+	return Time.get_ticks_msec() / 1000.0 < _stun_until
+
+func _flash_stun(seconds: float) -> void:
+	if _stun_tw and _stun_tw.is_valid():
+		_stun_tw.kill()   # re-stun (e.g. nova spam) shouldn't stack tints / leave the mob stuck cyan
+	_stun_tw = create_tween()
+	_stun_tw.tween_property(parent, "modulate", Color(0.5, 0.85, 1.0), 0.1)
+	_stun_tw.tween_interval(maxf(0.0, seconds - 0.2))
+	_stun_tw.tween_property(parent, "modulate", Color.WHITE, 0.1)   # matches the telegraph reset
 
 # Route this mob's pathfinding through a specific nav map (the boss uses its own boss-sized mesh).
 func set_nav_map(map: RID) -> void:
@@ -110,6 +133,10 @@ func alert(t: CharacterBody2D) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not _active:
+		return
+	if is_stunned():
+		if is_instance_valid(parent):
+			parent.velocity = Vector2.ZERO   # held in place; chase/attack drive suspended
 		return
 	match current_state:
 		State.IDLE: _find_target()

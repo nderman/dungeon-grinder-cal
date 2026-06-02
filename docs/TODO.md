@@ -8,6 +8,32 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ABILITIES + CLASS/RACE PROGRESSION (done 2026-06-02)** — big arc:
+  - **Spells & Skills**: unified `AbilityLibrary` autoload (spells cost mana, skills cooldown-only),
+    cast the selected ability on **Q**, **level-on-use** (cap 15), Abilities panel on **K** to pick the
+    active. Effects: projectile / nova(AoE) / self_heal / blink. Tomes (consumables) teach abilities
+    per-run. Replaced `NanoMagicLibrary`. Ability VFX via `AbilityFx` (nova ring / heal pulse / blink
+    streak), mirrors `MeleeSwing`.
+  - **Enemy stun**: `AIComponent.stun()` suspends chase/attack + cyan flash. Ground Slam rebalanced
+    (damage halved → 0.65, adds 1.5s stun via the `stun` ability field).
+  - **Classless start → Floor-3 pick (DCC)**: classless on floors 1-2 (race+base stats only, no class
+    ability); on Floor 3 a **mandatory** Race & Class modal (`ClassSelectPanel`) — input is frozen
+    until you pick. `GameManager.choose_class/choose_race` apply bonuses as live deltas (preserve
+    spent points) + grant/select the class starter.
+  - **Roguelite gate**: Floor-3 pick offers only `MetaManager.unlocked_classes/races`; **Green Room
+    unlock shop** spends milestone tokens (floors 3/6/9) via `unlock_content()` to grow the roster.
+
+- **EARLY-GAME DIFFICULTY (tuning, deferred)** — floors 1-2 feel hard now (classless weapon-only +
+  potion sickness + melee rescale). Levers when ready: innate basic ability while classless, guaranteed
+  floor-1 tome, more starting potions, softer early `floor_mult`, or a Rusty Shiv buff. *(2026-06-02)*
+
+- **ABILITIES POLISH (deferred follow-ups)** — (1) class **passives** still unimplemented (Iron Fist,
+  Efficient Code, etc. — flavour strings only); (2) skills have no **stamina** resource (cooldown
+  only); (3) UI dedup: extract a shared `ModalPanel.make_card(color)` / `add_section` / `top_stat`
+  (card StyleBox + section header duplicated across Inventory/Abilities/ClassSelect panels);
+  (4) rename internal `skill_points` → **attribute points** now that real Skills exist (UI + GameManager
+  + LevelUpPanel + CombatHUD). *(2026-06-02)*
+
 - **POTION SICKNESS (done 2026-06-01)** — DCC cool-down model: any potion starts a CON-scaled
   cool-down (`12 − 0.4·CON`, floored 2.5s); drinking another potion (any kind) before it clears
   inflicts **Poison** (DoT ~4%/s of max HP for 5s, bypasses armour + i-frames). The drink still

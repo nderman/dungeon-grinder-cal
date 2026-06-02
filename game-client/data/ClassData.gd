@@ -3,32 +3,38 @@
 # Source: MVP Master Design — "Class Starting Bonuses & Skills".
 extends Node
 
+# `ability` = the AbilityLibrary id of the class's permanent STARTER active (granted every run —
+# part of the class identity, the "Hybrid" half). `active` is its display name.
 const CLASSES := {
 	"Technomancer": {
 		"bonuses": {"INT": 3, "DEX": 1},
-		"active": "Fireball", "passive": "Efficient Code (-15% mana costs)",
+		"active": "Fireball", "ability": "fireball", "passive": "Efficient Code (-15% mana costs)",
 	},
 	"BioPaladin": {
 		"bonuses": {"CON": 3, "CHA": 1},
-		"active": "Holy Shield", "passive": "Martyr's Hype (gain Ratings when hit)",
+		"active": "Holy Shield", "ability": "holy_shield", "passive": "Martyr's Hype (gain Ratings when hit)",
 	},
 	"Brawler": {
 		"bonuses": {"STR": 3, "CON": 1},
-		"active": "Ground Slam", "passive": "Iron Fist (+20% melee damage)",
+		"active": "Ground Slam", "ability": "ground_slam", "passive": "Iron Fist (+20% melee damage)",
 	},
 	"GlitchWitch": {
 		"bonuses": {"DEX": 2, "INT": 2},
-		"active": "Blink", "passive": "Data Corruption (skills slow enemies)",
+		"active": "Blink", "ability": "blink", "passive": "Data Corruption (skills slow enemies)",
 	},
 	"GravityGlitcher": {
 		"bonuses": {"INT": 2, "DEX": 2},
-		"active": "Null-G Singularity", "passive": "Low-G Training (+dash distance)",
+		"active": "Null-G Singularity", "ability": "singularity", "passive": "Low-G Training (+dash distance)",
 	},
 	"Scavenger": {
 		"bonuses": {"CHA": 3, "DEX": 1},
-		"active": "Loot Sense", "passive": "Extreme Coupons (-20% shop prices)",
+		"active": "Scrap Bomb", "ability": "scrap_bomb", "passive": "Extreme Coupons (-20% shop prices)",
 	},
 }
 
 func get_bonuses(c: String) -> Dictionary:
 	return CLASSES.get(c, {}).get("bonuses", {})
+
+# The AbilityLibrary id this class starts with (its permanent active). "" if none.
+func get_starter_ability(c: String) -> String:
+	return CLASSES.get(c, {}).get("ability", "")
