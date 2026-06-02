@@ -8,6 +8,23 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ELITES + PROGRESSION + POLISH (done 2026-06-02)** —
+  - **Elite-upgrade system**: floor 3+, scaling chance (10% +4%/floor, cap 40%) upgrades ANY mob to an
+    Elite — ×1.4 size, ×2.5 HP, ×1.35 dmg, stun-resist ≥0.3 (can't Ground-Slam-lock), gold glow, 2×
+    XP/gold. Difficulty via quality not inflation → dialed depth scaling back 0.35→**0.25** and reverted
+    the mob-count bump.
+  - **Exponential XP**: `xp_to_next = 80 × 1.4^(lvl-1)` (was linear) — grindier deep. And mob/boss
+    `xp_reward × floor_mult` so tougher/deeper kills (+ elites ×2) pay more — the steeper curve is
+    funded by hunting big threats.
+  - **Boss gold fix**: bosses now set `ratings` (Floor 240 / Neighborhood 90) → corpse gold ~60/~22
+    (was ~3) + the audience jackpot.
+  - **Stairs/phase doors no longer spawn in passages**: `_wall_anchor` anchors to the middle of a
+    solid wall span (≥140px), never the wall centre where corridors attach. (30/30 doors clean over 6
+    floors.)
+  - **Enemy recolor** for readability: player's cyan is now unique (Sniper→magenta, Cleric→silver-gold).
+  - **Quickbar stacking**: HUD shows "Health Potion ×7" not a wall of repeats. (Real fix = the
+    player-assigned hotbar, NEXT arc — indexed slots 1-4, pick what goes where, replace FIFO.)
+
 - **CORPSES + ECONOMY SEED + BOSS-COVER FIX + BALANCE (done 2026-06-02)** —
   - **Lootable corpses** (`Corpse.tscn`, spawned on `enemy_cancelled`): walk over to collect the
     common drip — **gold** (new `GameManager.gold` run currency, scaled off the mob's ratings) + a 6%

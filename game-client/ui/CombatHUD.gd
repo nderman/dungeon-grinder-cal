@@ -155,10 +155,19 @@ func _refresh_quickbar() -> void:
 	if GameManager.quickbar.is_empty():
 		quickbar_label.text = ""
 		return
-	var names: PackedStringArray = []
+	# Stack identical consumables into "Name ×N" instead of listing every copy, preserving order.
+	var order: PackedStringArray = []
+	var counts := {}
 	for c in GameManager.quickbar:
-		names.append(LootData.item_name(c["base"]))
-	quickbar_label.text = "[1] " + ", ".join(names)
+		var item := LootData.item_name(c["base"])
+		if item not in counts:
+			order.append(item)
+		counts[item] = int(counts.get(item, 0)) + 1
+	var parts: PackedStringArray = []
+	for item in order:
+		var n: int = counts[item]
+		parts.append("%s ×%d" % [item, n] if n > 1 else item)
+	quickbar_label.text = "[1] " + ", ".join(parts)
 
 # Hearts + initial mana come straight off the player's components.
 var _bound: bool = false

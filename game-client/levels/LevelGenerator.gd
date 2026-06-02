@@ -37,8 +37,8 @@ const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 # (×20 of the old per-heart value, matching the player's HP pool).
 # damage is HP to the player: 64 ≈ one-shots a base CON-12 player (48 HP) — you must grind CON
 # to survive a hit, or skip the boss via the timer. Bosses are a real gate, not a speed-bump.
-const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300, "stun_resist": 0.6}
-const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120, "stun_resist": 0.35}
+const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300, "stun_resist": 0.6, "ratings": 240}
+const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120, "stun_resist": 0.35, "ratings": 90}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
 var corridors: Array = []        # [{rect:Rect2, a:int, b:int}] — a,b = the room indices it links
@@ -421,7 +421,7 @@ func _populate() -> void:
 	for r in rooms:
 		match r["type"]:
 			"Combat":
-				var extra := int(GameManager.current_floor - 1)   # +1 mob per floor deeper (denser packs)
+				var extra := int((GameManager.current_floor - 1) / 2)   # a few more mobs deeper (elites add the bite)
 				for _i in range(randi_range(2, 4) + extra):
 					_spawn_enemy(r["node"])
 			"Boss":
@@ -489,6 +489,7 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var hc := e.get_node_or_null("HealthComponent")
 	if hc:
 		hc.configured_hearts *= m
+		hc.xp_reward = int(hc.xp_reward * m)   # deeper (tougher) mobs are "higher level" → pay more XP
 	var ai := e.get_node_or_null("AIComponent")
 	if ai:
 		ai.damage_hearts *= m
@@ -496,8 +497,37 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 			ai.start_active = false       # boss-room adds stay put until the arena locks…
 			if hc:
 				hc.set_invulnerable(true)   # …and can't be sniped down before you commit
+	# Elite upgrade (floor 3+, scaling chance): a bigger, tankier, stun-resistant version of ANY
+	# mob — the "harder enemy that forces you to adapt" rather than just inflated global stats.
+	if not dormant and randf() < _elite_chance():
+		_make_elite(e, hc, ai)
 	room.enemies_root.add_child(e)
 	e.global_position = room.interior_point()
+
+const ELITE_MIN_FLOOR := 3
+const ELITE_BASE_CHANCE := 0.10   # at the first elite floor
+const ELITE_PER_FLOOR := 0.04     # +4% per floor deeper (GDD: ~+5%/floor)
+const ELITE_MAX_CHANCE := 0.40
+
+func _elite_chance() -> float:
+	var f := GameManager.current_floor
+	if f < ELITE_MIN_FLOOR:
+		return 0.0
+	return clampf(ELITE_BASE_CHANCE + ELITE_PER_FLOOR * (f - ELITE_MIN_FLOOR), 0.0, ELITE_MAX_CHANCE)
+
+# Turn a freshly-rolled mob into an Elite: bigger + much tankier + hits harder + resists stun (so
+# you can't just Ground-Slam-lock it) + a gold glow, and it pays out more XP/gold for the trouble.
+# Applied BEFORE add_child so the HP/scale changes are live when the components initialise.
+func _make_elite(e: Node, hc: Node, ai: Node) -> void:
+	(e as Node2D).scale *= 1.4
+	(e as Node2D).modulate = Color(1.4, 1.1, 0.5)   # bright gold tint reads as "buffed" on any base colour
+	if hc:
+		hc.configured_hearts *= 2.5
+		hc.xp_reward *= 2
+		hc.ratings_reward *= 2          # → more corpse gold too (gold scales off ratings)
+	if ai:
+		ai.damage_hearts *= 1.35
+		ai.stun_resist = maxf(ai.stun_resist, 0.3)
 
 func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	var room: Room = r["node"]
@@ -509,7 +539,8 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	var hc := b.get_node_or_null("HealthComponent")
 	if hc:
 		hc.configured_hearts = tier["hearts"] * m
-		hc.xp_reward = tier["xp"]
+		hc.xp_reward = int(tier["xp"] * m)   # deeper bosses pay more XP (scales with their toughness)
+		hc.ratings_reward = tier.get("ratings", hc.ratings_reward)   # boss = ratings + corpse-gold jackpot
 		hc.set_invulnerable(true)   # can't be sniped while dormant — must enter to fight it
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
@@ -633,37 +664,35 @@ func _upright_label(door: Node, rot: float) -> void:
 	if lbl:
 		lbl.rotation = -rot
 
-# Pick a spot for a wall-mounted door: a side of the room with NO corridor mouth, flush against
-# the inner wall face, plus the rotation that lays the (default-horizontal) door along that wall.
+# Pick a spot for a wall-mounted door: the MIDDLE OF A SOLID WALL SEGMENT wide enough for the door,
+# so it sits beside corridor mouths, never floating in a passage. (Corridors attach at the wall
+# centre, so the old "centre of the wall" anchor landed right in the opening on multi-exit rooms.)
+const DOOR_FIT := 140.0   # min solid-wall width a 124px door needs (with a little margin)
+
 func _wall_anchor(rect: Rect2) -> Dictionary:
 	var hx := rect.size.x * 0.5
 	var hy := rect.size.y * 0.5
-	var clear := []
+	var c := rect.get_center()
+	var depth := 8.0   # straddle the wall line (~16px embedded, ~32px into the room)
+	var opts := []     # [side, along-offset-local] for every solid span the door fits in
 	for side in SIDES:
-		if _edge_spans(rect, side, true).is_empty():   # no corridor opening on this side
-			clear.append(side)
-	var side: String
-	if not clear.is_empty():
-		side = clear.pick_random()
-	else:
-		# Every side has a corridor — put the door on the LEAST-obstructed wall.
-		var best := INF
-		side = "North"
-		for s in SIDES:
-			var span := 0.0
-			for sp in _edge_spans(rect, s, true):
-				span += sp[1] - sp[0]
-			if span < best:
-				best = span
-				side = s
-	# Door is 48px deep (±24); centre it 8px in from the floor edge so it STRADDLES the wall line
-	# (~16px embedded in the wall, ~32px into the room) — reads as set into the wall, still reachable.
-	var depth := 8.0
+		for sp in _edge_spans(rect, side, false):   # false = SOLID spans (not corridor mouths)
+			if sp[1] - sp[0] < DOOR_FIT:
+				continue
+			var mid: float = (sp[0] + sp[1]) * 0.5
+			var along: float = (mid - c.x) if (side == "North" or side == "South") else (mid - c.y)
+			opts.append([side, along])
+	if opts.is_empty():
+		# Pathological tiny room: no wall segment fits — fall back to a wall centre.
+		return {"pos": Vector2(0, -hy + depth), "rot": 0.0}
+	var pick: Array = opts.pick_random()
+	var side: String = pick[0]
+	var along: float = pick[1]
 	match side:
-		"North": return {"pos": Vector2(0, -hy + depth), "rot": 0.0}
-		"South": return {"pos": Vector2(0, hy - depth), "rot": 0.0}
-		"East": return {"pos": Vector2(hx - depth, 0), "rot": PI * 0.5}
-		_: return {"pos": Vector2(-hx + depth, 0), "rot": PI * 0.5}   # West
+		"North": return {"pos": Vector2(along, -hy + depth), "rot": 0.0}
+		"South": return {"pos": Vector2(along, hy - depth), "rot": 0.0}
+		"East": return {"pos": Vector2(hx - depth, along), "rot": PI * 0.5}
+		_: return {"pos": Vector2(-hx + depth, along), "rot": PI * 0.5}   # West
 
 func _place_safe_room() -> void:
 	if safe_room_scene == null:

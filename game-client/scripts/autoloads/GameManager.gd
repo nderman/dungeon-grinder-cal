@@ -15,8 +15,8 @@ const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
-const FLOOR_DMG_PER_DEPTH := 0.35      # enemy hearts/damage scale: ×(1 + 0.35·(floor−1)) — ramps
-                                       # harder deep so a geared/skilled contestant stays pressured
+const FLOOR_DMG_PER_DEPTH := 0.25      # enemy hearts/damage scale: ×(1 + 0.25·(floor−1)). Moderate —
+                                       # deep-floor difficulty comes mainly from ELITES, not stat inflation
 
 # Ratings Spike reward table — {hype_pct, ratings} per achievement type.
 const SPIKE_TABLE := {
@@ -63,14 +63,16 @@ var _collapse_accum: float = 0.0     # collapse-DoT tick accumulator
 # --- PROGRESSION (XP / LEVELS / SKILL POINTS) — the character-growth rail ---
 # Per DCC: kills grant XP; every level hands you 3 stat points to spend, and you may only
 # spend them in a Safe Room. Levels reset per run (roguelite); you re-grow each Season.
-const XP_PER_LEVEL_BASE := 80          # XP for L1→L2; scales linearly with level
+const XP_PER_LEVEL_BASE := 80          # XP for L1→L2
+const XP_GROWTH := 1.4                 # geometric: each level costs 1.4× the last (grindier deep)
 const SKILL_POINTS_PER_LEVEL := 3      # DCC canon
 var xp: int = 0
 var level: int = 1
 var skill_points: int = 0              # unspent — banked until you reach a Safe-Room terminal
 
 func xp_to_next(lvl: int) -> int:
-	return XP_PER_LEVEL_BASE * maxi(1, lvl)   # L1→80, L2→160, L3→240 … (never 0 → no infinite loop)
+	# Geometric ramp: L1→80, L2→112, L3→157, L5→307, L10→1653 … each level a real grind step deeper.
+	return int(round(XP_PER_LEVEL_BASE * pow(XP_GROWTH, maxi(0, lvl - 1))))
 
 # --- ACTIVE CONTRACT ---
 var current_race: String = "Human"

@@ -13,7 +13,7 @@ radius = 16.0
 [node name="SyndicateSniper" type="CharacterBody2D" groups=["enemies"]]
 
 [node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.3, 0.8, 0.95, 1)
+color = Color(0.9, 0.35, 0.85, 1)
 polygon = PackedVector2Array(0, -18, 18, 0, 0, 18, -18, 0)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
