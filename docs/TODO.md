@@ -8,6 +8,31 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ENEMY VARIETY + BaseEnemy (done 2026-06-02)** — `BaseEnemy.tscn` inheritable template (std
+  component tree + a 0-DR `ProtectionComponent` so mobs are buffable). New archetypes: **Screamer**
+  (fast, 1♥, ~no telegraph swarm) and **Shield-Bot Cleric** (slow support; new `AuraComponent` grants
+  50% DR to allies within 200px, expiry-based so it fades when the cleric dies; faint ring VFX).
+  Retrofitted Goblin+Sniper with a `ProtectionComponent` so the aura buffs them. **Weighted spawn
+  table** (`_pick_enemy_scene`: melee 50 / ranged 20 / screamer 22 / cleric 8 floor-2+) replaced the
+  flat coin-flip. Original Goblin/Sniper/Golem stay standalone (only new mobs inherit BaseEnemy);
+  weights are first-pass — tune after playtest. Next archetypes: Lava-Lung Toad (hazard), Exploder.
+
+- **LOOTABLE CORPSES + the loot-source split** — kills leave a lootable corpse (walk over /
+  interact) that drops **basic common stuff**: coins/gold, low-tier crafting mats, basic potions
+  (antidotes), un-enchanted common gear. This is the steady drip from clearing.
+  **Loot Boxes stay the POWER source** (achievements/sponsors), and follow the DCC tier ladder —
+  Bronze (common/unenchanted) → Silver (basic jewelry, minor armour, copper/silver coin) → Gold
+  (moderately enchanted gear, recipes) → Platinum (high-tier enchants, skill books, stat gear) →
+  Legendary (artifacts, big stat/perm-point allocations) → Celestial (ultra-rare game-changers). So:
+  **corpses = common drip, boxes = better/rarer gear+potions.** Our `LootData.TIER_NAMES` already has
+  the ladder; future work is making box CONTENTS match the tier (richer rolls at higher tiers) and the
+  optional flavoured boxes (Goblin = explosives, "Talk of the Town" = fame items). Corpses persist a
+  few seconds / until looted; rarer mobs → slightly better common drops. Ref:
+  https://dungeon-crawler-carl.fandom.com/wiki/Loot_Boxes  *(2026-06-02)*
+- **BLOOD / GORE :)** — visual juice for the "meat grinder": blood splatter on hits + a bigger burst
+  on a kill (code-built particles/decals via FeedbackManager, like the CLINK!/floating-text pattern),
+  maybe lingering stains on the floor. Pairs with the FATALITY/audience-pop moments. *(2026-06-02)*
+
 - **STAT TWEAKS: DEX dodge + CON regen (done 2026-06-02)** — DEX gives a full-dodge chance
   (1.2%/pt, cap 50%, rolled before DR in `ProtectionComponent`, player-only, "DODGE" popup; doesn't
   apply to DoTs). CON gives passive HP regen (0.2 HP/s per pt) — lives in `HealthComponent.regen_rate`

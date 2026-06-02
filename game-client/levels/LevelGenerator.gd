@@ -8,8 +8,9 @@ extends Node2D
 
 @export var room_scene: PackedScene
 @export var enemy_scene: PackedScene             # default (melee) mob
-@export var ranged_enemy_scene: PackedScene      # mixed in at ranged_enemy_chance
-@export var ranged_enemy_chance: float = 0.3
+@export var ranged_enemy_scene: PackedScene      # ranged mob in the spawn pool
+@export var screamer_scene: PackedScene          # fast no-tell swarm
+@export var cleric_scene: PackedScene            # support-elite (DR aura), floor 2+
 @export var player_scene: PackedScene
 @export var safe_room_scene: PackedScene
 @export var phase_door_scene: PackedScene
@@ -439,10 +440,33 @@ func _populate() -> void:
 					_upright_label(pd, a["rot"])
 					r["node"].clear_cover_at(pd.position, 140.0)
 
+# Weighted archetype pick (replaces the flat melee/ranged coin-flip). Melee is the staple; ranged
+# + screamer swarm mix in; the support-elite Cleric is rarer and gated to floor 2+. Missing scenes
+# (null exports) just drop out of the pool, so it degrades gracefully.
+func _pick_enemy_scene() -> PackedScene:
+	var pool: Array = []   # [[scene, weight], …]
+	if enemy_scene:
+		pool.append([enemy_scene, 50])
+	if ranged_enemy_scene:
+		pool.append([ranged_enemy_scene, 20])
+	if screamer_scene:
+		pool.append([screamer_scene, 22])
+	if cleric_scene and GameManager.current_floor >= 2:
+		pool.append([cleric_scene, 8])
+	if pool.is_empty():
+		return enemy_scene
+	var total := 0
+	for entry in pool:
+		total += int(entry[1])
+	var roll := randi_range(1, total)
+	for entry in pool:
+		roll -= int(entry[1])
+		if roll <= 0:
+			return entry[0]
+	return pool[0][0]
+
 func _spawn_enemy(room: Room, dormant: bool = false) -> void:
-	var scene := enemy_scene
-	if ranged_enemy_scene != null and randf() < ranged_enemy_chance:
-		scene = ranged_enemy_scene
+	var scene := _pick_enemy_scene()
 	if scene == null:
 		return
 	var e := scene.instantiate()

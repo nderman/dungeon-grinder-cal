@@ -1,22 +1,27 @@
 [gd_scene load_steps=7 format=3]
 
+; Inheritable enemy template: the standard component tree (Health/Movement/AI/Protection/HealthBar +
+; CollisionShape + Visual). New archetypes inherit this and override visual/stats/AI params,
+; so they don't re-declare the whole tree. (The original Goblin/Sniper/Golem predate this.)
+; ProtectionComponent defaults to 0 DR (inert) but lets a Shield-Bot Cleric's aura buff the mob.
+
 [ext_resource type="Script" path="res://components/HealthComponent.gd" id="1_health"]
 [ext_resource type="Script" path="res://components/MovementComponent.gd" id="2_move"]
 [ext_resource type="Script" path="res://components/AIComponent.gd" id="3_ai"]
 [ext_resource type="Script" path="res://components/HealthBar.gd" id="4_hb"]
 [ext_resource type="Script" path="res://components/ProtectionComponent.gd" id="5_prot"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_goblin"]
+[sub_resource type="CircleShape2D" id="cs_base"]
 radius = 14.0
 
-[node name="GlitchGoblin" type="CharacterBody2D" groups=["enemies"]]
+[node name="BaseEnemy" type="CharacterBody2D" groups=["enemies"]]
 
 [node name="Visual" type="Polygon2D" parent="."]
-color = Color(1, 0.3, 0.3, 1)
+color = Color(0.8, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_goblin")
+shape = SubResource("cs_base")
 
 [node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("1_health")

@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://components/HealthComponent.gd" id="1_health"]
 [ext_resource type="Script" path="res://components/MovementComponent.gd" id="2_move"]
 [ext_resource type="Script" path="res://components/AIComponent.gd" id="3_ai"]
 [ext_resource type="Script" path="res://components/HealthBar.gd" id="4_hb"]
 [ext_resource type="PackedScene" path="res://entities/projectiles/GlitchBolt.tscn" id="5_bolt"]
+[ext_resource type="Script" path="res://components/ProtectionComponent.gd" id="6_prot"]
 
 [sub_resource type="CircleShape2D" id="cs_sniper"]
 radius = 16.0
@@ -26,6 +27,9 @@ ratings_reward = 12
 
 [node name="MovementComponent" type="Node2D" parent="."]
 script = ExtResource("2_move")
+
+[node name="ProtectionComponent" type="Node2D" parent="."]
+script = ExtResource("6_prot")
 
 [node name="AIComponent" type="Node2D" parent="."]
 script = ExtResource("3_ai")
