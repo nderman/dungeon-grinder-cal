@@ -15,7 +15,8 @@ const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
-const FLOOR_DMG_PER_DEPTH := 0.2       # enemy hearts/damage scale: ×(1 + 0.2·(floor−1))
+const FLOOR_DMG_PER_DEPTH := 0.35      # enemy hearts/damage scale: ×(1 + 0.35·(floor−1)) — ramps
+                                       # harder deep so a geared/skilled contestant stays pressured
 
 # Ratings Spike reward table — {hype_pct, ratings} per achievement type.
 const SPIKE_TABLE := {
@@ -50,6 +51,7 @@ var earned_loot_boxes: Array = []     # {tier, source} flagged by the achievemen
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
 var run_kills: int = 0                                    # mobs cancelled this run
+var gold: int = 0                                         # run currency from corpses; spent at shops (future)
 var _kill_times: Array[float] = []                        # recent kill timestamps (speed-demon detector)
 var _blow_times: Array[float] = []                        # tight-window kill timestamps (multi-kill detector)
 
@@ -97,6 +99,7 @@ signal items_changed()
 signal loot_boxes_changed(count: int)   # pending boxes waiting to open at a Safe Room
 signal floor_clock(elapsed: float, stairs_open: bool)   # HUD countdown
 signal stairs_opened()                  # stairs are now usable (timer or boss kill)
+signal gold_changed(total: int)         # corpse loot picked up
 
 # Enemy stat multiplier for the current depth (deeper floors hit harder / have more HP).
 func floor_mult() -> float:
@@ -154,6 +157,13 @@ func descend() -> void:
 func add_loot_box(tier: int) -> void:
 	earned_loot_boxes.append(tier)
 	loot_boxes_changed.emit(earned_loot_boxes.size())
+
+# Corpse loot: common-tier currency picked up off the floor. Spent at shops (future arc).
+func add_gold(amount: int) -> void:
+	if amount <= 0:
+		return
+	gold += amount
+	gold_changed.emit(gold)
 
 # Effective stats = base run-stats (race/class + skill points) + equipped gear bonuses.
 func get_effective_stats() -> Dictionary:
@@ -400,6 +410,7 @@ func start_new_run() -> void:
 	level = 1
 	skill_points = 0
 	run_kills = 0
+	gold = 0
 	_kill_times.clear()
 	_blow_times.clear()
 	earned_loot_boxes.clear()
@@ -422,8 +433,7 @@ func start_new_run() -> void:
 	# ranged weapons (and learn spells/skills) as you progress.
 	equipped["Weapon"] = {"kind": "gear", "base": "rusty_shiv", "slot": "Weapon", "rarity": 0, "affixes": []}
 	_recompute_bonuses()
-	# A couple of starter heals so the early floors aren't a dry no-potion grind.
-	quickbar.append({"kind": "consumable", "base": "health_potion", "tier": 0})
+	# One starter heal — enough to not be bone-dry early, without a potion glut (corpses + boxes add more).
 	quickbar.append({"kind": "consumable", "base": "health_potion", "tier": 0})
 	SignalBus.run_started.emit()   # resets per-run achievement dedup
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)

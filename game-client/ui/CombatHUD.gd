@@ -19,6 +19,7 @@ extends CanvasLayer
 var _potion_cd: Label   # code-built potion-sickness cool-down indicator (above the quick bar)
 var _ability_label: Label   # code-built "Q: <active ability>" readout
 var _player: Node2D          # bound on spawn; polled for ability availability
+var _gold_label: Label       # code-built corpse-gold readout (top-left, under Boxes)
 const ABILITY_READY := Color(0.7, 0.85, 1.0)
 const ABILITY_DIM := Color(0.45, 0.45, 0.52, 0.6)   # greyed when on cooldown / out of mana
 
@@ -53,6 +54,9 @@ func _ready() -> void:
 	ticker.modulate.a = 0.0
 	_build_potion_cd()
 	_build_ability_label()
+	_build_gold_label()
+	GameManager.gold_changed.connect(_on_gold)
+	_on_gold(GameManager.gold)
 	GameManager.abilities_changed.connect(_refresh_ability)
 	_refresh_ability()
 	_bind_player.call_deferred()
@@ -69,6 +73,19 @@ func _build_ability_label() -> void:
 	_ability_label.add_theme_font_size_override("font_size", 14)
 	_ability_label.modulate = Color(0.7, 0.85, 1.0)
 	add_child(_ability_label)
+
+func _build_gold_label() -> void:
+	_gold_label = Label.new()
+	_gold_label.offset_left = 16.0
+	_gold_label.offset_top = 96.0
+	_gold_label.offset_right = 200.0
+	_gold_label.offset_bottom = 118.0
+	_gold_label.add_theme_font_size_override("font_size", 16)
+	_gold_label.modulate = Color(1.0, 0.85, 0.25)
+	add_child(_gold_label)
+
+func _on_gold(total: int) -> void:
+	_gold_label.text = "Gold: %d" % total
 
 func _refresh_ability() -> void:
 	var id := GameManager.selected_ability

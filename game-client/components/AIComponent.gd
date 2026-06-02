@@ -22,8 +22,12 @@ var current_state: State = State.IDLE
 @export var ranged: bool = false                # ranged mobs fire a projectile instead of lunging
 @export var projectile_scene: PackedScene       # the bolt a ranged mob launches
 @export var stun_resist: float = 0.0            # 0 = full stun; bosses set ~0.4-0.6 (chance to shrug + shorter)
+@export var chase_navmesh_only: bool = false    # bosses: path AROUND cover, never beeline — so cover lets
+												# you outmaneuver them (and they can't wedge charging through it)
 
+const STUCK_BEELINE_TIME := 2.5   # navmesh-only bosses beeline after this long with no path progress
 var _active: bool = true
+var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
 var _stun_tw: Tween             # active stun-flash tween, killed before re-stunning
 var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
@@ -171,12 +175,21 @@ func _handle_chase(delta: float) -> void:
 		_change_state(State.TELEGRAPH)
 		return
 	if move_comp:
-		# Path toward the player through doorways. If the navmesh can't reach the player's spot
-		# (too tight for this agent's clearance) or returns no step, BEELINE so a kiting player
-		# behind cover can't sit safely out of reach.
+		# Path toward the player through doorways / around cover via the navmesh.
 		_agent.target_position = target.global_position
 		var dir := _agent.get_next_path_position() - global_position
-		if dir.length() <= 1.0 or not _agent.is_target_reachable():
+		var no_path := dir.length() <= 1.0 or not _agent.is_target_reachable()
+		if chase_navmesh_only:
+			# Bosses path purely around cover so you can break line-of-sight and outmaneuver them
+			# (no wedging from charging through it). But if they make NO progress for a while — you're
+			# parked in a spot the boss can't reach — they beeline so you can't safe-spot it forever.
+			# Active juking keeps re-pathing (progress), so this only bites a STATIC safe-spotter.
+			_no_progress = (_no_progress + delta) if no_path else 0.0
+			if _no_progress >= STUCK_BEELINE_TIME:
+				dir = target.global_position - global_position
+		elif no_path:
+			# Trash mobs beeline immediately when unreachable, so kiting them behind cover doesn't
+			# leave them stuck out of range.
 			dir = target.global_position - global_position
 		if dir.length() > 1.0:
 			move_comp.handle_movement(delta, dir.normalized(), move_speed)

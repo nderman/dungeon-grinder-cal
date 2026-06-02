@@ -11,6 +11,7 @@ extends Node2D
 @export var ranged_enemy_scene: PackedScene      # ranged mob in the spawn pool
 @export var screamer_scene: PackedScene          # fast no-tell swarm
 @export var cleric_scene: PackedScene            # support-elite (DR aura), floor 2+
+@export var corpse_scene: PackedScene            # lootable drop spawned where a mob dies
 @export var player_scene: PackedScene
 @export var safe_room_scene: PackedScene
 @export var phase_door_scene: PackedScene
@@ -53,6 +54,7 @@ func _ready() -> void:
 	if not GameManager.is_run_active:
 		GameManager.start_new_run()
 	GameManager.begin_floor()   # reset the stairs-open / collapse clock for this floor
+	SignalBus.enemy_cancelled.connect(_spawn_corpse)   # mobs leave a lootable corpse where they die
 	var tree := _split(Rect2(Vector2.ZERO, WORLD), 0)
 	_collect_rooms(tree)
 	_connect_mst()
@@ -419,7 +421,7 @@ func _populate() -> void:
 	for r in rooms:
 		match r["type"]:
 			"Combat":
-				var extra := int((GameManager.current_floor - 1) / 2)   # more mobs deeper
+				var extra := int(GameManager.current_floor - 1)   # +1 mob per floor deeper (denser packs)
 				for _i in range(randi_range(2, 4) + extra):
 					_spawn_enemy(r["node"])
 			"Boss":
@@ -465,6 +467,19 @@ func _pick_enemy_scene() -> PackedScene:
 			return entry[0]
 	return pool[0][0]
 
+# Drop a lootable corpse where a mob died (fired by SignalBus.enemy_cancelled). Contents are the
+# COMMON drip: gold scaled off the mob's ratings value, and an occasional basic potion. Tougher mobs
+# (higher ratings) leave more gold; Loot Boxes remain the source of real gear.
+func _spawn_corpse(loc: Vector2, ratings: int) -> void:
+	if corpse_scene == null or not is_inside_tree():
+		return
+	var corpse := corpse_scene.instantiate()
+	add_child(corpse)
+	corpse.global_position = loc
+	var g := maxi(1, int(ratings / 4.0)) + randi_range(0, 2)
+	var potion := "health_potion" if randf() < 0.06 else ""
+	corpse.setup(g, potion)
+
 func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var scene := _pick_enemy_scene()
 	if scene == null:
@@ -502,6 +517,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 		ai.telegraph_duration = tier["telegraph"]
 		ai.move_speed = tier["speed"]
 		ai.stun_resist = tier.get("stun_resist", 0.0)   # bosses shrug off / shorten Ground Slam etc.
+		ai.chase_navmesh_only = true   # path AROUND cover (outmaneuverable, no wedging) — never beeline
 		ai.start_active = false   # dormant until the arena locks
 	b.scale = Vector2(tier["scale"], tier["scale"])
 	b.modulate = tier["tint"]

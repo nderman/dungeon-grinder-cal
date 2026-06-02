@@ -97,7 +97,9 @@ func _add_block(pos: Vector2, block_size: Vector2, color: Color) -> StaticBody2D
 # them). The central cross stays clear-ish so doorways aren't walled. Other room types stay clear.
 func _build_cover() -> void:
 	if room_type not in ["Combat", "Boss", "MiniBoss"]:
-		return   # combat-ish rooms get cover; Spawn/Safe/PhaseDoor stay clear
+		return   # combat-ish rooms get cover (boss arenas too — strategic, lets you juke the boss
+		         # around it); Spawn/Safe/PhaseDoor stay clear. Bosses path AROUND cover (navmesh-only,
+		         # no beeline) so cover both works as cover AND stops them wedging.
 	var hx := size.x * 0.5
 	var hy := size.y * 0.5
 	if minf(hx, hy) < 150.0:

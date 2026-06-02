@@ -8,6 +8,22 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **CORPSES + ECONOMY SEED + BOSS-COVER FIX + BALANCE (done 2026-06-02)** —
+  - **Lootable corpses** (`Corpse.tscn`, spawned on `enemy_cancelled`): walk over to collect the
+    common drip — **gold** (new `GameManager.gold` run currency, scaled off the mob's ratings) + a 6%
+    basic-potion chance. HUD gold readout. Auto-fades after 25s. (Gold spends at shops later. Still
+    TODO: corpses dropping common GEAR; box CONTENTS scaling by tier — see Loot-Boxes note.)
+  - **Boss cover / juking**: cover stays in boss arenas (strategic). Bosses chase **navmesh-only**
+    (`AIComponent.chase_navmesh_only`) — path AROUND cover so you can break LoS and outmaneuver them,
+    and they can't wedge charging through it. Anti safe-spot: after `STUCK_BEELINE_TIME` (2.5s) of no
+    path progress they beeline, so a static safe-spotter can't snipe a boss forever. Trash mobs keep
+    the immediate beeline (anti-kite).
+  - **Balance**: starter potions 2→1 + corpse potion 6% (was a glut); enemy depth scaling 0.2→**0.35**
+    /floor + **+1 mob/floor** in combat rooms (deeper = meatier).
+  - **NEXT: Elite-upgrade system** (the real "harder from floor 3/4" answer) — bigger/tankier/stun-
+    resistant mobs from floor 3, scaling chance (GDD's +5%/floor). Dial the 0.35 scaling back down
+    once elites carry difficulty (variety over number-inflation).
+
 - **ENEMY VARIETY + BaseEnemy (done 2026-06-02)** — `BaseEnemy.tscn` inheritable template (std
   component tree + a 0-DR `ProtectionComponent` so mobs are buffable). New archetypes: **Screamer**
   (fast, 1♥, ~no telegraph swarm) and **Shield-Bot Cleric** (slow support; new `AuraComponent` grants
@@ -163,6 +179,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   - **Boss-battle start screen** — dramatic intro card when a boss arena locks (name, title,
     snarky Cal commentary), à la DCC boss reveals. Ref: https://dungeon-crawler-carl.fandom.com/wiki/Boss
   - **Funny achievement text** — punch up the achievement titles/descriptions in Cal's voice.
+    Canon (https://dungeon-crawler-carl.fandom.com/wiki/Category:Achievements, ~159 of them):
+    names are crude/dark/funny ("War Criminal", "You're the Reason Why Daddy Drinks!", "Total, Utter
+    Failure", "Three Cheers for Slaughter", "Apex Predator"). **Some grant loot boxes, some PURELY
+    mock you (no reward)** — which is exactly our floor-gated drip + heckle, so the model's already
+    canon; this is a naming/voice pass. New TRIGGERS worth adding (beyond our current 7): killed a
+    mob **higher level than you**, **You Found Stairs!**, **Pacifist** (clear a floor w/o killing),
+    hoarder (full bag), pet/charm-based, slaughter-count milestones, audience ("They like me!").
+    Categories of box by source (canon: Goblin Box = explosives, "Talk of the Town" = fame items).
   - **Funny monster + equipment descriptions** — flavor blurbs on each enemy/boss + item.
   - **Bestiary / Achievement / Dungeon-guide screen** — a codex you open to read the above for
     things you've *encountered* (discovered-gated). Monsters, bosses, weapons, achievements.

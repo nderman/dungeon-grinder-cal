@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+; Lootable corpse: an Area2D the player walks over to collect gold / a basic potion. The dark-red
+; splat doubles as a touch of gore. Pickup radius is generous so you grab it just by passing through.
+
+[ext_resource type="Script" path="res://entities/Corpse.gd" id="1_corpse"]
+
+[sub_resource type="CircleShape2D" id="cs_corpse"]
+radius = 30.0
+
+[node name="Corpse" type="Area2D"]
+script = ExtResource("1_corpse")
+
+[node name="Splat" type="Polygon2D" parent="."]
+color = Color(0.55, 0.08, 0.1, 0.85)
+polygon = PackedVector2Array(-16, -6, -6, -14, 8, -11, 16, -2, 12, 9, 0, 14, -12, 10)
+
+[node name="Coin" type="Polygon2D" parent="."]
+color = Color(1.0, 0.85, 0.25, 1)
+polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("cs_corpse")
