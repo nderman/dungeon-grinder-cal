@@ -8,6 +8,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **STAT TWEAKS: DEX dodge + CON regen (done 2026-06-02)** — DEX gives a full-dodge chance
+  (1.2%/pt, cap 50%, rolled before DR in `ProtectionComponent`, player-only, "DODGE" popup; doesn't
+  apply to DoTs). CON gives passive HP regen (0.2 HP/s per pt) — lives in `HealthComponent.regen_rate`
+  mirroring `ManaComponent`. Both also help the early-game survivability. INT→detection + CHA→shop
+  prices still planned (see Map arc + Stats section).
+
 - **COMBAT POLISH (done 2026-06-02)** — (1) Melee no longer whiffs on close enemies: the swing cone
   is widened by the angle the enemy's body subtends at its distance (stays directional — full
   forward reach, won't clip enemies beside/behind). (2) Boss **stun resist** (`AIComponent.stun_resist`,
@@ -160,6 +166,9 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
     map (the "what it is"); *Neighborhood Map* → clears FOW in the boss area (this = "killing a boss
     reveals the map" reward); *Ping* spell / *Pathfinder* skill → extend detection range. Ties into the
     Abilities framework + INT.
+  - **INT drives detection/minimap (planned stat tie-in):** base enemy-detection / minimap-reveal
+    radius scales with INT (recall/awareness, DCC). So INT is the "see what's coming" stat on top of
+    mana/spell power — pairs with the reveal items above. *(2026-06-02)*
   - **Dark areas + dynamic lighting** — some rooms/zones are unlit; the player carries a light
     radius (torch/scanner), and there are placed light sources. This *is* the visibility mechanic:
     **Light2D (player + sources) + LightOccluder2D on every wall** → you can't see into the dark or
@@ -224,8 +233,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ### Stats & combat
 - **DEX → ranged accuracy / projectile spread** (second role beyond move speed).
-- **Wire up STR + CHA** — currently dead (only race/class bonuses + loot tags read them).
-  STR: melee / knockback / carry? CHA: loot luck / charm lesser bosses / shop prices?
+- **CHA drives shop prices (planned stat tie-in)** — CHA already gives the Ratings/audience
+  multiplier; when SHOPS land, CHA should also improve **buy/sell prices** (DCC: charm/haggle). The
+  Scavenger passive "Extreme Coupons (-20% shop prices)" already assumes a shop price system to hook
+  into. (STR = melee/knockback ✓, DEX = speed/accuracy/dodge ✓, CON = HP/DR/regen/potion-cd ✓,
+  INT = mana/spell + planned detection, CHA = audience + planned shop prices — every stat now has a
+  role or a planned one.) *(2026-06-02)*
 - **Item depth (on top of the MVP)** — gear stat bonuses + consumables now work; still TODO:
   **equip slots** + drop/swap, **weapons-as-items** (folds in weapon-specific stats), and
   **affixes** (Burn/Bleed/Lightning/AOE/Leech/Slow). Also consider pausing while the inventory

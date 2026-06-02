@@ -16,12 +16,25 @@ var is_player: bool = false
 @export var iframe_seconds: float = 0.4      # brief post-hit invulnerability (player)
 var _invuln: bool = false
 
+const REGEN_PER_CON := 0.2   # HP/sec per CON point (DCC: CON drives health regen); set by the Player
+var regen_rate: float = 0.0  # passive HP/sec; 0 = none (enemies leave it 0)
+
 signal health_changed(current: float, maximum: float)
 signal health_depleted
 
 func _ready() -> void:
 	if configured_hearts > 0.0:
 		initialize_health(configured_hearts)
+
+# Passive regen toward max (CON-scaled, set by the Player). Throttles the HUD emit to whole-HP
+# changes, mirroring ManaComponent. Never revives a corpse (current must already be > 0).
+func _physics_process(delta: float) -> void:
+	if regen_rate <= 0.0 or current_hearts <= 0.0 or current_hearts >= max_hearts:
+		return
+	var prev := current_hearts
+	current_hearts = minf(current_hearts + regen_rate * delta, max_hearts)
+	if floor(prev) != floor(current_hearts):
+		health_changed.emit(current_hearts, max_hearts)
 
 func initialize_health(heart_count: float) -> void:
 	max_hearts = maxf(1.0, heart_count)

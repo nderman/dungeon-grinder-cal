@@ -105,7 +105,10 @@ func _derive_vitals(full: bool) -> void:
 		health_comp.set_max_hearts(con * 10)
 		mana_comp.set_max_mana(intel)
 	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
-	base_speed = 300.0 + (current_stats["DEX"] * 12.5)
+	health_comp.regen_rate = con * HealthComponent.REGEN_PER_CON   # CON → passive HP regen
+	var dex := int(current_stats["DEX"])
+	protection_comp.dodge_chance = minf(ProtectionComponent.DODGE_CAP, dex * ProtectionComponent.DODGE_PER_DEX)
+	base_speed = 300.0 + (dex * 12.5)
 
 func _physics_process(delta: float) -> void:
 	_tick_poison(delta)
