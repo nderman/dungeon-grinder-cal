@@ -18,6 +18,9 @@ extends CanvasLayer
 @onready var clock_label: Label = $Clock
 var _potion_cd: Label   # code-built potion-sickness cool-down indicator (above the quick bar)
 var _ability_label: Label   # code-built "Q: <active ability>" readout
+var _player: Node2D          # bound on spawn; polled for ability availability
+const ABILITY_READY := Color(0.7, 0.85, 1.0)
+const ABILITY_DIM := Color(0.45, 0.45, 0.52, 0.6)   # greyed when on cooldown / out of mana
 
 const SPIKE_TEXT := {
 	"SPEED_DEMON": "SPEED DEMON!", "NEAR_DEATH": "NEAR DEATH!",
@@ -96,6 +99,9 @@ func _process(_delta: float) -> void:
 		_potion_cd.text = "⚠ Potion sickness  %.1fs" % rem
 	elif _potion_cd.visible:
 		_potion_cd.visible = false
+	# Grey the ability readout when it can't be cast (on cooldown / out of mana).
+	if GameManager.selected_ability != "" and _player != null and is_instance_valid(_player):
+		_ability_label.modulate = ABILITY_READY if _player.selected_ability_ready() else ABILITY_DIM
 
 # Show the equipped weapon's name + type (e.g. "Rusty Shiv (melee)").
 func _refresh_weapon() -> void:
@@ -148,6 +154,7 @@ func _bind_player() -> void:
 		get_tree().create_timer(0.1).timeout.connect(_bind_player)   # spawn race — retry
 		return
 	_bound = true
+	_player = p as Node2D
 	_refresh_weapon()   # seed the equipped-weapon label
 	var hc := p.get_node_or_null("HealthComponent")
 	if hc:

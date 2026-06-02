@@ -35,8 +35,8 @@ const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 # (×20 of the old per-heart value, matching the player's HP pool).
 # damage is HP to the player: 64 ≈ one-shots a base CON-12 player (48 HP) — you must grind CON
 # to survive a hit, or skip the boss via the timer. Bosses are a real gate, not a speed-bump.
-const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300}
-const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120}
+const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300, "stun_resist": 0.6}
+const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120, "stun_resist": 0.35}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
 var corridors: Array = []        # [{rect:Rect2, a:int, b:int}] — a,b = the room indices it links
@@ -477,6 +477,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 		ai.damage_hearts = tier["damage"] * m
 		ai.telegraph_duration = tier["telegraph"]
 		ai.move_speed = tier["speed"]
+		ai.stun_resist = tier.get("stun_resist", 0.0)   # bosses shrug off / shorten Ground Slam etc.
 		ai.start_active = false   # dormant until the arena locks
 	b.scale = Vector2(tier["scale"], tier["scale"])
 	b.modulate = tier["tint"]

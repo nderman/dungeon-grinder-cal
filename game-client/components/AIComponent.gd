@@ -21,6 +21,7 @@ var current_state: State = State.IDLE
 @export var lunge_speed: float = 950.0
 @export var ranged: bool = false                # ranged mobs fire a projectile instead of lunging
 @export var projectile_scene: PackedScene       # the bolt a ranged mob launches
+@export var stun_resist: float = 0.0            # 0 = full stun; bosses set ~0.4-0.6 (chance to shrug + shorter)
 
 var _active: bool = true
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
@@ -69,10 +70,17 @@ func activate() -> void:
 	_active = true
 
 # Crowd control (Ground Slam etc.): freeze the mob's chase/attack drive for `seconds`. Stacks by
-# taking the later expiry, halts current movement, and flashes a cyan tell.
+# taking the later expiry, halts current movement, and flashes a cyan tell. stun_resist (bosses)
+# gives a chance to shrug it off entirely AND shortens any stun that does land.
 func stun(seconds: float) -> void:
 	if seconds <= 0.0:
 		return
+	var resist := clampf(stun_resist, 0.0, 0.95)   # never fully immune; never negative (would lengthen)
+	if resist > 0.0:
+		if randf() < resist:
+			SignalBus.toast.emit("RESISTED", global_position)
+			return
+		seconds *= (1.0 - resist)
 	_stun_until = maxf(_stun_until, Time.get_ticks_msec() / 1000.0 + seconds)
 	if is_instance_valid(parent):
 		parent.velocity = Vector2.ZERO

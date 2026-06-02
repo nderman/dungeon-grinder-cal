@@ -196,6 +196,17 @@ func cast_active_ability() -> void:
 	SignalBus.spell_cast.emit(String(a["name"]), global_position)
 	_apply_ability(a, GameManager.ability_level(id))
 
+# True when the selected ability can be cast right now (off cooldown + enough mana). Drives the
+# HUD greying-out the ability readout when it's unavailable.
+func selected_ability_ready() -> bool:
+	var id := GameManager.selected_ability
+	if id == "" or not AbilityLibrary.has_ability(id):
+		return false
+	if Time.get_ticks_msec() / 1000.0 < float(_ability_cd_until.get(id, 0.0)):
+		return false
+	var cost := float(AbilityLibrary.get_ability(id).get("mana_cost", 0.0))
+	return cost <= 0.0 or mana_comp.current_mana >= cost
+
 # Resolve an ability's magnitude (base × scaling-stat × use-level) and run its effect + VFX.
 func _apply_ability(a: Dictionary, level: int) -> void:
 	var stat := int(current_stats.get(String(a.get("scale", "INT")), 4))
@@ -276,7 +287,7 @@ func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array) -> void:
 	var dmg := float(w["damage"]) * (1.0 + str_stat * MELEE_DMG_PER_STR)
 	var knock := float(w["knock"]) + str_stat * MELEE_KNOCK_PER_STR
 	var melee_range := float(w["range"])
-	var cos_half := cos(deg_to_rad(float(w["arc"]) * 0.5))
+	var arc_half := deg_to_rad(float(w["arc"]) * 0.5)
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not (e is CharacterBody2D) or e in already:
 			continue
@@ -285,10 +296,17 @@ func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array) -> void:
 		if dist <= 0.0:
 			continue
 		# Reach the enemy's body edge, not just its centre (graphic == hit zone).
-		if dist - _enemy_radius(e) > melee_range:
+		var er := _enemy_radius(e)
+		var gap := dist - er
+		if gap > melee_range:
 			continue
-		if swing_aim.dot(to_e / dist) < cos_half:
-			continue   # outside the swing arc
+		# Stay DIRECTIONAL (full forward reach, won't clip enemies beside/behind you), but widen the
+		# swing cone by the angle the enemy's body subtends at this distance — so a close enemy whose
+		# CENTRE sits a hair off a narrow cone still connects, instead of whiffing in your face.
+		var subtend := asin(clampf(er / dist, 0.0, 1.0))
+		var off := acos(clampf(swing_aim.dot(to_e / dist), -1.0, 1.0))
+		if off > arc_half + subtend:
+			continue   # outside the (body-widened) swing arc
 		var hc := e.get_node_or_null("HealthComponent") as HealthComponent
 		if hc == null:
 			continue

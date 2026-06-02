@@ -8,6 +8,13 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **COMBAT POLISH (done 2026-06-02)** — (1) Melee no longer whiffs on close enemies: the swing cone
+  is widened by the angle the enemy's body subtends at its distance (stays directional — full
+  forward reach, won't clip enemies beside/behind). (2) Boss **stun resist** (`AIComponent.stun_resist`,
+  clamped 0-0.95): chance to shrug off + shortens any stun that lands (Floor Boss 0.6, Neighborhood
+  0.35; trash 0). (3) HUD ability readout **greys out** when the active ability is on cooldown / out
+  of mana (`Player.selected_ability_ready()`).
+
 - **ABILITIES + CLASS/RACE PROGRESSION (done 2026-06-02)** — big arc:
   - **Spells & Skills**: unified `AbilityLibrary` autoload (spells cost mana, skills cooldown-only),
     cast the selected ability on **Q**, **level-on-use** (cap 15), Abilities panel on **K** to pick the
