@@ -79,6 +79,12 @@ const ITEMS := {
 	"glitch_pistol":  {"name": "Glitch Pistol",  "tags": ["INT"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.6, "cooldown": 0.28, "spread": 6.0}},
 	"scrap_smg":      {"name": "Scrap SMG",      "tags": ["DEX"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.35, "cooldown": 0.12, "spread": 16.0}},
 	"rail_spike":     {"name": "Rail Spike",     "tags": ["DEX"], "min_tier": 3, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 1.8, "cooldown": 0.85, "spread": 2.0}},
+	# Exciting finds (NOT starters — the stuff you actually want to loot):
+	"broadsword":     {"name": "Broadsword",     "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.3, "cooldown": 0.6, "range": 92.0, "arc": 88.0, "knock": 52.0}},
+	"nunchucks":      {"name": "Nunchucks",      "tags": ["DEX"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.5, "cooldown": 0.2, "range": 72.0, "arc": 132.0, "knock": 28.0}},
+	"crossbow":       {"name": "Crossbow",       "tags": ["DEX"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 1.5, "cooldown": 0.7, "spread": 2.0}},
+	"katana":         {"name": "Katana",         "tags": ["STR", "DEX"], "min_tier": 3, "slot": "Weapon", "weapon": {"type": "melee", "damage": 1.0, "cooldown": 0.4, "range": 104.0, "arc": 72.0, "knock": 40.0}},
+	"war_hammer":     {"name": "War Hammer",     "tags": ["STR"], "min_tier": 3, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.7, "cooldown": 0.82, "range": 88.0, "arc": 112.0, "knock": 96.0}},
 	"golden_toaster": {"name": "God-Emperor's Golden Toaster", "tags": ["INT", "STR"], "min_tier": 4, "slot": "Weapon", "weapon": {"type": "melee", "damage": 1.8, "cooldown": 0.6, "range": 108.0, "arc": 120.0, "knock": 80.0}},
 }
 
@@ -150,6 +156,8 @@ func _pick_base(tier: int, stats: Dictionary) -> String:
 	var top := _top_stat(stats)
 	var pool: Array[String] = []
 	for id in ITEMS:
+		if id in STARTER_WEAPONS:
+			continue   # starters are run-openers only — never the reward for cracking a box
 		var it: Dictionary = ITEMS[id]
 		if int(it["min_tier"]) > tier:
 			continue

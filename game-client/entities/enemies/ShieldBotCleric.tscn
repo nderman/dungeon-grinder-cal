@@ -31,3 +31,4 @@ move_speed = 120.0
 
 [node name="AuraComponent" type="Node2D" parent="."]
 script = ExtResource("2")
+aura_dr = 50.0

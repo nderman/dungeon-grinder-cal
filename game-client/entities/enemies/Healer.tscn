@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3]
+
+; Healer: slow, weak support that mends nearby allies over time (AuraComponent in heal mode). Leave
+; it alive and the trash around it keeps getting topped off — kill the medic first. Inherits BaseEnemy.
+
+[ext_resource type="PackedScene" path="res://entities/enemies/BaseEnemy.tscn" id="1"]
+[ext_resource type="Script" path="res://components/AuraComponent.gd" id="2"]
+
+[sub_resource type="CircleShape2D" id="cs_healer"]
+radius = 16.0
+
+[node name="Healer" instance=ExtResource("1")]
+
+[node name="Visual" parent="."]
+color = Color(0.45, 0.9, 0.6, 1)
+polygon = PackedVector2Array(-16, -16, 16, -16, 16, 16, -16, 16)
+
+[node name="CollisionShape2D" parent="."]
+shape = SubResource("cs_healer")
+
+[node name="HealthComponent" parent="."]
+configured_hearts = 4.0
+xp_reward = 45
+
+[node name="AIComponent" parent="."]
+detection_range = 460.0
+attack_range = 60.0
+telegraph_duration = 0.5
+damage_hearts = 8.0
+move_speed = 120.0
+
+[node name="AuraComponent" type="Node2D" parent="."]
+script = ExtResource("2")
+heal_per_tick = 0.8
+radius = 180.0
+ring_color = Color(0.4, 0.9, 0.5, 0.22)

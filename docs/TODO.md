@@ -8,6 +8,15 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **WEAPONS + HEALER ENEMY (done 2026-06-03)** —
+  - Loot no longer drops the 4 STARTER_WEAPONS (`_pick_base` skips them). Added exciting finds:
+    Broadsword, Nunchucks (fast/wide), Crossbow (accurate), Katana (reach), War Hammer (knockback),
+    rolling from tier 2-3 boxes.
+  - **Healer** enemy (floor 2+): generalized `AuraComponent` to a `heal_per_tick` mode (reuses the
+    Cleric's tick/range/ring) — heals nearby allies (~2.7 HP/s), not itself, green ring. Kill-the-medic
+    dynamic. (Cleric scene now sets `aura_dr=50` explicitly since the default went to 0.) Also guarded
+    `HealthComponent.heal()` against reviving a 0-HP corpse, matching the other HP mutators.
+
 - **HOTBAR (done 2026-06-03)** — replaced the FIFO quick bar with a 4-slot assignable hotbar (keys
   1-4). Each slot holds a consumable (stacked by base+tier with ×count) or an ability. Consumables
   auto-slot on pickup, abilities auto-slot on learn → class ability + tome both bound & usable, and

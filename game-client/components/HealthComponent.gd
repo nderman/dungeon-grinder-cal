@@ -88,6 +88,8 @@ func _grant_iframes() -> void:
 	_invuln = false
 
 func heal(amount: float) -> void:
+	if current_hearts <= 0.0:
+		return   # never revives a corpse (matches take_damage/apply_dot/regen) — e.g. a Healer ticking
 	current_hearts = minf(current_hearts + amount, max_hearts)
 	health_changed.emit(current_hearts, max_hearts)
 
