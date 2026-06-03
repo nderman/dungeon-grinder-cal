@@ -139,7 +139,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("dash") and _can_dash:
 		_perform_dash()
 	elif event.is_action_pressed("use_item"):
-		GameManager.use_consumable()
+		GameManager.use_slot(0)   # key 1
+	elif event.is_action_pressed("slot_2"):
+		GameManager.use_slot(1)
+	elif event.is_action_pressed("slot_3"):
+		GameManager.use_slot(2)
+	elif event.is_action_pressed("slot_4"):
+		GameManager.use_slot(3)
 	elif event.is_action_pressed("inventory"):
 		_inventory_panel.toggle()
 	elif event.is_action_pressed("abilities"):
@@ -181,7 +187,11 @@ func _perform_dash() -> void:
 # Cast the currently-SELECTED active ability (the Q key). Spells gate on mana, every ability gates
 # on its own cooldown; effectiveness scales with the ability's stat and its use-earned level.
 func cast_active_ability() -> void:
-	var id := GameManager.selected_ability
+	cast_ability(GameManager.selected_ability)
+
+# Cast a SPECIFIC ability by id (Q casts the selected one; hotbar slots cast theirs). Gated by its
+# own cooldown + mana; effectiveness scales with the ability's stat and its use-earned level.
+func cast_ability(id: String) -> void:
 	if id == "" or not AbilityLibrary.has_ability(id):
 		return
 	var a := AbilityLibrary.get_ability(id)

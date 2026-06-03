@@ -8,6 +8,40 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **HOTBAR (done 2026-06-03)** — replaced the FIFO quick bar with a 4-slot assignable hotbar (keys
+  1-4). Each slot holds a consumable (stacked by base+tier with ×count) or an ability. Consumables
+  auto-slot on pickup, abilities auto-slot on learn → class ability + tome both bound & usable, and
+  you can press the key for the SPECIFIC potion you want. Q still casts the K-panel-selected ability.
+  `GameManager.hotbar` + `use_slot()` + `hotbar_slot_label()` (shared by HUD + inventory).
+  **Still TODO**: manual rearrange (drag/assign), maybe >4 slots, overflow handling beyond drop.
+
+- **RANGED ENEMIES: HOLD FIRE WITH NO LoS (quick AI fix)** — they currently telegraph then fire even
+  if you've ducked behind cover, wasting the shot into a wall. Re-check `_has_los(target)` at the
+  moment of firing (`_execute_attack`/`_fire_projectile`); if blocked, cancel the shot (back to CHASE)
+  instead of shooting the wall. Small `AIComponent` change. *(2026-06-03)*
+- **ANTI-KITE / RANGED-PLAYER CHALLENGE** — high-DEX move speed (300 + DEX×12.5) lets you outrun ALL
+  enemies and bosses and kite freely. Counters to add: (a) more **fast swarmy** mobs (small, quick, low
+  HP — extend Screamers / a new flanker), (b) a **boss SPRINT/charge** ability (periodic dash to close
+  distance on a kiter), (c) **bosses with ranged/projectile attacks** so they can punish kiting (boss
+  "weapons"), (d) maybe curve DEX→speed (diminishing) so speed isn't unbounded. Pairs with enemy-variety
+  arc. *(2026-06-03)*
+
+- **HOLY SHIELD → real timed buff + active indicator** — currently `holy_shield` is just an instant
+  self-heal (no "active" state to show). Redesign it into an actual shield: a temporary buff (brief
+  +DR / damage absorb / partial invuln) for a few seconds, with a **golden outline on the player**
+  while it's active so you can see it's up. (First held-buff ability — sets the pattern for buff VFX +
+  a player buff-state.) *(2026-06-03)*
+
+- **HOTBAR = unified assignable slots (TOP PRIORITY)** — replace the FIFO quick bar with numbered
+  slots (1-4) the player ASSIGNS: a slot can hold a **consumable, a spell, OR a skill**. Solves
+  multiple live complaints: (a) can't choose which potion to use (FIFO), (b) tome + class ability —
+  want BOTH usable / switchable without the K-panel dance, (c) spells/skills slotted alongside items.
+  Press the slot key to use/cast it. Keep the Abilities panel (K) for *learning/inspecting*; the
+  hotbar is for *using*. *(2026-06-03)*
+- **INVENTORY: show EFFECTIVE weapon damage** — cards show base "melee 0.8 dmg", so you can't tell if
+  the Pipe Wrench or Bone Cleaver actually hits harder (STR scaling + affixes not reflected). Show the
+  computed per-hit / DPS a weapon would do with current stats, so comparisons are clear. *(2026-06-03)*
+
 - **EARLY-GAME VARIETY + BOSS-NAV + UNBLOCKS (done 2026-06-03)** —
   - **Boss stuck — real cause fixed**: boss navmesh clearance was 40px but the Floor Boss body is
     ~67px (golem ×1.45), so it routed through gaps too tight for itself. Bumped to **74px**.

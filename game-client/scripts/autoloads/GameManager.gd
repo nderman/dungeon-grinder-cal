@@ -85,7 +85,11 @@ var current_run_stats: Dictionary = {}
 var equipped: Dictionary = {}        # slot:String -> gear instance
 var bag: Array = []                  # unequipped gear instances
 var _item_bonuses: Dictionary = {}   # stat -> summed bonus from equipped gear
-var quickbar: Array = []             # [{kind,base,tier}] consumables, used from the quick bar
+const HOTBAR_SLOTS := 4
+# Player-assignable hotbar (keys 1-4). Each slot is null, a consumable {kind:"consumable",base,tier,
+# count}, or an ability {kind:"ability",id}. Acquired consumables / learned abilities auto-fill the
+# first free slot; pressing a slot uses/casts it. Replaces the old FIFO quick bar.
+var hotbar: Array = [null, null, null, null]
 
 # Learnable active abilities (AbilityLibrary). Hybrid model: the class starter is re-granted every
 # run (permanent identity); tomes found mid-crawl are learned per-run. Abilities level by USE.
@@ -102,6 +106,7 @@ signal loot_boxes_changed(count: int)   # pending boxes waiting to open at a Saf
 signal floor_clock(elapsed: float, stairs_open: bool)   # HUD countdown
 signal stairs_opened()                  # stairs are now usable (timer or boss kill)
 signal gold_changed(total: int)         # corpse loot picked up
+signal hotbar_changed()                 # a slot's contents/count changed (HUD + inventory)
 
 # Enemy stat multiplier for the current depth (deeper floors hit harder / have more HP).
 func floor_mult() -> float:
@@ -247,11 +252,24 @@ func add_consumable(base: String, tier: int) -> void:
 	if e.get("effect", "") == "learn":
 		var aid := String(e.get("ability", ""))
 		var msg := ("Learned %s!" % AbilityLibrary.ability_name(aid)) if learn_ability(aid) else ("%s already known." % AbilityLibrary.ability_name(aid))
-		var p := get_tree().get_first_node_in_group("player")
-		SignalBus.toast.emit(msg, p.global_position if p else Vector2.ZERO)
+		var lp := get_tree().get_first_node_in_group("player")
+		SignalBus.toast.emit(msg, lp.global_position if lp else Vector2.ZERO)
 		return
-	quickbar.append({"kind": "consumable", "base": base, "tier": tier})
-	items_changed.emit()
+	# Stack onto an existing slot of the same consumable AND tier (tier sets potency, so a tier-2 and
+	# a tier-0 of the same base must not merge), else take the first empty slot.
+	for slot in hotbar:
+		if slot != null and slot.get("kind") == "consumable" and slot["base"] == base and int(slot["tier"]) == tier:
+			slot["count"] = int(slot["count"]) + 1
+			hotbar_changed.emit()
+			return
+	for i in range(HOTBAR_SLOTS):
+		if hotbar[i] == null:
+			hotbar[i] = {"kind": "consumable", "base": base, "tier": tier, "count": 1}
+			hotbar_changed.emit()
+			return
+	# Hotbar full — drop it (rare; rearrange/free a slot to keep more).
+	var p := get_tree().get_first_node_in_group("player")
+	SignalBus.toast.emit("Hotbar full — %s lost" % LootData.item_name(base), p.global_position if p else Vector2.ZERO)
 
 # DCC potion sickness: after any potion there's a cool-down; higher CON shortens it. Drink a potion
 # while it's still ticking and the player is Poisoned (the Player handles the debuff).
@@ -277,8 +295,21 @@ func learn_ability(id: String) -> bool:
 	known_abilities.append(id)
 	if selected_ability == "":
 		selected_ability = id
+	_hotbar_add_ability(id)
 	abilities_changed.emit()
 	return true
+
+# Drop a newly-learned ability into the first free hotbar slot (so a tome is instantly usable
+# alongside your class ability). No-op if already slotted or the bar is full (still castable via Q).
+func _hotbar_add_ability(id: String) -> void:
+	for slot in hotbar:
+		if slot != null and slot.get("kind") == "ability" and slot["id"] == id:
+			return
+	for i in range(HOTBAR_SLOTS):
+		if hotbar[i] == null:
+			hotbar[i] = {"kind": "ability", "id": id}
+			hotbar_changed.emit()
+			return
 
 # Bind the cast key to a known ability.
 func select_ability(id: String) -> void:
@@ -338,22 +369,40 @@ func choose_race(r: String) -> void:
 	current_race = r
 	SignalBus.toast.emit("RACE: %s" % r, Vector2.ZERO)
 
-# Use the oldest consumable in the quick bar on the player.
-func use_consumable() -> void:
-	if quickbar.is_empty():
+# Display label for a hotbar slot (shared by the HUD + inventory so they can't drift). "—" if empty.
+func hotbar_slot_label(i: int) -> String:
+	if i < 0 or i >= hotbar.size() or hotbar[i] == null:
+		return "—"
+	var slot: Dictionary = hotbar[i]
+	if slot["kind"] == "ability":
+		return AbilityLibrary.ability_name(String(slot["id"]))
+	var nm := LootData.item_name(String(slot["base"]))
+	var n := int(slot["count"])
+	return "%s×%d" % [nm, n] if n > 1 else nm
+
+# Activate hotbar slot `i` (key 1-4): cast its ability, or use one of its consumable.
+func use_slot(i: int) -> void:
+	if i < 0 or i >= HOTBAR_SLOTS or hotbar[i] == null:
 		return
 	var p := get_tree().get_first_node_in_group("player")
 	if p == null:
 		return
-	var c: Dictionary = quickbar.pop_front()
-	var base := String(c["base"])
+	var slot: Dictionary = hotbar[i]
+	if slot["kind"] == "ability":
+		p.cast_ability(String(slot["id"]))
+		return
+	# Consumable: apply one, run the potion cool-down (poison on early re-drink), decrement / clear.
+	var base := String(slot["base"])
 	var sick := false
 	if LootData.is_potion(base):
 		var now := Time.get_ticks_msec() / 1000.0
-		sick = now < _potion_ready_at   # still on cool-down → this drink poisons you
+		sick = now < _potion_ready_at
 		_potion_ready_at = now + potion_cooldown_seconds()
-	p.apply_consumable(base, int(c["tier"]), sick)
-	items_changed.emit()
+	p.apply_consumable(base, int(slot["tier"]), sick)
+	slot["count"] = int(slot["count"]) - 1
+	if slot["count"] <= 0:
+		hotbar[i] = null
+	hotbar_changed.emit()
 
 func _ready() -> void:
 	SignalBus.ratings_spike.connect(_on_ratings_spike)
@@ -429,7 +478,7 @@ func start_new_run() -> void:
 	equipped.clear()
 	bag.clear()
 	_item_bonuses.clear()
-	quickbar.clear()
+	hotbar = [null, null, null, null]
 	_potion_ready_at = 0.0
 	known_abilities.clear()
 	selected_ability = ""
@@ -447,7 +496,7 @@ func start_new_run() -> void:
 	equipped["Weapon"] = {"kind": "gear", "base": LootData.random_starter_weapon(), "slot": "Weapon", "rarity": 0, "affixes": []}
 	_recompute_bonuses()
 	# One starter heal — enough to not be bone-dry early, without a potion glut (corpses + boxes add more).
-	quickbar.append({"kind": "consumable", "base": "health_potion", "tier": 0})
+	add_consumable("health_potion", 0)
 	SignalBus.run_started.emit()   # resets per-run achievement dedup
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)
 

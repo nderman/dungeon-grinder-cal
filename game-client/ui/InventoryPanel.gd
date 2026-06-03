@@ -109,13 +109,10 @@ func _update_stats() -> void:
 	_stats_lbl.text = "Effective:  " + "    ".join(parts)
 
 func _update_quick() -> void:
-	if GameManager.quickbar.is_empty():
-		_quick_lbl.text = "Quick Bar [1]:  (none)"
-		return
 	var parts: PackedStringArray = []
-	for c in GameManager.quickbar:
-		parts.append("%s (%s)" % [LootData.item_name(c["base"]), LootData.tier_name(int(c["tier"]))])
-	_quick_lbl.text = "Quick Bar [1]:  " + " · ".join(parts)
+	for i in range(GameManager.hotbar.size()):
+		parts.append("[%d] %s" % [i + 1, GameManager.hotbar_slot_label(i)])
+	_quick_lbl.text = "Hotbar:  " + "   ".join(parts)
 
 # --- Cards ------------------------------------------------------------------------------------
 

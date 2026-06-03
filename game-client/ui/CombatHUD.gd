@@ -40,7 +40,7 @@ func _ready() -> void:
 	SignalBus.item_acquired.connect(_on_item)
 	SignalBus.xp_changed.connect(_on_xp)
 	SignalBus.leveled_up.connect(_on_levelup)
-	GameManager.items_changed.connect(_refresh_quickbar)
+	GameManager.hotbar_changed.connect(_refresh_hotbar)
 	GameManager.items_changed.connect(_refresh_weapon)
 	GameManager.loot_boxes_changed.connect(_on_boxes)
 	GameManager.floor_clock.connect(_on_clock)
@@ -49,7 +49,7 @@ func _ready() -> void:
 	_on_rating(GameManager.run_ratings)
 	_on_hype(GameManager.hype_meter)
 	_on_xp(GameManager.xp, GameManager.xp_to_next(GameManager.level), GameManager.level)
-	_refresh_quickbar()
+	_refresh_hotbar()
 	_refresh_weapon()
 	_on_boxes(GameManager.earned_loot_boxes.size())
 	ticker.modulate.a = 0.0
@@ -176,23 +176,12 @@ func _mmss(s: float) -> String:
 func _on_boxes(count: int) -> void:
 	boxes_label.text = "📦 %d loot box%s — open at a Safe Room" % [count, "" if count == 1 else "es"] if count > 0 else ""
 
-func _refresh_quickbar() -> void:
-	if GameManager.quickbar.is_empty():
-		quickbar_label.text = ""
-		return
-	# Stack identical consumables into "Name ×N" instead of listing every copy, preserving order.
-	var order: PackedStringArray = []
-	var counts := {}
-	for c in GameManager.quickbar:
-		var item := LootData.item_name(c["base"])
-		if item not in counts:
-			order.append(item)
-		counts[item] = int(counts.get(item, 0)) + 1
+func _refresh_hotbar() -> void:
+	# Numbered slots: "1:Ground Slam  2:Health Potion×3  3:—  4:—".
 	var parts: PackedStringArray = []
-	for item in order:
-		var n: int = counts[item]
-		parts.append("%s ×%d" % [item, n] if n > 1 else item)
-	quickbar_label.text = "[1] " + ", ".join(parts)
+	for i in range(GameManager.hotbar.size()):
+		parts.append("%d:%s" % [i + 1, GameManager.hotbar_slot_label(i)])
+	quickbar_label.text = "  ".join(parts)
 
 # Hearts + initial mana come straight off the player's components.
 var _bound: bool = false
