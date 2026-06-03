@@ -9,6 +9,7 @@ var _range: float = 96.0
 var _arc: float = deg_to_rad(120.0)   # full cone the slash sweeps through
 var _facing: float = 0.0              # centre angle of the swing
 var _progress: float = 1.0            # 0→1 sweep; >=1 means finished (nothing drawn)
+var _tint: Color = Color(0.8, 0.95, 1.0)   # slash colour (player = blue; enemies pass red)
 
 const SWEEP_TIME := 0.18
 const BLADE_DEG := 30.0               # angular width of the bright slash band
@@ -18,10 +19,11 @@ var _tw: Tween
 func _ready() -> void:
 	z_index = 10   # draw the slash above bodies
 
-func play(aim: Vector2, range_px: float, arc_deg: float) -> void:
+func play(aim: Vector2, range_px: float, arc_deg: float, tint: Color = Color(0.8, 0.95, 1.0)) -> void:
 	_facing = aim.angle()
 	_range = range_px
 	_arc = deg_to_rad(arc_deg)
+	_tint = tint
 	_progress = 0.0
 	if _tw and _tw.is_valid():
 		_tw.kill()   # robust if a faster cooldown ever overlaps swings
@@ -38,7 +40,7 @@ func _draw() -> void:
 	# Leading edge travels from one side of the cone to the other as progress runs 0→1.
 	var lead := _facing - _arc * 0.5 + _arc * _progress
 	var blade := deg_to_rad(BLADE_DEG)
-	var col := Color(0.8, 0.95, 1.0, (1.0 - _progress) * 0.85)
+	var col := Color(_tint.r, _tint.g, _tint.b, (1.0 - _progress) * 0.85)
 	var pts: PackedVector2Array = [Vector2.ZERO]
 	var steps := 8
 	for i in range(steps + 1):

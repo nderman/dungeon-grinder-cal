@@ -12,6 +12,7 @@ extends Node2D
 @export var screamer_scene: PackedScene          # fast no-tell swarm
 @export var cleric_scene: PackedScene            # support-elite (DR aura), floor 2+
 @export var healer_scene: PackedScene            # support-elite (heals allies), floor 2+
+@export var brute_scene: PackedScene             # big swinging reach-melee (telegraphed arc)
 @export var corpse_scene: PackedScene            # lootable drop spawned where a mob dies
 @export var player_scene: PackedScene
 @export var safe_room_scene: PackedScene
@@ -455,6 +456,8 @@ func _pick_enemy_scene() -> PackedScene:
 		pool.append([ranged_enemy_scene, 20])
 	if screamer_scene:
 		pool.append([screamer_scene, 22])
+	if brute_scene:
+		pool.append([brute_scene, 14])
 	if cleric_scene and GameManager.current_floor >= 2:
 		pool.append([cleric_scene, 8])
 	if healer_scene and GameManager.current_floor >= 2:

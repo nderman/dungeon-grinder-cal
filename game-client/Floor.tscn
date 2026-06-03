@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://levels/LevelGenerator.gd" id="1_gen"]
 [ext_resource type="PackedScene" path="res://levels/prefabs/Room.tscn" id="2_room"]
@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" path="res://entities/enemies/ShieldBotCleric.tscn" id="11_cleric"]
 [ext_resource type="PackedScene" path="res://entities/Corpse.tscn" id="12_corpse"]
 [ext_resource type="PackedScene" path="res://entities/enemies/Healer.tscn" id="13_healer"]
+[ext_resource type="PackedScene" path="res://entities/enemies/Brute.tscn" id="14_brute"]
 
 [node name="Floor" type="Node2D"]
 
@@ -24,6 +25,7 @@ ranged_enemy_scene = ExtResource("9_sniper")
 screamer_scene = ExtResource("10_scream")
 cleric_scene = ExtResource("11_cleric")
 healer_scene = ExtResource("13_healer")
+brute_scene = ExtResource("14_brute")
 corpse_scene = ExtResource("12_corpse")
 player_scene = ExtResource("4_player")
 safe_room_scene = ExtResource("5_safe")

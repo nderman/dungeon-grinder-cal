@@ -8,6 +8,37 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ITEMS NEED EFFECTS, NOT JUST STATS (next big arc)** — right now every item is just stat bonuses
+  (rarity = affix COUNT, affixes = flat +STR/+INT/etc.). Boring, especially Rare+. Make higher
+  rarities roll EFFECT affixes that change how you play: on-hit **Burn/Bleed/Poison** DoT, **Leech**
+  (heal on hit), **Lightning/chain**, **AoE/cleave** on weapons, **Slow/knockback**, crit chance,
+  proc-on-kill (mini-explosion — reuses the Bomb primitive!), move-speed/dodge on gear, etc. Plan:
+  add an `affix` TYPE system (stat-affix vs effect-affix) to `LootData.roll`; weight effect-affixes to
+  Rare+; apply them in combat (on-hit hooks in melee/projectile, the jewellery/trinket slots are the
+  home for the flashy ones). Also: weapons could roll damage/range modifiers, not just stat tags.
+  Pairs with the inventory effective-damage display. THE thing that makes loot exciting. *(2026-06-03)*
+
+- **Stun doesn't interrupt a committed enemy attack** — both the lunge loop and the new swing
+  coroutine keep running through a `stun()` (short windows ~0.18s so low impact). If we want stun to
+  feel weightier, add `if is_stunned(): return` inside the swing/lunge loops to cancel mid-attack. *(2026-06-03)*
+
+- **EXPLOSION PRIMITIVE → mines / grenades / exploding enemies / traps** — the new `Bomb` (fuse →
+  AoE blast, hits enemies + optionally the player, art-free draw) is a reusable primitive. Spin-offs:
+  (a) **Exploding enemy** — a mob that detonates a Bomb-blast on death (or on reaching you), forcing
+  spacing; (b) **Grenade** consumable/ability variants (different fuse/radius/damage); (c) **Mines** —
+  proximity-armed (no fuse; trigger on enemy/player enter via an Area2D) — player-placed OR enemy
+  hazard; (d) **Traps** (GDD §7: Data-Spike Landmines, Disintegrator Beams, Automated Turrets) — level
+  hazards reusing the blast. Generalize Bomb into a shared "detonate(pos,damage,radius,mask)" helper so
+  all of these share one explosion. *(2026-06-03)*
+
+- **ENEMY MELEE SWINGS (weapon attacks) — variety** — some (not all) melee enemies should SWING a
+  weapon in a telegraphed arc instead of the current lunge-and-touch. Different counterplay (sidestep
+  the arc vs back away), more readable + menacing, and a great boss-move. Implementation: add an attack
+  TYPE to `AIComponent` ("lunge" | "swing" | "ranged"); the "swing" path telegraphs then does an arc
+  hit-check in front (mirror the player's `_melee_tick`: range + arc dot, through DR) + a `MeleeSwing`-
+  style slash VFX for enemies. Reuses existing melee-arc tech. Pairs with anti-kite (a swinging brute
+  with reach + sprint punishes kiters) and gives bosses a real weapon attack. *(2026-06-03)*
+
 - **WEAPONS + HEALER ENEMY (done 2026-06-03)** —
   - Loot no longer drops the 4 STARTER_WEAPONS (`_pick_base` skips them). Added exciting finds:
     Broadsword, Nunchucks (fast/wide), Crossbow (accurate), Katana (reach), War Hammer (knockback),

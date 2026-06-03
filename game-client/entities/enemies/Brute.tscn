@@ -1,0 +1,34 @@
+[gd_scene load_steps=3 format=3]
+
+; Brute: a big, slow melee enemy that SWINGS a weapon in a telegraphed arc (vs the goblin's lunge).
+; Has reach + hits hard, but the swing direction locks on the wind-up — sidestep the cone to dodge.
+; Inherits BaseEnemy (swing attack via AIComponent.swing).
+
+[ext_resource type="PackedScene" path="res://entities/enemies/BaseEnemy.tscn" id="1"]
+
+[sub_resource type="CircleShape2D" id="cs_brute"]
+radius = 24.0
+
+[node name="Brute" instance=ExtResource("1")]
+
+[node name="Visual" parent="."]
+color = Color(0.72, 0.42, 0.24, 1)
+polygon = PackedVector2Array(-24, -24, 24, -24, 24, 24, -24, 24)
+
+[node name="CollisionShape2D" parent="."]
+shape = SubResource("cs_brute")
+
+[node name="HealthComponent" parent="."]
+configured_hearts = 5.0
+xp_reward = 50
+
+[node name="AIComponent" parent="."]
+detection_range = 440.0
+attack_range = 70.0
+telegraph_duration = 0.55
+attack_cooldown = 1.4
+damage_hearts = 30.0
+move_speed = 200.0
+swing = true
+swing_arc = 110.0
+lunge = false

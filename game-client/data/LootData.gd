@@ -72,7 +72,7 @@ const ITEMS := {
 	# Starter weapons (STARTER_WEAPONS): all ~equal weak dps, different FEEL — randomised each run.
 	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.55, "cooldown": 0.34, "range": 58.0, "arc": 46.0, "knock": 24.0}},
 	"kitchen_knife":  {"name": "Kitchen Knife",  "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.42, "cooldown": 0.26, "range": 52.0, "arc": 38.0, "knock": 16.0}},
-	"scrap_club":     {"name": "Scrap Club",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.9, "cooldown": 0.56, "range": 76.0, "arc": 104.0, "knock": 58.0}},
+	"scrap_club":     {"name": "Scrap Club",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.62, "cooldown": 0.56, "range": 76.0, "arc": 104.0, "knock": 58.0}},
 	"pop_pistol":     {"name": "Pop Pistol",     "tags": ["DEX"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.45, "cooldown": 0.5, "spread": 14.0}},
 	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.8, "cooldown": 0.52, "range": 84.0, "arc": 96.0, "knock": 60.0}},
 	"cleaver":        {"name": "Bone Cleaver",   "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.15, "cooldown": 0.70, "range": 92.0, "arc": 100.0, "knock": 55.0}},

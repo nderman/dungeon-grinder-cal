@@ -21,12 +21,12 @@ const SCALE_PER_STAT := 0.1      # +10% effectiveness per point of the scaling s
 
 const ABILITIES := {
 	"glitch_bolt": {"name": "Glitch Bolt", "kind": "spell", "scale": "INT", "mana_cost": 5.0, "cooldown": 0.25, "effect": "projectile", "power": 0.6, "description": "Rapid packet of unstable data."},
-	"fireball": {"name": "Fireball", "kind": "spell", "scale": "INT", "mana_cost": 12.0, "cooldown": 0.6, "effect": "projectile", "power": 1.4, "proj_scale": 2.6, "proj_color": Color(1.0, 0.5, 0.12), "description": "A fat bolt of weaponised heat."},
+	"fireball": {"name": "Fireball", "kind": "spell", "scale": "INT", "mana_cost": 20.0, "cooldown": 0.6, "effect": "projectile", "power": 1.4, "proj_scale": 2.6, "proj_color": Color(1.0, 0.5, 0.12), "description": "A fat bolt of weaponised heat."},
 	"singularity": {"name": "Null-G Singularity", "kind": "spell", "scale": "INT", "mana_cost": 30.0, "cooldown": 4.0, "effect": "nova", "power": 1.6, "radius": 200.0, "description": "Collapses local space, crushing nearby mobs."},
 	"ground_slam": {"name": "Ground Slam", "kind": "skill", "scale": "STR", "mana_cost": 0.0, "cooldown": 3.0, "effect": "nova", "power": 0.65, "radius": 170.0, "stun": 1.5, "description": "A quake that stuns and rattles everything around you."},
 	"holy_shield": {"name": "Holy Shield", "kind": "skill", "scale": "CON", "mana_cost": 0.0, "cooldown": 8.0, "effect": "self_heal", "power": 18.0, "description": "Channels faith into a burst of healing."},
 	"blink": {"name": "Blink", "kind": "skill", "scale": "DEX", "mana_cost": 0.0, "cooldown": 2.5, "effect": "blink", "reach": 260.0, "power": 0.0, "description": "Phase a short distance toward your aim."},
-	"scrap_bomb": {"name": "Scrap Bomb", "kind": "skill", "scale": "DEX", "mana_cost": 0.0, "cooldown": 3.5, "effect": "nova", "power": 1.1, "radius": 160.0, "description": "Lob a junk charge that detonates around you."},
+	"scrap_bomb": {"name": "Scrap Bomb", "kind": "skill", "scale": "DEX", "mana_cost": 0.0, "cooldown": 4.5, "effect": "bomb", "power": 2.8, "radius": 150.0, "fuse": 1.2, "friendly_fire": true, "description": "Drop a junk charge — a big delayed blast that doesn't care whose side you're on. Drop and RUN."},
 }
 
 func has_ability(id: String) -> bool:

@@ -21,6 +21,8 @@ var current_state: State = State.IDLE
 @export var lunge_speed: float = 950.0
 @export var ranged: bool = false                # ranged mobs fire a projectile instead of lunging
 @export var projectile_scene: PackedScene       # the bolt a ranged mob launches
+@export var swing: bool = false                 # melee mobs that SWING a weapon in a telegraphed arc
+@export var swing_arc: float = 100.0            # degrees of the swing cone (dodge by sidestepping it)
 @export var stun_resist: float = 0.0            # 0 = full stun; bosses set ~0.4-0.6 (chance to shrug + shorter)
 @export var chase_navmesh_only: bool = false    # bosses: path AROUND cover, never beeline — so cover lets
 												# you outmaneuver them (and they can't wedge charging through it)
@@ -28,6 +30,8 @@ var current_state: State = State.IDLE
 const STUCK_BEELINE_TIME := 2.5   # navmesh-only bosses beeline after this long with no path progress
 var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
+var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph start (sidestep it)
+var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
 var _stun_tw: Tween             # active stun-flash tween, killed before re-stunning
 var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
@@ -205,6 +209,11 @@ func _change_state(new_state: State) -> void:
 
 func _start_telegraph() -> void:
 	SignalBus.ratings_spike.emit("TELEGRAPH_START")
+	# Lock the swing direction NOW (at the wind-up) so a sidestep during the telegraph dodges it.
+	if swing and is_instance_valid(target):
+		var to_t := target.global_position - global_position
+		if to_t.length() > 0.0:
+			_swing_aim = to_t.normalized()
 	if parent:
 		parent.velocity = Vector2.ZERO
 		_flash_tell()   # very visible "about to hit you" cue on the mob itself
@@ -228,6 +237,8 @@ func _execute_attack() -> void:
 		elif is_instance_valid(parent):
 			_change_state(State.CHASE)   # regain line-of-sight before trying again
 			return
+	elif swing and is_instance_valid(parent) and is_instance_valid(target):
+		await _do_swing()
 	elif lunge and is_instance_valid(parent) and is_instance_valid(target):
 		# Commit a forward lunge toward the target — this is what makes the hit land
 		# (a stationary telegraph whiffs against a moving player). Dash to dodge it.
@@ -250,6 +261,30 @@ func _execute_attack() -> void:
 		_hit_target()
 	if is_instance_valid(parent):
 		_change_state(State.COOLDOWN)   # skip if the mob died during the lunge
+
+# A telegraphed weapon swing: slash the LOCKED arc. The hit is SAMPLED across the whole sweep (not a
+# single start-frame snapshot), so anyone the blade passes through connects — matching the visual and
+# the player's own melee. Sidestepping out of the cone during the wind-up still dodges it.
+func _do_swing() -> void:
+	var reach := attack_range + 28.0
+	if _swing_fx == null:
+		_swing_fx = MeleeSwing.new()
+		add_child(_swing_fx)
+	_swing_fx.play(_swing_aim, reach, swing_arc, Color(1.0, 0.4, 0.3))   # red = enemy slash
+	var cos_half := cos(deg_to_rad(swing_arc * 0.5))
+	var hit := false
+	var elapsed := 0.0
+	while elapsed < MeleeSwing.SWEEP_TIME:
+		if not is_instance_valid(parent) or not is_instance_valid(target):
+			return
+		if not hit:
+			var to_t := target.global_position - global_position
+			var dist := to_t.length()
+			if dist > 0.0 and dist <= reach and _swing_aim.dot(to_t / dist) >= cos_half:
+				_hit_target()
+				hit = true   # one hit per swing
+		elapsed += get_physics_process_delta_time()
+		await get_tree().physics_frame
 
 func _hit_target() -> void:
 	if not is_instance_valid(target):

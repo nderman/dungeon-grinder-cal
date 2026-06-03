@@ -26,6 +26,7 @@ var aim_dir: Vector2 = Vector2.RIGHT
 # Its `type` (melee/ranged) decides the primary attack; damage/cooldown/range/arc/spread come from
 # the weapon. No weapon → FISTS. STR scales melee, INT scales ranged, DEX tightens spread + i-frames.
 const BOLT_SCENE := preload("res://entities/projectiles/GlitchBolt.tscn")
+const BOMB_SCENE := preload("res://entities/Bomb.tscn")
 var _can_fire: bool = true
 var _can_melee: bool = true
 # Coefficients are on the DCC stat scale (start ~4-7): chosen so a starting build's outputs match
@@ -233,6 +234,12 @@ func _apply_ability(a: Dictionary, level: int) -> void:
 			var radius := float(a.get("radius", 160.0))
 			_ability_nova(value, radius, float(a.get("stun", 0.0)))
 			_ability_fx.play_nova(radius, col)
+		"bomb":
+			# Drop a timed charge at your feet — big delayed blast that also hurts YOU (drop & run).
+			var bomb := BOMB_SCENE.instantiate()
+			get_tree().current_scene.add_child(bomb)
+			bomb.global_position = global_position
+			bomb.setup(value, float(a.get("radius", 150.0)), float(a.get("fuse", 1.2)), bool(a.get("friendly_fire", false)))
 		"self_heal":
 			health_comp.heal(value)
 			_ability_fx.play_pulse(Color(0.4, 1.0, 0.5))
