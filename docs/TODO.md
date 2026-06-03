@@ -8,6 +8,54 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **EARLY-GAME VARIETY + BOSS-NAV + UNBLOCKS (done 2026-06-03)** —
+  - **Boss stuck — real cause fixed**: boss navmesh clearance was 40px but the Floor Boss body is
+    ~67px (golem ×1.45), so it routed through gaps too tight for itself. Bumped to **74px**.
+  - **Tome unblock**: tomes now **auto-learn on pickup** (`add_consumable` learns + toasts, doesn't
+    queue) — no more drinking your potions to reach the tome.
+  - **Random starter weapon** (shiv/kitchen_knife/scrap_club/pop_pistol — `STARTER_WEAPONS`) +
+    **random starting race** from unlocked (changeable Floor 3).
+  - **Fireball** big + orange (`proj_scale`/`proj_color` on GlitchBolt.setup); **mana regen** 5→1.8/s.
+  - **HUD**: fixed bottom-left overlap (potion/ability rows collided with Weapon label); added a
+    **race·class indicator** (top-left); potion warning relabeled "Potion cooldown … (drink = Poison)".
+
+- **RUN-START INTRO SCREEN ("Welcome to the dungeon")** — a System-announcer card on run start that
+  surfaces the random setup we now roll: *"Welcome to the dungeon. Floor 1. **Cat**. You found a
+  **Kitchen Knife** on the way in… now KILL! KILL! KILL!"* Shows race + starter weapon + **starting
+  stats** (STR/DEX/INT/CON/CHA) + race ability (below), (+ later class reveal on Floor 3) in Cal/System
+  voice. Makes the random race/weapon feel INTENTIONAL and mostly replaces the need for the race HUD
+  label. Pairs with the boss-intro card + flavour pass; reuse the ModalPanel base. Tap/space to drop
+  in. *(2026-06-03)*
+
+- **RACE ABILITIES / PASSIVES** — races currently grant only stat bonuses; their `passive` field is
+  flavour text only (unimplemented). Give each race a real perk — either implement the existing
+  passives (Ogre "Ponderous Might" 100% knockback/-20% speed, Cat "Hiss-stun" + faster Hype, Trollkin
+  regen after 10s safe, AeroWraith dash-through-walls/ignore-hazards) AND/OR a granted **racial
+  ability** (an AbilityLibrary id, like the class starter — `RaceData.get_starter_ability`). Makes the
+  random starting race matter beyond numbers + feeds the intro screen. *(2026-06-03)*
+
+- **ENDGAME / FINAL BOSS + WIN STATE (design, not now)** — the run currently descends forever
+  (collapse clock + permadeath, a floor-boss each level); there's no climax or "you won." Need a
+  defined ending. Seeds:
+  - A **bounded run** to a final floor (e.g. floor 9 or 12 — ties to our milestone-token floors 3/6/9),
+    instead of infinite descent. Or keep endless but a fightable **true-ending mega-boss** at a
+    milestone you choose to challenge.
+  - A unique **climactic arena + multi-phase final boss** (the Showrunner? the System itself?), with the
+    dramatic boss-intro card (already logged), an audience-climax ratings spike, distinct music/visced.
+  - **Win screen / "Season Champion"**: run summary, a big one-time reward, prestige unlock; maybe
+    **NG+** (harder loop, new modifiers) so winning opens a new layer rather than just ending.
+  - Make it FEEL earned (DCC tone): the System's grudging respect, the audience going wild, a
+    Celestial-tier box, etc. Pairs with the achievement/flavour voice pass.  *(2026-06-03)*
+
+- **ART PASS — pixel-art sprites/tileset** — replace the code-built `Polygon2D` placeholders with
+  real 16×16 pixel art. Candidate pack: https://anokolisa.itch.io/free-pixel-art-asset-pack-topdown-tileset-rpg-16x16-sprites
+  Scope: (1) entities — swap each `Polygon2D` for `Sprite2D`/`AnimatedSprite2D` (visual is isolated
+  per-scene, so no logic changes; player/goblin/screamer/sniper/cleric/golem/corpse/doors). (2) floors
+  + walls — tiled texture (`TileMapLayer` or textured polys) over the code-built room rects instead of
+  flat colours. (3) the recent color-coding (red/magenta/green/etc.) becomes distinct *sprites*.
+  ⚠️ **Check the pack's LICENSE** (attribution / CC0) before shipping art. Big visual jump; do after
+  the gameplay systems settle. *(2026-06-02)*
+
 - **ELITES + PROGRESSION + POLISH (done 2026-06-02)** —
   - **Elite-upgrade system**: floor 3+, scaling chance (10% +4%/floor, cap 40%) upgrades ANY mob to an
     Elite — ×1.4 size, ×2.5 HP, ×1.35 dmg, stun-resist ≥0.3 (can't Ground-Slam-lock), gold glow, 2×

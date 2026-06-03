@@ -241,6 +241,15 @@ func _recompute_bonuses() -> void:
 	items_changed.emit()
 
 func add_consumable(base: String, tier: int) -> void:
+	# A tome teaches its ability the moment you pick it up — it should NOT queue behind your potions
+	# in the FIFO quick bar (you'd have to drink everything to reach it). (Hotbar = proper fix later.)
+	var e := LootData.consumable_effect(base, tier)
+	if e.get("effect", "") == "learn":
+		var aid := String(e.get("ability", ""))
+		var msg := ("Learned %s!" % AbilityLibrary.ability_name(aid)) if learn_ability(aid) else ("%s already known." % AbilityLibrary.ability_name(aid))
+		var p := get_tree().get_first_node_in_group("player")
+		SignalBus.toast.emit(msg, p.global_position if p else Vector2.ZERO)
+		return
 	quickbar.append({"kind": "consumable", "base": base, "tier": tier})
 	items_changed.emit()
 
@@ -430,10 +439,12 @@ func start_new_run() -> void:
 	# DCC: crawlers are CLASSLESS for the first two floors. Stats are race + base only; the class
 	# (its stat bonuses + starter ability) is chosen on Floor 3 via choose_class().
 	current_class = ""
+	# Random starting race from the UNLOCKED roster (Human-only until you unlock more) — early-floor
+	# variety + makes race unlocks pay off immediately. You can still change it on Floor 3.
+	current_race = MetaManager.unlocked_races.pick_random() if not MetaManager.unlocked_races.is_empty() else "Human"
 	current_run_stats = MetaManager.get_current_contestant_stats(current_race, "")
-	# Weapon-gated start: begin with a basic melee weapon only — no ranged, no spells. Find/equip
-	# ranged weapons (and learn spells/skills) as you progress.
-	equipped["Weapon"] = {"kind": "gear", "base": "rusty_shiv", "slot": "Weapon", "rarity": 0, "affixes": []}
+	# Weapon-gated start: a random basic weapon (variety of FEEL run-to-run) — no spells/skills yet.
+	equipped["Weapon"] = {"kind": "gear", "base": LootData.random_starter_weapon(), "slot": "Weapon", "rarity": 0, "affixes": []}
 	_recompute_bonuses()
 	# One starter heal — enough to not be bone-dry early, without a potion glut (corpses + boxes add more).
 	quickbar.append({"kind": "consumable", "base": "health_potion", "tier": 0})

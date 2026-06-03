@@ -390,13 +390,14 @@ func _build_navmesh() -> void:
 			src.add_obstruction_outline(_rect_outline(cr))   # holes in the mesh where cover is
 	# Mob mesh on the default map.
 	_make_nav_region(src, 22.0, get_world_2d().navigation_map)
-	# Boss mesh on its own map — 40px clearance: enough to keep the big boss off walls/cover
-	# without making so many spots unreachable that a kiting player can hide. Beeline fallback
-	# (AIComponent) covers anywhere the mesh still can't reach.
+	# Boss mesh on its own map. Clearance MUST exceed the boss's body radius (Floor Boss = golem
+	# radius 46 × scale 1.45 ≈ 67px) or the mesh routes it through gaps too tight for its own body
+	# and it wedges. 74px clears the biggest boss with margin; it's locked in an open arena so the
+	# tighter mesh still has room. Stuck-timer beeline (AIComponent) covers any truly blocked spot.
 	boss_nav_map = NavigationServer2D.map_create()
 	NavigationServer2D.map_set_active(boss_nav_map, true)
 	NavigationServer2D.map_set_cell_size(boss_nav_map, NavigationServer2D.map_get_cell_size(get_world_2d().navigation_map))
-	_make_nav_region(src, 40.0, boss_nav_map)
+	_make_nav_region(src, 74.0, boss_nav_map)
 
 # Free the boss nav map when this floor is torn down (descent/death) so the RID doesn't leak.
 func _exit_tree() -> void:

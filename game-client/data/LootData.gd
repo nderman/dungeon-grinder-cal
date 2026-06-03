@@ -69,7 +69,11 @@ const ITEMS := {
 	"vigor_pendant":       {"name": "Vigor Pendant",               "tags": ["CON"],        "min_tier": 2, "slot": "Amulet"},
 	"adrenaline_chip":     {"name": "Adrenaline Chip",             "tags": ["DEX"],        "min_tier": 2, "slot": "Trinket"},
 	# --- Weapons (the equipped Weapon-slot item drives the attack via its `weapon` block) ---
+	# Starter weapons (STARTER_WEAPONS): all ~equal weak dps, different FEEL — randomised each run.
 	"rusty_shiv":     {"name": "Rusty Shiv",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.55, "cooldown": 0.34, "range": 58.0, "arc": 46.0, "knock": 24.0}},
+	"kitchen_knife":  {"name": "Kitchen Knife",  "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.42, "cooldown": 0.26, "range": 52.0, "arc": 38.0, "knock": 16.0}},
+	"scrap_club":     {"name": "Scrap Club",     "tags": ["STR"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.9, "cooldown": 0.56, "range": 76.0, "arc": 104.0, "knock": 58.0}},
+	"pop_pistol":     {"name": "Pop Pistol",     "tags": ["DEX"], "min_tier": 0, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.45, "cooldown": 0.5, "spread": 14.0}},
 	"pipe_wrench":    {"name": "Pipe Wrench",    "tags": ["STR"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 0.8, "cooldown": 0.52, "range": 84.0, "arc": 96.0, "knock": 60.0}},
 	"cleaver":        {"name": "Bone Cleaver",   "tags": ["STR"], "min_tier": 2, "slot": "Weapon", "weapon": {"type": "melee",  "damage": 1.15, "cooldown": 0.70, "range": 92.0, "arc": 100.0, "knock": 55.0}},
 	"glitch_pistol":  {"name": "Glitch Pistol",  "tags": ["INT"], "min_tier": 1, "slot": "Weapon", "weapon": {"type": "ranged", "damage": 0.6, "cooldown": 0.28, "spread": 6.0}},
@@ -80,6 +84,12 @@ const ITEMS := {
 
 # The attack you have with no weapon equipped (a weak melee jab). Also the template for `weapon`.
 const FISTS := {"type": "melee", "damage": 0.4, "cooldown": 0.45, "range": 80.0, "arc": 110.0, "knock": 25.0}
+
+# Roughly-equal weak weapons a run can open with (random each Season) — variety of FEEL, not power.
+const STARTER_WEAPONS := ["rusty_shiv", "kitchen_knife", "scrap_club", "pop_pistol"]
+
+func random_starter_weapon() -> String:
+	return STARTER_WEAPONS.pick_random()
 
 func weapon_stats(base: String) -> Dictionary:
 	return ITEMS.get(base, {}).get("weapon", FISTS)

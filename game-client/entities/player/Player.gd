@@ -218,7 +218,7 @@ func _apply_ability(a: Dictionary, level: int) -> void:
 	var col := Color(0.55, 0.8, 1.0) if String(a.get("kind", "skill")) == "spell" else Color(1.0, 0.62, 0.3)
 	match String(a.get("effect", "")):
 		"projectile":
-			_spawn_projectile(value, 6.0)
+			_spawn_projectile(value, 6.0, float(a.get("proj_scale", 1.0)), a.get("proj_color", Color.TRANSPARENT))
 		"nova":
 			var radius := float(a.get("radius", 160.0))
 			_ability_nova(value, radius, float(a.get("stun", 0.0)))
@@ -373,11 +373,11 @@ func _tick_poison(delta: float) -> void:
 		_poison_ticks -= 1
 		health_comp.apply_dot(health_comp.max_hearts * POISON_PCT_PER_TICK)
 
-func _spawn_projectile(damage: float, base_spread: float) -> void:
+func _spawn_projectile(damage: float, base_spread: float, scale_mult: float = 1.0, color: Color = Color.TRANSPARENT) -> void:
 	var bolt := BOLT_SCENE.instantiate()
 	get_tree().current_scene.add_child(bolt)
 	bolt.global_position = weapon_anchor.global_position
-	bolt.setup(_spread_dir(base_spread), damage)
+	bolt.setup(_spread_dir(base_spread), damage, &"enemies", scale_mult, color)
 
 # DEX → accuracy: the weapon's base spread cone tightens as DEX rises; high DEX fires near-true.
 func _spread_dir(base_spread: float) -> Vector2:

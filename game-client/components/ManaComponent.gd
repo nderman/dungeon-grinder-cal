@@ -7,8 +7,8 @@ class_name ManaComponent
 
 var max_mana: float = 50.0
 var current_mana: float = 50.0
-var base_regen_rate: float = 5.0   # mana/sec
-var current_regen_rate: float = 5.0
+var base_regen_rate: float = 1.8   # mana/sec — slow on purpose, so mana is a real resource + Mana
+var current_regen_rate: float = 1.8   # Batteries matter (INT still speeds it via the ×(1+INT·0.05))
 
 func initialize_mana(int_stat: int) -> void:
 	max_mana = int_stat * 12.0   # DCC scale: INT ~4 → ~48 (held from the old INT×5 at INT 10)

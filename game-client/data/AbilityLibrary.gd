@@ -21,7 +21,7 @@ const SCALE_PER_STAT := 0.1      # +10% effectiveness per point of the scaling s
 
 const ABILITIES := {
 	"glitch_bolt": {"name": "Glitch Bolt", "kind": "spell", "scale": "INT", "mana_cost": 5.0, "cooldown": 0.25, "effect": "projectile", "power": 0.6, "description": "Rapid packet of unstable data."},
-	"fireball": {"name": "Fireball", "kind": "spell", "scale": "INT", "mana_cost": 12.0, "cooldown": 0.6, "effect": "projectile", "power": 1.4, "description": "A bolt of weaponised heat."},
+	"fireball": {"name": "Fireball", "kind": "spell", "scale": "INT", "mana_cost": 12.0, "cooldown": 0.6, "effect": "projectile", "power": 1.4, "proj_scale": 2.6, "proj_color": Color(1.0, 0.5, 0.12), "description": "A fat bolt of weaponised heat."},
 	"singularity": {"name": "Null-G Singularity", "kind": "spell", "scale": "INT", "mana_cost": 30.0, "cooldown": 4.0, "effect": "nova", "power": 1.6, "radius": 200.0, "description": "Collapses local space, crushing nearby mobs."},
 	"ground_slam": {"name": "Ground Slam", "kind": "skill", "scale": "STR", "mana_cost": 0.0, "cooldown": 3.0, "effect": "nova", "power": 0.65, "radius": 170.0, "stun": 1.5, "description": "A quake that stuns and rattles everything around you."},
 	"holy_shield": {"name": "Holy Shield", "kind": "skill", "scale": "CON", "mana_cost": 0.0, "cooldown": 8.0, "effect": "self_heal", "power": 18.0, "description": "Channels faith into a burst of healing."},

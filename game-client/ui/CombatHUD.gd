@@ -20,6 +20,7 @@ var _potion_cd: Label   # code-built potion-sickness cool-down indicator (above 
 var _ability_label: Label   # code-built "Q: <active ability>" readout
 var _player: Node2D          # bound on spawn; polled for ability availability
 var _gold_label: Label       # code-built corpse-gold readout (top-left, under Boxes)
+var _race_label: Label       # code-built race (·class once chosen) identity readout, top-left
 const ABILITY_READY := Color(0.7, 0.85, 1.0)
 const ABILITY_DIM := Color(0.45, 0.45, 0.52, 0.6)   # greyed when on cooldown / out of mana
 
@@ -57,6 +58,8 @@ func _ready() -> void:
 	_build_gold_label()
 	GameManager.gold_changed.connect(_on_gold)
 	_on_gold(GameManager.gold)
+	_build_race_label()
+	_refresh_race()
 	GameManager.abilities_changed.connect(_refresh_ability)
 	_refresh_ability()
 	_bind_player.call_deferred()
@@ -67,9 +70,9 @@ func _build_ability_label() -> void:
 	_ability_label.anchor_top = 1.0
 	_ability_label.anchor_bottom = 1.0
 	_ability_label.offset_left = 16.0
-	_ability_label.offset_top = -82.0
+	_ability_label.offset_top = -114.0
 	_ability_label.offset_right = 600.0
-	_ability_label.offset_bottom = -58.0
+	_ability_label.offset_bottom = -90.0
 	_ability_label.add_theme_font_size_override("font_size", 14)
 	_ability_label.modulate = Color(0.7, 0.85, 1.0)
 	add_child(_ability_label)
@@ -87,6 +90,27 @@ func _build_gold_label() -> void:
 func _on_gold(total: int) -> void:
 	_gold_label.text = "Gold: %d" % total
 
+func _build_race_label() -> void:
+	_race_label = Label.new()
+	_race_label.offset_left = 16.0
+	_race_label.offset_top = 120.0
+	_race_label.offset_right = 320.0
+	_race_label.offset_bottom = 142.0
+	_race_label.add_theme_font_size_override("font_size", 16)
+	_race_label.modulate = Color(0.75, 0.8, 0.9)
+	add_child(_race_label)
+
+var _race_cache_r := ""
+var _race_cache_c := "—"   # sentinel ≠ any real class so the first refresh always paints
+func _refresh_race() -> void:
+	# Race/class only change on run start + Floor 3 — rebuild the label string only on a change,
+	# not every frame (avoids a per-frame alloc on this _process-driven readout).
+	if GameManager.current_race == _race_cache_r and GameManager.current_class == _race_cache_c:
+		return
+	_race_cache_r = GameManager.current_race
+	_race_cache_c = GameManager.current_class
+	_race_label.text = _race_cache_r if _race_cache_c == "" else "%s · %s" % [_race_cache_r, _race_cache_c]
+
 func _refresh_ability() -> void:
 	var id := GameManager.selected_ability
 	if id == "":
@@ -101,9 +125,9 @@ func _build_potion_cd() -> void:
 	_potion_cd.anchor_top = 1.0
 	_potion_cd.anchor_bottom = 1.0
 	_potion_cd.offset_left = 16.0
-	_potion_cd.offset_top = -58.0
+	_potion_cd.offset_top = -88.0
 	_potion_cd.offset_right = 600.0
-	_potion_cd.offset_bottom = -34.0
+	_potion_cd.offset_bottom = -64.0
 	_potion_cd.add_theme_font_size_override("font_size", 14)
 	_potion_cd.modulate = Color(1.0, 0.55, 0.3)
 	_potion_cd.visible = false
@@ -113,12 +137,13 @@ func _process(_delta: float) -> void:
 	var rem := GameManager.potion_cooldown_remaining()
 	if rem > 0.0:
 		_potion_cd.visible = true
-		_potion_cd.text = "⚠ Potion sickness  %.1fs" % rem
+		_potion_cd.text = "⚠ Potion cooldown  %.1fs  (drink now = Poison)" % rem
 	elif _potion_cd.visible:
 		_potion_cd.visible = false
 	# Grey the ability readout when it can't be cast (on cooldown / out of mana).
 	if GameManager.selected_ability != "" and _player != null and is_instance_valid(_player):
 		_ability_label.modulate = ABILITY_READY if _player.selected_ability_ready() else ABILITY_DIM
+	_refresh_race()   # reflects the random start race + the Floor-3 class pick
 
 # Show the equipped weapon's name + type (e.g. "Rusty Shiv (melee)").
 func _refresh_weapon() -> void:
