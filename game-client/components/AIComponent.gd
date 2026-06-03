@@ -221,7 +221,13 @@ func _flash_tell() -> void:
 
 func _execute_attack() -> void:
 	if ranged:
-		_fire_projectile()
+		# Don't waste the shot if you ducked behind cover during the telegraph — hold fire and
+		# reposition for a clear line instead of plinking the wall.
+		if is_instance_valid(target) and _has_los(target):
+			_fire_projectile()
+		elif is_instance_valid(parent):
+			_change_state(State.CHASE)   # regain line-of-sight before trying again
+			return
 	elif lunge and is_instance_valid(parent) and is_instance_valid(target):
 		# Commit a forward lunge toward the target — this is what makes the hit land
 		# (a stationary telegraph whiffs against a moving player). Dash to dodge it.
