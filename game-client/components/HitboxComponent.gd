@@ -9,6 +9,10 @@ class_name HitboxComponent
 @export var target_group: StringName = &"enemies"
 @export var one_shot: bool = true   # projectiles despawn after a hit
 
+# Emitted after damage lands, with the victim and the post-DR amount dealt — lets the carrier
+# (e.g. a player bolt) fire on-hit gear EFFECTS via CombatEffects without this node knowing them.
+signal hit_landed(victim: Node, dealt: float)
+
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	area_entered.connect(_on_area_entered)
@@ -36,6 +40,7 @@ func _try_hit(victim: Node) -> void:
 	if prot:
 		dmg = prot.handle_incoming_damage(dmg)
 	health.take_damage(dmg)
+	hit_landed.emit(victim, dmg)
 	_consume()
 
 func _consume() -> void:

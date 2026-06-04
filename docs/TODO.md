@@ -8,15 +8,26 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
-- **ITEMS NEED EFFECTS, NOT JUST STATS (next big arc)** — right now every item is just stat bonuses
-  (rarity = affix COUNT, affixes = flat +STR/+INT/etc.). Boring, especially Rare+. Make higher
-  rarities roll EFFECT affixes that change how you play: on-hit **Burn/Bleed/Poison** DoT, **Leech**
-  (heal on hit), **Lightning/chain**, **AoE/cleave** on weapons, **Slow/knockback**, crit chance,
-  proc-on-kill (mini-explosion — reuses the Bomb primitive!), move-speed/dodge on gear, etc. Plan:
-  add an `affix` TYPE system (stat-affix vs effect-affix) to `LootData.roll`; weight effect-affixes to
-  Rare+; apply them in combat (on-hit hooks in melee/projectile, the jewellery/trinket slots are the
-  home for the flashy ones). Also: weapons could roll damage/range modifiers, not just stat tags.
-  Pairs with the inventory effective-damage display. THE thing that makes loot exciting. *(2026-06-03)*
+- **REFACTOR: extract `Combat.deal(victim, raw_dmg)` helper** — the "fetch HealthComponent, route
+  through ProtectionComponent.handle_incoming_damage if present, take_damage" tail is copy-pasted in
+  6 sites: `CombatEffects._chain`, `Player._ability_nova`, `Player._melee_tick`, `Bomb._detonate`,
+  `HitboxComponent._try_hit`, `AIComponent._hit_target`. A single static helper collapses all of
+  them. Kept out of the effect-affix commit to avoid touching hot-path combat mid-feature; do it as
+  its own validated pass. *(2026-06-03, flagged in effect-affix review)*
+- **ITEMS NEED EFFECTS — v1 BUILT (2026-06-03).** Rare+ gear now rolls EFFECT affixes (not just
+  flat stats): **Burn** (fire DoT), **Leech** (heal on hit), **Crit** (chance to double), **Chill**
+  (slow), **Chain** (arc damage to a 2nd enemy). Summed across ALL equipped slots
+  (`LootData.combat_effects`) and applied on every weapon hit (melee + ranged) via `CombatEffects`;
+  timed statuses live in `StatusEffect` (burn ticks DoT, chill drops `AIComponent.speed_mult`). Item
+  names get an adjective ("Savage War Hammer", "Burning Ring") and the inventory desc lists the
+  effects. Rare always gets ≥1 effect; Epic/Legendary stack more. Still TODO / deferred:
+  - effect-affixes are **gear-wide but only proc on WEAPON hits** — spells (Fireball etc.) don't
+    carry them yet. Decide if leech/crit should feed spell casts too.
+  - **defensive** effect-affixes for armour slots (thorns, on-hit regen, block) — currently all 5
+    effects are offensive, so a Rare helmet's effect is a bit odd flavour-wise (works, just funny).
+  - weapons rolling **damage/range modifiers** (not just stat tags); **proc-on-kill** mini-explosion
+    (reuse Bomb); knockback / move-speed / dodge effects.
+  - balance pass once playtested; pairs with the inventory effective-damage display.
 
 - **Stun doesn't interrupt a committed enemy attack** — both the lunge loop and the new swing
   coroutine keep running through a `stun()` (short windows ~0.18s so low impact). If we want stun to

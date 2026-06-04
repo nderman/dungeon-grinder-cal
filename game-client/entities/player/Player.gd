@@ -271,12 +271,23 @@ func _ability_nova(damage: float, radius: float, stun_seconds: float = 0.0) -> v
 func _ability_blink(reach: float) -> void:
 	move_and_collide(aim_dir * reach)
 
+# On-hit EFFECTS from all equipped gear (LootData effect-affixes — burn/leech/crit/chill/chain).
+# Recomputed once per attack: cheap (a few dict reads) and means swapping gear takes effect at once
+# with no cache to invalidate. Spells deliberately don't carry these — they're weapon-hit procs.
+func _attack_effects() -> Dictionary:
+	return LootData.combat_effects(GameManager.equipped)
+
 # Fire the equipped ranged weapon: damage scales with INT, spread = weapon base tightened by DEX.
+# A crit roll fattens the bolt (gold + bigger), and the shot carries the gear's on-hit effects.
 func _fire(w: Dictionary) -> void:
 	_can_fire = false
 	var int_stat := int(current_stats["INT"])
-	var dmg: float = float(w["damage"]) * (1.0 + int_stat * RANGED_DMG_PER_INT)
-	_spawn_projectile(dmg, float(w.get("spread", 6.0)))
+	var base_dmg: float = float(w["damage"]) * (1.0 + int_stat * RANGED_DMG_PER_INT)
+	var fx := _attack_effects()
+	var res := CombatEffects.resolve_damage(base_dmg, fx)
+	var crit: bool = res[1]
+	_spawn_projectile(res[0], float(w.get("spread", 6.0)),
+		1.3 if crit else 1.0, Color(1.0, 0.9, 0.3) if crit else Color.TRANSPARENT, fx)
 	SignalBus.spell_cast.emit("Shot", global_position)
 	await get_tree().create_timer(float(w["cooldown"])).timeout
 	_can_fire = true
@@ -289,12 +300,13 @@ func _melee_attack(w: Dictionary) -> void:
 	var swing_aim := aim_dir
 	_melee_fx.play(swing_aim, float(w["range"]), float(w["arc"]))   # the visible sweep
 	SignalBus.spell_cast.emit("Melee", global_position)
+	var fx := _attack_effects()   # gear on-hit effects, fixed for the whole swing
 	var already: Array = []   # enemies hit this swing (don't double-hit)
 	var elapsed := 0.0
 	while elapsed < MELEE_SWEEP_TIME:
 		if not _alive or not is_inside_tree():
 			return   # player died / floor changed mid-swing — stop touching the world
-		_melee_tick(w, swing_aim, already)
+		_melee_tick(w, swing_aim, already, fx)
 		elapsed += get_physics_process_delta_time()
 		await get_tree().physics_frame
 	if not is_inside_tree():
@@ -302,9 +314,9 @@ func _melee_attack(w: Dictionary) -> void:
 	await get_tree().create_timer(maxf(0.0, float(w["cooldown"]) - MELEE_SWEEP_TIME)).timeout
 	_can_melee = true
 
-func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array) -> void:
+func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array, effects: Dictionary) -> void:
 	var str_stat := int(current_stats["STR"])
-	var dmg := float(w["damage"]) * (1.0 + str_stat * MELEE_DMG_PER_STR)
+	var base_dmg := float(w["damage"]) * (1.0 + str_stat * MELEE_DMG_PER_STR)
 	var knock := float(w["knock"]) + str_stat * MELEE_KNOCK_PER_STR
 	var melee_range := float(w["range"])
 	var arc_half := deg_to_rad(float(w["arc"]) * 0.5)
@@ -331,10 +343,15 @@ func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array) -> void:
 		if hc == null:
 			continue
 		already.append(e)
-		# Route through the enemy's DR (same pipeline as HitboxComponent / AIComponent._hit_target).
+		# Crit is rolled per-enemy, then routed through the enemy's DR (same pipeline as
+		# HitboxComponent / AIComponent._hit_target), then the gear's on-hit effects proc.
+		var res := CombatEffects.resolve_damage(base_dmg, effects)
 		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
-		var hit: float = prot.handle_incoming_damage(dmg) if prot else dmg
+		var hit: float = prot.handle_incoming_damage(res[0]) if prot else res[0]
 		hc.take_damage(hit)
+		if res[1]:
+			SignalBus.toast.emit("CRIT!", e.global_position)
+		CombatEffects.apply_on_hit(e, hit, effects, health_comp)
 		# Shove survivors only (not a corpse). Big bosses (scale ≥ 1.3) are too heavy to shove.
 		# move_and_collide so the shove stops at walls — no punting enemies out of the map.
 		if is_instance_valid(e) and not e.is_queued_for_deletion() and e.scale.x < 1.3:
@@ -390,11 +407,13 @@ func _tick_poison(delta: float) -> void:
 		_poison_ticks -= 1
 		health_comp.apply_dot(health_comp.max_hearts * POISON_PCT_PER_TICK)
 
-func _spawn_projectile(damage: float, base_spread: float, scale_mult: float = 1.0, color: Color = Color.TRANSPARENT) -> void:
+func _spawn_projectile(damage: float, base_spread: float, scale_mult: float = 1.0, color: Color = Color.TRANSPARENT, effects: Dictionary = {}) -> void:
 	var bolt := BOLT_SCENE.instantiate()
 	get_tree().current_scene.add_child(bolt)
 	bolt.global_position = weapon_anchor.global_position
 	bolt.setup(_spread_dir(base_spread), damage, &"enemies", scale_mult, color)
+	if not effects.is_empty():
+		bolt.arm_effects(effects, health_comp)   # weapon fire procs gear effects; spells don't
 
 # DEX → accuracy: the weapon's base spread cone tightens as DEX rises; high DEX fires near-true.
 func _spread_dir(base_spread: float) -> Vector2:

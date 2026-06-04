@@ -24,6 +24,23 @@ const SLOT_ACCEPTS := {"Ring 2": "Ring"}
 const STAT_KEYS := ["STR", "DEX", "INT", "CON", "CHA"]
 const BASE_BONUS_PER_TAG := 2   # a gear item's flat bonus to each of its tagged stats
 
+# --- Effect-affixes: the "interesting" rolls that only appear on Rare+ gear ---------------------
+# Beyond flat stat bonuses, Rare+ items roll EFFECT affixes that change how you FIGHT. They're
+# summed across all equipped gear (combat_effects) and applied on every weapon hit by CombatEffects.
+#   burn  power = DoT hearts/sec (burns for a few seconds)   leech power = fraction of the hit healed
+#   crit  power = chance of a doubled hit                     chill power = enemy slow fraction
+#   chain power = fraction of the hit arced to a 2nd enemy
+# `adj` prefixes the item name ("Savage War Hammer") so loot READS exciting at a glance.
+const EFFECT_AFFIXES := {
+	"burn":  {"adj": "Burning",  "label": "Burn"},
+	"leech": {"adj": "Leeching", "label": "Leech"},
+	"crit":  {"adj": "Savage",   "label": "Crit"},
+	"chill": {"adj": "Chilling", "label": "Chill"},
+	"chain": {"adj": "Shocking", "label": "Chain"},
+}
+const EFFECT_KEYS := ["burn", "leech", "crit", "chill", "chain"]
+const EFFECT_MIN_RARITY := 2   # Rare (index 2) and above start rolling effect-affixes
+
 # Which item `slot` type fits in this equip-slot key (e.g. "Ring 2" accepts a "Ring").
 func slot_accepts(slot_key: String) -> String:
 	return SLOT_ACCEPTS.get(slot_key, slot_key)
@@ -148,9 +165,52 @@ func roll(tier: int, stats: Dictionary) -> Dictionary:
 		return {"kind": "consumable", "base": base, "tier": tier}
 	var rarity := _roll_rarity(tier)
 	var affixes := []
-	for _i in range(rarity):
-		affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
+	var used_effects: Array[String] = []
+	for i in range(rarity):
+		# Rare+ turns affix slots into EFFECT rolls — the first slot always, the rest 50/50 with a
+		# stat roll. So a Rare item ALWAYS does something interesting, and Epics/Legendaries stack
+		# more tricks. Lower rarities stay pure stat-stick (unchanged).
+		var want_effect := rarity >= EFFECT_MIN_RARITY and (i == 0 or randf() < 0.5) and used_effects.size() < EFFECT_KEYS.size()
+		if want_effect:
+			var eff := _pick_effect(used_effects)
+			used_effects.append(eff)
+			affixes.append({"effect": eff, "power": _roll_effect_power(eff, tier)})
+		else:
+			affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
 	return {"kind": "gear", "base": base, "slot": ITEMS[base].get("slot", "Trinket"), "rarity": rarity, "affixes": affixes}
+
+# Pick an effect not already on this item (no double "Burning"); falls back if all are used.
+func _pick_effect(used: Array) -> String:
+	var pool := EFFECT_KEYS.filter(func(e): return e not in used)
+	return pool.pick_random() if not pool.is_empty() else EFFECT_KEYS.pick_random()
+
+# Per-effect magnitude, scaled by box tier — the `power` stored on the affix. Tuned so even a
+# tier-0 Rare is noticeable and Celestial rolls bite hard. snappedf keeps the numbers readable.
+func _roll_effect_power(effect: String, tier: int) -> float:
+	match effect:
+		"burn":  return snappedf(0.25 + 0.10 * tier + randf() * 0.30, 0.05)   # DoT hearts/sec
+		"leech": return snappedf(0.05 + 0.01 * tier + randf() * 0.04, 0.01)   # fraction of hit healed
+		"crit":  return snappedf(0.05 + 0.015 * tier + randf() * 0.05, 0.01)  # crit chance
+		"chill": return snappedf(0.20 + 0.03 * tier + randf() * 0.15, 0.05)   # enemy slow fraction
+		"chain": return snappedf(0.30 + 0.05 * tier + randf() * 0.20, 0.05)   # splash fraction
+	# A key in EFFECT_KEYS with no power branch would roll 0.0 silently — loud-fail in debug instead.
+	# Adding an effect means wiring it BOTH here AND in CombatEffects (resolve/apply).
+	assert(false, "LootData: no _roll_effect_power branch for effect '%s'" % effect)
+	return 0.0
+
+# Sum every equipped item's effect-affixes into {effect: total_power}. CombatEffects reads this on
+# each weapon hit — effect-affixes from ANY slot count, so a Ring of Leeching feeds your sword swings.
+func combat_effects(equipped: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for key in equipped:
+		var inst = equipped[key]
+		if typeof(inst) != TYPE_DICTIONARY:
+			continue
+		for af in inst.get("affixes", []):
+			if af.has("effect"):
+				var e := String(af["effect"])
+				out[e] = float(out.get(e, 0.0)) + float(af["power"])
+	return out
 
 func _pick_base(tier: int, stats: Dictionary) -> String:
 	var top := _top_stat(stats)
@@ -194,13 +254,28 @@ func instance_bonus(inst: Dictionary) -> Dictionary:
 	for s in ITEMS.get(inst.get("base", ""), {}).get("tags", []):
 		out[s] = int(out.get(s, 0)) + BASE_BONUS_PER_TAG
 	for af in inst.get("affixes", []):
-		out[af["stat"]] = int(out.get(af["stat"], 0)) + int(af["amount"])
+		if af.has("stat"):   # effect-affixes carry no stat — skip them here (see combat_effects)
+			out[af["stat"]] = int(out.get(af["stat"], 0)) + int(af["amount"])
 	return out
 
+# Effect-affixes prefix the base name with their adjective ("Savage War Hammer", "Burning Ring").
+# The FIRST effect wins the prefix (an item with two effects still reads as one flavourful name).
 func instance_name(inst: Dictionary) -> String:
-	return item_name(inst.get("base", ""))
+	var base_name := item_name(inst.get("base", ""))
+	for af in inst.get("affixes", []):
+		if af.has("effect"):
+			return "%s %s" % [EFFECT_AFFIXES[String(af["effect"])]["adj"], base_name]
+	return base_name
 
-# "melee 1.7 dmg · +4 STR, +2 INT"  (weapon line first if it's a weapon)
+# One affix's combat-effect readout: "Burn 1.2/s", "Leech 9%", "Crit 11%", "Chill 35%", "Chain 45%".
+func effect_label(af: Dictionary) -> String:
+	var e := String(af.get("effect", ""))
+	var p := float(af.get("power", 0.0))
+	if e == "burn":
+		return "Burn %.1f/s" % p
+	return "%s %d%%" % [EFFECT_AFFIXES.get(e, {}).get("label", e), roundi(p * 100.0)]
+
+# "melee 1.7 dmg · +4 STR, +2 INT · Crit 11% · Leech 9%"  (weapon line first, effects last)
 func instance_desc(inst: Dictionary) -> String:
 	var parts: PackedStringArray = []
 	var base := String(inst.get("base", ""))
@@ -210,4 +285,7 @@ func instance_desc(inst: Dictionary) -> String:
 	var b := instance_bonus(inst)
 	for s in b:
 		parts.append("+%d %s" % [int(b[s]), s])
+	for af in inst.get("affixes", []):
+		if af.has("effect"):
+			parts.append(effect_label(af))
 	return " · ".join(parts)

@@ -34,6 +34,7 @@ var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph
 var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
 var _stun_tw: Tween             # active stun-flash tween, killed before re-stunning
+var speed_mult: float = 1.0     # chase-speed multiplier; a Chill status (StatusEffect) drops it <1
 var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
@@ -196,7 +197,7 @@ func _handle_chase(delta: float) -> void:
 			# leave them stuck out of range.
 			dir = target.global_position - global_position
 		if dir.length() > 1.0:
-			move_comp.handle_movement(delta, dir.normalized(), move_speed)
+			move_comp.handle_movement(delta, dir.normalized(), move_speed * speed_mult)
 
 func _change_state(new_state: State) -> void:
 	current_state = new_state

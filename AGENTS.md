@@ -55,8 +55,10 @@ Autoloads (registered in `game-client/project.godot`, load order matters):
 
 ## Current state (what exists)
 **Implemented (GDScript):** all 6 autoloads/data scripts; components Health, Hitbox,
-Movement, Protection, Mana, AI; `LevelGenerator.gd`; `entities/player/Player.gd`;
-`project.godot` with autoloads + twin-stick input map.
+Movement, Protection, Mana, AI, Aura, MeleeSwing, StatusEffect, CombatEffects;
+`LevelGenerator.gd`; `entities/player/Player.gd`; `project.godot` with autoloads +
+twin-stick input map. Loot is rolled into instances (base + rarity + affixes); Rare+ gear
+rolls EFFECT-affixes (Burn/Leech/Crit/Chill/Chain) that proc on weapon hits via `CombatEffects`.
 **Runnable game (`Floor.tscn` = main scene):** `LevelGenerator` builds an **Open Floor** —
 a Random Walk grid of parametric `Room`s (walls + door-gaps built in code via `Room.gd`),
 doors opened between neighbours, enemies + Phase-Doors scattered, and a sub-dimensional
