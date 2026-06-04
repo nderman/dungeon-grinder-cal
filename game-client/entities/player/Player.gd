@@ -31,9 +31,8 @@ var _can_fire: bool = true
 var _can_melee: bool = true
 # Coefficients are on the DCC stat scale (start ~4-7): chosen so a starting build's outputs match
 # the old base-10 balance, but each point now matters ~2.5× more and stats climb to 100+.
-const MELEE_DMG_PER_STR := 0.107    # STR 7 → ×1.75 melee (held from the old STR 15 ×1.75)
-const MELEE_KNOCK_PER_STR := 8.0    # +8px knockback per STR (was 4 at the old scale)
-const RANGED_DMG_PER_INT := 0.125   # INT 4 → ×1.5 ranged (held from old INT 10 ×1.5)
+# Weapon damage scaling lives in LootData (single source, shared with the inventory's DPS readout):
+# LootData.MELEE_DMG_PER_STR / RANGED_DMG_PER_INT / MELEE_KNOCK_PER_STR.
 const SPREAD_PER_DEX := 1.1         # DEX tightens the weapon's base spread (DEX ~8 ≈ old DEX 10)
 const DASH_IFRAME_PER_DEX := 0.025  # +0.1s i-frames at DEX 4
 const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the MeleeSwing VFX)
@@ -105,10 +104,13 @@ func _derive_vitals(full: bool) -> void:
 	else:
 		health_comp.set_max_hearts(con * 10)
 		mana_comp.set_max_mana(intel)
+	# Defensive effect-affixes (armor/regen/dodge from Rare+ gear) stack on top of the CON/DEX base.
+	var def := LootData.defensive_effects(GameManager.equipped)
 	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
-	health_comp.regen_rate = con * HealthComponent.REGEN_PER_CON   # CON → passive HP regen
+	protection_comp.gear_dr = float(def.get("armor", 0.0))   # flat DR% from "Plated" gear
+	health_comp.regen_rate = con * HealthComponent.REGEN_PER_CON + float(def.get("regen", 0.0))
 	var dex := int(current_stats["DEX"])
-	protection_comp.dodge_chance = minf(ProtectionComponent.DODGE_CAP, dex * ProtectionComponent.DODGE_PER_DEX)
+	protection_comp.dodge_chance = minf(ProtectionComponent.DODGE_CAP, dex * ProtectionComponent.DODGE_PER_DEX + float(def.get("dodge", 0.0)))
 	base_speed = 300.0 + (dex * 12.5)
 
 func _physics_process(delta: float) -> void:
@@ -282,7 +284,7 @@ func _attack_effects() -> Dictionary:
 func _fire(w: Dictionary) -> void:
 	_can_fire = false
 	var int_stat := int(current_stats["INT"])
-	var base_dmg: float = float(w["damage"]) * (1.0 + int_stat * RANGED_DMG_PER_INT)
+	var base_dmg: float = float(w["damage"]) * (1.0 + int_stat * LootData.RANGED_DMG_PER_INT)
 	var fx := _attack_effects()
 	var res := CombatEffects.resolve_damage(base_dmg, fx)
 	var crit: bool = res[1]
@@ -316,8 +318,8 @@ func _melee_attack(w: Dictionary) -> void:
 
 func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array, effects: Dictionary) -> void:
 	var str_stat := int(current_stats["STR"])
-	var base_dmg := float(w["damage"]) * (1.0 + str_stat * MELEE_DMG_PER_STR)
-	var knock := float(w["knock"]) + str_stat * MELEE_KNOCK_PER_STR
+	var base_dmg := float(w["damage"]) * (1.0 + str_stat * LootData.MELEE_DMG_PER_STR)
+	var knock := float(w["knock"]) + str_stat * LootData.MELEE_KNOCK_PER_STR
 	var melee_range := float(w["range"])
 	var arc_half := deg_to_rad(float(w["arc"]) * 0.5)
 	for e in get_tree().get_nodes_in_group("enemies"):

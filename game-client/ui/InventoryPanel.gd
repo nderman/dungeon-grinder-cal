@@ -12,6 +12,7 @@ var _bag_grid: GridContainer
 var _stats_lbl: Label
 var _quick_lbl: Label
 var _detail: RichTextLabel
+var _eff: Dictionary = {}   # effective stats this refresh — feeds weapon effective-DPS in descs
 
 const NAME_FONT := 16
 const SMALL_FONT := 13
@@ -85,6 +86,7 @@ func _apply_size() -> void:
 	_scroll.custom_minimum_size.y = clampf(vh - 230.0, 220.0, 1000.0)
 
 func _refresh() -> void:
+	_eff = GameManager.get_effective_stats()   # shared by every card's effective-DPS readout
 	_clear(_equip_col)
 	_clear(_bag_grid)
 	for slot in LootData.SLOTS:
@@ -102,10 +104,9 @@ func _refresh() -> void:
 	_set_detail("")
 
 func _update_stats() -> void:
-	var eff := GameManager.get_effective_stats()
 	var parts: PackedStringArray = []
 	for s in LootData.STAT_KEYS:
-		parts.append("%s %d" % [s, int(eff.get(s, 0))])
+		parts.append("%s %d" % [s, int(_eff.get(s, 0))])
 	_stats_lbl.text = "Effective:  " + "    ".join(parts)
 
 func _update_quick() -> void:
@@ -142,7 +143,7 @@ func _equipped_card(slot: String) -> Control:
 	v.add_child(name_lbl)
 
 	var desc := Label.new()
-	desc.text = LootData.instance_desc(inst)
+	desc.text = LootData.instance_desc(inst, _eff)
 	desc.add_theme_font_size_override("font_size", SMALL_FONT)
 	desc.modulate = Color(0.8, 0.8, 0.85)
 	v.add_child(desc)
@@ -180,7 +181,7 @@ func _bag_card(inst: Dictionary) -> Control:
 	v.add_child(tag)
 
 	var bonus := Label.new()
-	bonus.text = LootData.instance_desc(inst)
+	bonus.text = LootData.instance_desc(inst, _eff)
 	bonus.add_theme_font_size_override("font_size", SMALL_FONT)
 	bonus.modulate = Color(0.82, 0.82, 0.88)
 	v.add_child(bonus)
@@ -215,12 +216,12 @@ func _card_panel(inst: Dictionary) -> PanelContainer:
 func _item_detail(inst: Dictionary) -> String:
 	return "[b]%s[/b]  (%s · %s)\n%s" % [
 		LootData.instance_name(inst), LootData.rarity_name(int(inst.get("rarity", 0))),
-		String(inst.get("slot", "")), LootData.instance_desc(inst)]
+		String(inst.get("slot", "")), LootData.instance_desc(inst, _eff)]
 
 # Shows where the item would equip and the per-stat delta vs the item it'd displace (or empty).
 func _compare_detail(inst: Dictionary) -> String:
 	var target := GameManager.resolve_equip_slot(inst)   # exactly where equip() would put it
-	var head := "[b]%s[/b]  %s" % [LootData.instance_name(inst), LootData.instance_desc(inst)]
+	var head := "[b]%s[/b]  %s" % [LootData.instance_name(inst), LootData.instance_desc(inst, _eff)]
 	if target == "":
 		return head
 

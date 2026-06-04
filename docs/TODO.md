@@ -20,14 +20,15 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   (`LootData.combat_effects`) and applied on every weapon hit (melee + ranged) via `CombatEffects`;
   timed statuses live in `StatusEffect` (burn ticks DoT, chill drops `AIComponent.speed_mult`). Item
   names get an adjective ("Savage War Hammer", "Burning Ring") and the inventory desc lists the
-  effects. Rare always gets ≥1 effect; Epic/Legendary stack more. Still TODO / deferred:
-  - effect-affixes are **gear-wide but only proc on WEAPON hits** — spells (Fireball etc.) don't
-    carry them yet. Decide if leech/crit should feed spell casts too.
-  - **defensive** effect-affixes for armour slots (thorns, on-hit regen, block) — currently all 5
-    effects are offensive, so a Rare helmet's effect is a bit odd flavour-wise (works, just funny).
-  - weapons rolling **damage/range modifiers** (not just stat tags); **proc-on-kill** mini-explosion
-    (reuse Bomb); knockback / move-speed / dodge effects.
-  - balance pass once playtested; pairs with the inventory effective-damage display.
+  effects. Rare always gets ≥1 effect; Epic/Legendary stack more.
+  - **DEFENSIVE affixes — DONE (2026-06-04).** Armour rolls **Armor** (flat DR%, finally wires the
+    dead `gear_dr`), **Regen** (bonus HP/s), **Dodge** (+% full-dodge); folded into vitals in
+    `_derive_vitals`. Slot routing: Weapon→offense, armour→defense, jewellery→either (`_effect_pool_for_slot`).
+  - **Inventory EFFECTIVE damage/DPS — DONE (2026-06-04).** Weapon cards show stat-scaled dmg + DPS
+    (`effective_weapon_damage`/`_dps`); dmg-scaling consts moved to LootData as single source.
+  - Still deferred: effects only proc on WEAPON hits, not spells (decide if leech/crit should feed
+    casts); **thorns** (needs attacker ref at the hit site); weapons rolling **damage/range modifiers**;
+    **proc-on-kill** mini-explosion (reuse Bomb); balance pass once playtested.
 
 - **Stun doesn't interrupt a committed enemy attack** — both the lunge loop and the new swing
   coroutine keep running through a `stun()` (short windows ~0.18s so low impact). If we want stun to
@@ -89,9 +90,9 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   want BOTH usable / switchable without the K-panel dance, (c) spells/skills slotted alongside items.
   Press the slot key to use/cast it. Keep the Abilities panel (K) for *learning/inspecting*; the
   hotbar is for *using*. *(2026-06-03)*
-- **INVENTORY: show EFFECTIVE weapon damage** — cards show base "melee 0.8 dmg", so you can't tell if
-  the Pipe Wrench or Bone Cleaver actually hits harder (STR scaling + affixes not reflected). Show the
-  computed per-hit / DPS a weapon would do with current stats, so comparisons are clear. *(2026-06-03)*
+- **INVENTORY: show EFFECTIVE weapon damage (DONE 2026-06-04)** — weapon cards now show stat-scaled
+  per-hit dmg + DPS (`effective_weapon_damage`/`effective_weapon_dps`), so Pipe Wrench vs Bone Cleaver
+  is a clear comparison. Scaling consts (MELEE_DMG_PER_STR etc.) moved Player→LootData (single source).
 
 - **EARLY-GAME VARIETY + BOSS-NAV + UNBLOCKS (done 2026-06-03)** —
   - **Boss stuck — real cause fixed**: boss navmesh clearance was 40px but the Floor Boss body is

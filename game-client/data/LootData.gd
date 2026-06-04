@@ -24,22 +24,44 @@ const SLOT_ACCEPTS := {"Ring 2": "Ring"}
 const STAT_KEYS := ["STR", "DEX", "INT", "CON", "CHA"]
 const BASE_BONUS_PER_TAG := 2   # a gear item's flat bonus to each of its tagged stats
 
+# Weapon damage scaling (single source of truth — Player reads these). Melee scales with STR, ranged
+# with INT; knockback scales with STR. Used both in combat AND for the inventory's effective-DPS.
+const MELEE_DMG_PER_STR := 0.107    # STR 7 → ×1.75 melee
+const RANGED_DMG_PER_INT := 0.125   # INT 4 → ×1.5 ranged
+const MELEE_KNOCK_PER_STR := 8.0    # +8px knockback per STR
+
 # --- Effect-affixes: the "interesting" rolls that only appear on Rare+ gear ---------------------
-# Beyond flat stat bonuses, Rare+ items roll EFFECT affixes that change how you FIGHT. They're
-# summed across all equipped gear (combat_effects) and applied on every weapon hit by CombatEffects.
-#   burn  power = DoT hearts/sec (burns for a few seconds)   leech power = fraction of the hit healed
-#   crit  power = chance of a doubled hit                     chill power = enemy slow fraction
-#   chain power = fraction of the hit arced to a 2nd enemy
-# `adj` prefixes the item name ("Savage War Hammer") so loot READS exciting at a glance.
+# Beyond flat stat bonuses, Rare+ items roll EFFECT affixes. OFFENSE effects proc on your weapon
+# hits (CombatEffects); DEFENSE effects passively buff you (folded into vitals in _derive_vitals).
+#   burn  = DoT hearts/sec      leech = fraction of hit healed   crit = chance to double a hit
+#   chill = enemy slow fraction chain = fraction arced to a 2nd enemy
+#   armor = flat DR%            regen = bonus HP/sec             dodge = +% full-dodge chance
+# `adj` prefixes the item name ("Savage War Hammer", "Plated Helm") so loot READS at a glance.
+# `adj` = name prefix, `label` = inventory readout. Whether an effect is offense or defense is the
+# single source OFFENSE_EFFECTS / DEFENSE_EFFECTS below (routing + aggregation read those arrays).
 const EFFECT_AFFIXES := {
 	"burn":  {"adj": "Burning",  "label": "Burn"},
 	"leech": {"adj": "Leeching", "label": "Leech"},
 	"crit":  {"adj": "Savage",   "label": "Crit"},
 	"chill": {"adj": "Chilling", "label": "Chill"},
 	"chain": {"adj": "Shocking", "label": "Chain"},
+	"armor": {"adj": "Plated",   "label": "Armor"},
+	"regen": {"adj": "Mending",  "label": "Regen"},
+	"dodge": {"adj": "Nimble",   "label": "Dodge"},
 }
-const EFFECT_KEYS := ["burn", "leech", "crit", "chill", "chain"]
+const OFFENSE_EFFECTS := ["burn", "leech", "crit", "chill", "chain"]  # proc on your weapon hits
+const DEFENSE_EFFECTS := ["armor", "regen", "dodge"]                  # passive buffs to you
 const EFFECT_MIN_RARITY := 2   # Rare (index 2) and above start rolling effect-affixes
+# Which effects a slot may roll: the Weapon does damage (OFFENSE), armour protects (DEFENSE), and
+# jewellery has no inherent armour value so it rolls EITHER — a Rare ring can be fiery OR protective.
+const ARMOUR_SLOTS := ["Head", "Chest", "Legs", "Hands"]
+
+func _effect_pool_for_slot(slot: String) -> Array:
+	if slot == "Weapon":
+		return OFFENSE_EFFECTS
+	if slot in ARMOUR_SLOTS:
+		return DEFENSE_EFFECTS
+	return OFFENSE_EFFECTS + DEFENSE_EFFECTS   # Amulet / Ring / Trinket
 
 # Which item `slot` type fits in this equip-slot key (e.g. "Ring 2" accepts a "Ring").
 func slot_accepts(slot_key: String) -> String:
@@ -164,28 +186,31 @@ func roll(tier: int, stats: Dictionary) -> Dictionary:
 	if is_consumable(base):
 		return {"kind": "consumable", "base": base, "tier": tier}
 	var rarity := _roll_rarity(tier)
+	var slot := String(ITEMS[base].get("slot", "Trinket"))
+	var pool := _effect_pool_for_slot(slot)   # which effects THIS slot may roll (offense/defense)
 	var affixes := []
 	var used_effects: Array[String] = []
 	for i in range(rarity):
 		# Rare+ turns affix slots into EFFECT rolls — the first slot always, the rest 50/50 with a
 		# stat roll. So a Rare item ALWAYS does something interesting, and Epics/Legendaries stack
 		# more tricks. Lower rarities stay pure stat-stick (unchanged).
-		var want_effect := rarity >= EFFECT_MIN_RARITY and (i == 0 or randf() < 0.5) and used_effects.size() < EFFECT_KEYS.size()
+		var want_effect := rarity >= EFFECT_MIN_RARITY and (i == 0 or randf() < 0.5) and used_effects.size() < pool.size()
 		if want_effect:
-			var eff := _pick_effect(used_effects)
+			var eff := _pick_effect(used_effects, pool)
 			used_effects.append(eff)
 			affixes.append({"effect": eff, "power": _roll_effect_power(eff, tier)})
 		else:
 			affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
-	return {"kind": "gear", "base": base, "slot": ITEMS[base].get("slot", "Trinket"), "rarity": rarity, "affixes": affixes}
+	return {"kind": "gear", "base": base, "slot": slot, "rarity": rarity, "affixes": affixes}
 
-# Pick an effect not already on this item (no double "Burning"); falls back if all are used.
-func _pick_effect(used: Array) -> String:
-	var pool := EFFECT_KEYS.filter(func(e): return e not in used)
-	return pool.pick_random() if not pool.is_empty() else EFFECT_KEYS.pick_random()
+# Pick an effect from this slot's pool, avoiding duplicates already on the item; falls back if all used.
+func _pick_effect(used: Array, pool: Array) -> String:
+	var avail := pool.filter(func(e): return e not in used)
+	return avail.pick_random() if not avail.is_empty() else pool.pick_random()
 
-# Per-effect magnitude, scaled by box tier — the `power` stored on the affix. Tuned so even a
-# tier-0 Rare is noticeable and Celestial rolls bite hard. snappedf keeps the numbers readable.
+# Per-effect magnitude, scaled by box tier — the `power` stored on the affix. Offense effects are
+# FRACTIONS (crit 0.11 = 11%, burn 1.2 = hearts/sec); defense effects are percentage-POINTS for DR/
+# dodge (armor 6.0 = +6% DR) or HP/sec (regen). snappedf keeps the numbers readable.
 func _roll_effect_power(effect: String, tier: int) -> float:
 	match effect:
 		"burn":  return snappedf(0.25 + 0.10 * tier + randf() * 0.30, 0.05)   # DoT hearts/sec
@@ -193,21 +218,32 @@ func _roll_effect_power(effect: String, tier: int) -> float:
 		"crit":  return snappedf(0.05 + 0.015 * tier + randf() * 0.05, 0.01)  # crit chance
 		"chill": return snappedf(0.20 + 0.03 * tier + randf() * 0.15, 0.05)   # enemy slow fraction
 		"chain": return snappedf(0.30 + 0.05 * tier + randf() * 0.20, 0.05)   # splash fraction
-	# A key in EFFECT_KEYS with no power branch would roll 0.0 silently — loud-fail in debug instead.
-	# Adding an effect means wiring it BOTH here AND in CombatEffects (resolve/apply).
+		"armor": return snappedf(3.0 + 1.5 * tier + randf() * 4.0, 1.0)       # flat DR % (whole points)
+		"regen": return snappedf(0.5 + 0.3 * tier + randf() * 1.0, 0.1)       # bonus HP/sec
+		"dodge": return snappedf(2.0 + 0.5 * tier + randf() * 3.0, 1.0)       # +% full-dodge (whole)
+	# A listed effect with no power branch would roll 0.0 silently — loud-fail in debug instead.
+	# Adding an effect means wiring it here AND in CombatEffects (offense) or _derive_vitals (defense).
 	assert(false, "LootData: no _roll_effect_power branch for effect '%s'" % effect)
 	return 0.0
 
-# Sum every equipped item's effect-affixes into {effect: total_power}. CombatEffects reads this on
-# each weapon hit — effect-affixes from ANY slot count, so a Ring of Leeching feeds your sword swings.
+# Sum equipped OFFENSE effect-affixes into {effect: total_power}. CombatEffects reads this on each
+# weapon hit — effects from ANY slot count, so a Ring of Leeching feeds your sword swings.
 func combat_effects(equipped: Dictionary) -> Dictionary:
+	return _sum_effects(equipped, OFFENSE_EFFECTS)
+
+# Sum equipped DEFENSE effect-affixes into {armor, regen, dodge}. Player._derive_vitals folds these
+# into DR / regen / dodge each time gear changes.
+func defensive_effects(equipped: Dictionary) -> Dictionary:
+	return _sum_effects(equipped, DEFENSE_EFFECTS)
+
+func _sum_effects(equipped: Dictionary, keys: Array) -> Dictionary:
 	var out: Dictionary = {}
 	for key in equipped:
 		var inst = equipped[key]
 		if typeof(inst) != TYPE_DICTIONARY:
 			continue
 		for af in inst.get("affixes", []):
-			if af.has("effect"):
+			if af.has("effect") and String(af["effect"]) in keys:
 				var e := String(af["effect"])
 				out[e] = float(out.get(e, 0.0)) + float(af["power"])
 	return out
@@ -267,21 +303,40 @@ func instance_name(inst: Dictionary) -> String:
 			return "%s %s" % [EFFECT_AFFIXES[String(af["effect"])]["adj"], base_name]
 	return base_name
 
-# One affix's combat-effect readout: "Burn 1.2/s", "Leech 9%", "Crit 11%", "Chill 35%", "Chain 45%".
+# One affix's readout. Rate effects show "/s" (Burn 1.2/s, Regen 1.5/s); DR/dodge are already in
+# percent-points (Armor 6%, Dodge 4%); fraction effects scale to % (Crit 11%, Leech 9%, Chill 35%).
 func effect_label(af: Dictionary) -> String:
 	var e := String(af.get("effect", ""))
 	var p := float(af.get("power", 0.0))
-	if e == "burn":
-		return "Burn %.1f/s" % p
-	return "%s %d%%" % [EFFECT_AFFIXES.get(e, {}).get("label", e), roundi(p * 100.0)]
+	var lbl := String(EFFECT_AFFIXES.get(e, {}).get("label", e))
+	match e:
+		"burn", "regen": return "%s %.1f/s" % [lbl, p]
+		"armor", "dodge": return "%s %d%%" % [lbl, roundi(p)]
+		_: return "%s %d%%" % [lbl, roundi(p * 100.0)]
 
-# "melee 1.7 dmg · +4 STR, +2 INT · Crit 11% · Leech 9%"  (weapon line first, effects last)
-func instance_desc(inst: Dictionary) -> String:
+# Effective per-hit damage of a weapon for a wielder's stats (melee scales STR, ranged INT).
+func effective_weapon_damage(base: String, stats: Dictionary) -> float:
+	var w := weapon_stats(base)
+	if String(w.get("type", "melee")) == "ranged":
+		return float(w["damage"]) * (1.0 + int(stats.get("INT", 0)) * RANGED_DMG_PER_INT)
+	return float(w["damage"]) * (1.0 + int(stats.get("STR", 0)) * MELEE_DMG_PER_STR)
+
+# Sustained DPS = effective per-hit ÷ cooldown — the true "which weapon hits harder" comparison.
+func effective_weapon_dps(base: String, stats: Dictionary) -> float:
+	var w := weapon_stats(base)
+	return effective_weapon_damage(base, stats) / maxf(0.05, float(w.get("cooldown", 0.5)))
+
+# "melee 2.4 dmg · 4.3 DPS · +4 STR · Crit 11%"  (weapon line first, effects last). Passing `stats`
+# shows STAT-SCALED effective damage + DPS so weapons are comparable; without it, the base number.
+func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 	var parts: PackedStringArray = []
 	var base := String(inst.get("base", ""))
 	if ITEMS.get(base, {}).has("weapon"):
 		var w: Dictionary = ITEMS[base]["weapon"]
-		parts.append("%s %.1f dmg" % [w["type"], w["damage"]])
+		if stats.is_empty():
+			parts.append("%s %.1f dmg" % [w["type"], w["damage"]])
+		else:
+			parts.append("%s %.1f dmg · %.1f DPS" % [w["type"], effective_weapon_damage(base, stats), effective_weapon_dps(base, stats)])
 	var b := instance_bonus(inst)
 	for s in b:
 		parts.append("+%d %s" % [int(b[s]), s])
