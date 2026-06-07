@@ -58,7 +58,10 @@ Autoloads (registered in `game-client/project.godot`, load order matters):
 Movement, Protection, Mana, AI, Aura, MeleeSwing, StatusEffect, CombatEffects;
 `LevelGenerator.gd`; `entities/player/Player.gd`; `project.godot` with autoloads +
 twin-stick input map. Loot is rolled into instances (base + rarity + affixes); Rare+ gear
-rolls EFFECT-affixes (Burn/Leech/Crit/Chill/Chain) that proc on weapon hits via `CombatEffects`.
+rolls EFFECT-affixes (Burn/Leech/Crit/Chill/Chain offensive, Armor/Regen/Dodge defensive) that
+proc on weapon hits via `CombatEffects`. Enemies: Goblin/Brute/Screamer/Sniper + Cleric/Healer
+elites. Boss rooms roll a **roster** (`_pick_boss_scene`): Golem (slam+swing), Hexgun (radial
+volleys), Showrunner (summons adds + ranged) — each a thin entity script on the shared components.
 **Runnable game (`Floor.tscn` = main scene):** `LevelGenerator` builds an **Open Floor** —
 a Random Walk grid of parametric `Room`s (walls + door-gaps built in code via `Room.gd`),
 doors opened between neighbours, enemies + Phase-Doors scattered, and a sub-dimensional
@@ -68,9 +71,8 @@ warps you back via `GameManager.last_safe_room_entrance_pos`). `CombatHUD` shows
 hype/ratings; death → placeholder Green Room. `Main.tscn` is kept as a single-room combat
 test bench.
 **Not yet built (next work):**
-- Real **boss** (Meat-Grinder Golem) in place of the placeholder goblin in the boss room;
-  weighted enemy spawns (Sniper, Shield-Bot per the GDD table); `SafeRoom` stat/loot
-  terminals; floor→floor progression via an exit room; art (everything is gray-box squares).
+- **Endgame**: a bounded run to a final floor + win state (currently descends forever); more
+  achievement variety; **art** (everything is still gray-box `Polygon2D`). See `docs/TODO.md`.
 - Scripts still to draft: `InputComponent` (optional — Player handles input inline now),
   `SafeRoomTerminal.gd`, `LootBoxTerminal.gd`, `SponsorDropPod.gd`, `GreenRoomUI.gd`,
   `CastingCouchUI.gd`, `FeedbackManager.gd` (the SignalBus listener that plays VFX/SFX),

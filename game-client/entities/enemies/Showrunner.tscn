@@ -1,0 +1,49 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://entities/enemies/Showrunner.gd" id="1_show"]
+[ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
+[ext_resource type="Script" path="res://components/MovementComponent.gd" id="3_move"]
+[ext_resource type="Script" path="res://components/AIComponent.gd" id="4_ai"]
+[ext_resource type="Script" path="res://components/HealthBar.gd" id="5_hb"]
+[ext_resource type="PackedScene" path="res://entities/enemies/GlitchGoblin.tscn" id="6_gob"]
+[ext_resource type="PackedScene" path="res://entities/enemies/Screamer.tscn" id="7_scream"]
+[ext_resource type="PackedScene" path="res://entities/projectiles/GlitchBolt.tscn" id="8_bolt"]
+
+[sub_resource type="CircleShape2D" id="cs_show"]
+radius = 30.0
+
+[node name="Showrunner" type="CharacterBody2D" groups=["enemies"]]
+script = ExtResource("1_show")
+add_scenes = Array[PackedScene]([ExtResource("6_gob"), ExtResource("7_scream")])
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.6, 0.3, 0.82, 1)
+polygon = PackedVector2Array(0, -30, 29, -9, 18, 24, -18, 24, -29, -9)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("cs_show")
+
+[node name="HealthComponent" type="Node2D" parent="."]
+script = ExtResource("2_health")
+configured_hearts = 14.0
+xp_reward = 140
+
+[node name="MovementComponent" type="Node2D" parent="."]
+script = ExtResource("3_move")
+
+[node name="AIComponent" type="Node2D" parent="."]
+script = ExtResource("4_ai")
+detection_range = 720.0
+attack_range = 330.0
+telegraph_duration = 0.85
+attack_cooldown = 1.7
+damage_hearts = 30.0
+move_speed = 120.0
+lunge = false
+ranged = true
+projectile_scene = ExtResource("8_bolt")
+
+[node name="HealthBar" type="Node2D" parent="."]
+script = ExtResource("5_hb")
+width = 70.0
+y_offset = -44.0

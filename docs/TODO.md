@@ -8,6 +8,30 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **Boss enrage/defeat boilerplate is 3x now** — Golem/Hexgun/Showrunner each repeat the identical
+  `_on_health_changed` 50%-once-enrage gate + `_on_defeated` (FATALITY spike + toast). Fine at 3, but
+  before a 4th boss lands, extract a small **`BossPhaseComponent`** (watches HealthComponent, emits an
+  `enraged` signal at a threshold + FATALITY on death) — a COMPONENT, not a base class (composition
+  mandate). Each boss script then just connects `enraged` to its own effect. *(2026-06-07, batch review)*
+- **MORE ACHIEVEMENT VARIETY — esp. ones that show off the new mechanics** — the system is ready:
+  define in `AchievementData.ACHIEVEMENTS` ({title, desc, tier, scope}) and trigger from
+  `AchievementManager` (it listens to SignalBus — `enemy_cancelled`, `ratings_spike` types, etc., →
+  `unlock(id)`). Cool ideas tied to what we just built:
+  - **"Pyromaniac"** — set an enemy on fire (hook `StatusEffect.apply(BURN)` / `CombatEffects` →
+    emit a new `enemy_ignited` signal or a `ratings_spike("IGNITE")`).
+  - **"Walked It Off"** — survived being set on fire (needs a fire SOURCE vs the player first — a
+    future fire-enemy, or reuse the potion-sickness DoT as the "burn"). Fire on player isn't a thing yet.
+  - **"Boom!"** — blew an enemy up (hook `Bomb._detonate` when it kills ≥1 enemy → spike/signal).
+  - Others: "Leech Lord" (heal X via Leech), "Chain Reaction" (chain-kill via the Chain affix),
+    "Untouchable Boss" (kill a boss without taking damage), "Glass Cannon" (clear a floor at <10% HP).
+  Pattern per achievement: pick/emit a SignalBus event at the mechanic site, map it in
+  `AchievementManager._on_spike` (or a new handler). *(2026-06-04)*
+
+- **MULTIPLE FINAL BOSSES for replayability** (lower priority — endgame isn't built yet) — once the
+  bounded-run/final-boss arc exists (see endgame TODO), have >1 climactic final boss rolled per run
+  (the Showrunner? the System? a celebrity guest?), each with its own arena + phases, so the ending
+  isn't identical every Season. Reuses the new boss-roster pattern (`_pick_boss_scene`), just gated
+  to the final floor with a dedicated final-boss pool. *(2026-06-04)*
 - **REFACTOR: extract `Combat.deal(victim, raw_dmg)` helper** — the "fetch HealthComponent, route
   through ProtectionComponent.handle_incoming_damage if present, take_damage" tail is copy-pasted in
   6 sites: `CombatEffects._chain`, `Player._ability_nova`, `Player._melee_tick`, `Bomb._detonate`,

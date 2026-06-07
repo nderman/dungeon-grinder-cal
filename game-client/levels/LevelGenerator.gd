@@ -17,7 +17,9 @@ extends Node2D
 @export var player_scene: PackedScene
 @export var safe_room_scene: PackedScene
 @export var phase_door_scene: PackedScene
-@export var boss_scene: PackedScene
+@export var boss_scene: PackedScene              # the DEFAULT boss (Golem) — also the roster fallback
+@export var boss_pool: Array[PackedScene] = []   # extra boss ARCHETYPES (Hexgun, Showrunner, …) — a
+                                                 # boss room rolls one at random so floors vary
 @export var neighborhood_bosses: int = 2         # DCC: a floor has several bosses, not one
 
 # World + BSP tuning. Bigger world + one more split depth = larger floors with more rooms
@@ -536,13 +538,27 @@ func _make_elite(e: Node, hc: Node, ai: Node) -> void:
 		ai.damage_hearts *= 1.35
 		ai.stun_resist = maxf(ai.stun_resist, 0.3)
 
+# Roll a boss archetype: the default boss_scene plus every entry in boss_pool, uniform. The tier
+# (Floor vs Neighborhood) scales HP/damage/size on top, so any archetype works at either rank.
+func _pick_boss_scene() -> PackedScene:
+	var roster: Array[PackedScene] = []
+	if boss_scene != null:
+		roster.append(boss_scene)
+	for s in boss_pool:
+		if s != null:
+			roster.append(s)
+	return roster.pick_random()
+
 func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	var room: Room = r["node"]
-	if boss_scene == null:
-		_spawn_enemy(room)
+	var scene := _pick_boss_scene()   # roll an archetype (Golem / Hexgun / Showrunner / …)
+	if scene == null:
+		_spawn_enemy(room)   # no boss configured (or an all-null pool) — fall back to a normal mob
 		return
 	var m := GameManager.floor_mult()   # deeper floors → tougher bosses
-	var b := boss_scene.instantiate()
+	# NOTE: tier damage is set here, but the boss's own _ready post-scales damage_hearts (e.g. Hexgun
+	# /Showrunner soften it for many projectiles). Keep this assignment BEFORE add_child(b).
+	var b := scene.instantiate()
 	var hc := b.get_node_or_null("HealthComponent")
 	if hc:
 		hc.configured_hearts = tier["hearts"] * m

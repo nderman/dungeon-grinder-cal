@@ -23,6 +23,11 @@ var current_state: State = State.IDLE
 @export var projectile_scene: PackedScene       # the bolt a ranged mob launches
 @export var swing: bool = false                 # melee mobs that SWING a weapon in a telegraphed arc
 @export var swing_arc: float = 100.0            # degrees of the swing cone (dodge by sidestepping it)
+@export var swing_chance: float = 0.5           # if a mob can BOTH swing and lunge, odds it SWINGS
+												# this attack (the rest are slams) — a varied boss
+@export var swing_telegraph_mult: float = 0.6   # swings wind up FASTER than the base telegraph: a
+												# swing locks its arc early, so a long tell = a free
+												# sidestep. Tighter window keeps swings threatening.
 @export var stun_resist: float = 0.0            # 0 = full stun; bosses set ~0.4-0.6 (chance to shrug + shorter)
 @export var chase_navmesh_only: bool = false    # bosses: path AROUND cover, never beeline — so cover lets
 												# you outmaneuver them (and they can't wedge charging through it)
@@ -32,6 +37,7 @@ var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
 var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph start (sidestep it)
 var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
+var _use_swing_this_attack: bool = false  # chosen at each telegraph: swing this hit, or slam (lunge)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
 var _stun_tw: Tween             # active stun-flash tween, killed before re-stunning
 var speed_mult: float = 1.0     # chase-speed multiplier; a Chill status (StatusEffect) drops it <1
@@ -77,6 +83,11 @@ func _has_los(t: Node2D) -> bool:
 
 func activate() -> void:
 	_active = true
+
+# Awake (chasing/attacking) vs dormant — bosses start dormant until the arena locks. Boss entity
+# scripts gate their special attacks (volleys, summons) on this so they don't fire while asleep.
+func is_active() -> bool:
+	return _active
 
 # Crowd control (Ground Slam etc.): freeze the mob's chase/attack drive for `seconds`. Stacks by
 # taking the later expiry, halts current movement, and flashes a cyan tell. stun_resist (bosses)
@@ -210,24 +221,30 @@ func _change_state(new_state: State) -> void:
 
 func _start_telegraph() -> void:
 	SignalBus.ratings_spike.emit("TELEGRAPH_START")
+	# Decide THIS attack: a mob that can BOTH swing and slam rolls one per wind-up (unpredictable —
+	# the slam tracks you, the swing locks an arc, so they want different dodges); a pure swinger
+	# always swings, a pure slammer never does.
+	_use_swing_this_attack = (randf() < swing_chance) if (swing and lunge) else swing
 	# Lock the swing direction NOW (at the wind-up) so a sidestep during the telegraph dodges it.
-	if swing and is_instance_valid(target):
+	if _use_swing_this_attack and is_instance_valid(target):
 		var to_t := target.global_position - global_position
 		if to_t.length() > 0.0:
 			_swing_aim = to_t.normalized()
+	# Swings get a tighter wind-up than slams (their locked arc is otherwise a free dodge).
+	var tele := telegraph_duration * (swing_telegraph_mult if _use_swing_this_attack else 1.0)
 	if parent:
 		parent.velocity = Vector2.ZERO
-		_flash_tell()   # very visible "about to hit you" cue on the mob itself
-	await get_tree().create_timer(telegraph_duration).timeout
+		_flash_tell(tele)   # very visible "about to hit you" cue on the mob itself
+	await get_tree().create_timer(tele).timeout
 	if parent: parent.modulate = Color.WHITE
 	_change_state(State.ATTACK)
 
 # Pulse the whole mob red for the telegraph window. (A dedicated visual component
 # could own this later; inline is fine for the bootstrap.)
-func _flash_tell() -> void:
+func _flash_tell(duration: float) -> void:
 	var tw := create_tween()
-	tw.tween_property(parent, "modulate", Color(1, 0.2, 0.2), telegraph_duration * 0.5)
-	tw.tween_property(parent, "modulate", Color(1, 0.5, 0.5), telegraph_duration * 0.5)
+	tw.tween_property(parent, "modulate", Color(1, 0.2, 0.2), duration * 0.5)
+	tw.tween_property(parent, "modulate", Color(1, 0.5, 0.5), duration * 0.5)
 
 func _execute_attack() -> void:
 	if ranged:
@@ -238,7 +255,7 @@ func _execute_attack() -> void:
 		elif is_instance_valid(parent):
 			_change_state(State.CHASE)   # regain line-of-sight before trying again
 			return
-	elif swing and is_instance_valid(parent) and is_instance_valid(target):
+	elif _use_swing_this_attack and is_instance_valid(parent) and is_instance_valid(target):
 		await _do_swing()
 	elif lunge and is_instance_valid(parent) and is_instance_valid(target):
 		# Commit a forward lunge toward the target — this is what makes the hit land
