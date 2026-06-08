@@ -8,24 +8,37 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ENEMY/BOSS ATTACKS SHOULD USE THE EFFECTS (fire/ice/etc.)** — `StatusEffect` (burn DoT, chill
+  slow) currently only flows player→enemy via `CombatEffects`. Let ENEMIES apply them back: a fire
+  mob/boss attack that puts a Burn on the player, an ice attack that Chills (slows) you, etc. Needs
+  `StatusEffect` to work on the player (burn ticks `apply_dot`, chill would need a player move-speed
+  hook — player speed is `base_speed`, not `AIComponent.speed_mult`). Wire via the enemy hit sites
+  (`AIComponent._hit_target`, `HitboxComponent`, projectile on-hit). Bonus: unlocks the deferred
+  **"Stop, Drop & Roll"** achievement (get set on fire) and makes the Hexgun/boss attacks scarier.
+  Could be an `@export` on AIComponent (e.g. `on_hit_effect: "burn"/"chill"`) so any mob opts in.
+  **Opens up RESISTANCE gear** — once enemies deal typed (fire/ice/…) damage, add defensive
+  effect-affixes like Fire Resist / Frost Resist (mitigate or shorten that status), a natural
+  extension of the armor/regen/dodge defensive line in `LootData`. Build the enemy-effects first,
+  then resistances have something to resist. *(2026-06-08)*
 - **Boss enrage/defeat boilerplate is 3x now** — Golem/Hexgun/Showrunner each repeat the identical
   `_on_health_changed` 50%-once-enrage gate + `_on_defeated` (FATALITY spike + toast). Fine at 3, but
   before a 4th boss lands, extract a small **`BossPhaseComponent`** (watches HealthComponent, emits an
   `enraged` signal at a threshold + FATALITY on death) — a COMPONENT, not a base class (composition
   mandate). Each boss script then just connects `enraged` to its own effect. *(2026-06-07, batch review)*
-- **MORE ACHIEVEMENT VARIETY — esp. ones that show off the new mechanics** — the system is ready:
-  define in `AchievementData.ACHIEVEMENTS` ({title, desc, tier, scope}) and trigger from
-  `AchievementManager` (it listens to SignalBus — `enemy_cancelled`, `ratings_spike` types, etc., →
-  `unlock(id)`). Cool ideas tied to what we just built:
-  - **"Pyromaniac"** — set an enemy on fire (hook `StatusEffect.apply(BURN)` / `CombatEffects` →
-    emit a new `enemy_ignited` signal or a `ratings_spike("IGNITE")`).
-  - **"Walked It Off"** — survived being set on fire (needs a fire SOURCE vs the player first — a
-    future fire-enemy, or reuse the potion-sickness DoT as the "burn"). Fire on player isn't a thing yet.
-  - **"Boom!"** — blew an enemy up (hook `Bomb._detonate` when it kills ≥1 enemy → spike/signal).
-  - Others: "Leech Lord" (heal X via Leech), "Chain Reaction" (chain-kill via the Chain affix),
-    "Untouchable Boss" (kill a boss without taking damage), "Glass Cannon" (clear a floor at <10% HP).
-  Pattern per achievement: pick/emit a SignalBus event at the mechanic site, map it in
-  `AchievementManager._on_spike` (or a new handler). *(2026-06-04)*
+- **ACHIEVEMENT VARIETY — batch 1 DONE (2026-06-08).** Pattern: emit a `ratings_spike` type at the
+  mechanic site, map it in `AchievementManager`. Shipped 11: Pyromaniac (IGNITE), Michael Bay Approved
+  (BOOM), Chain Reaction (CHAIN_KILL), Grave Robber, Tapped Out (`mana_depleted`), Cancelled
+  (`end_run`'s CANCELLED), + 5 stat milestones at 20 (STR title is race-adaptive via `title_override`).
+  - **Batch 2 (the 🔧 ones that need new plumbing):**
+    - **"Knife to a Gun Fight"** — melee-kill a RANGED enemy. Needs kill context: thread killer-weapon
+      type + victim archetype through the kill (`enemy_cancelled` carries neither today).
+    - **Boss trophies** — per-boss defeat (Golem/Hexgun/Showrunner): give each `_on_defeated` its own
+      spike type, or a `boss_defeated(id)` signal.
+    - **"Flawless Victory"** — kill a boss taking zero damage (track player hits during the locked arena).
+    - **"Stop, Drop & Roll"** — get set on fire (needs a fire source vs the PLAYER — a fire-enemy/hazard).
+    - **"Leech Lord"** — heal a cumulative threshold via Leech (needs a per-run counter, reset on `run_started`).
+  - Optional polish: give the spectacle spikes (IGNITE/BOOM/…) a small `SPIKE_TABLE` audience ratings
+    pop — currently trigger-only (the achievement toast is the only feedback). On-theme for the show.
 
 - **MULTIPLE FINAL BOSSES for replayability** (lower priority — endgame isn't built yet) — once the
   bounded-run/final-boss arc exists (see endgame TODO), have >1 climactic final boss rolled per run

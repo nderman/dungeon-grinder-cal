@@ -37,6 +37,8 @@ static func apply(victim: Node, k: String, power: float, seconds: float) -> void
 	s._remaining = seconds
 	s.name = "Status_" + k
 	victim.add_child(s)
+	if k == BURN:
+		SignalBus.ratings_spike.emit("IGNITE")   # "Pyromaniac" — a FRESH burn (not a refresh)
 
 func _ready() -> void:
 	if kind == CHILL:

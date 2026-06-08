@@ -11,6 +11,8 @@ func _ready() -> void:
 	SignalBus.enemy_cancelled.connect(_on_enemy_cancelled)
 	SignalBus.ratings_spike.connect(_on_spike)
 	SignalBus.phasedoor_discovered.connect(_on_phasedoor)
+	SignalBus.mana_depleted.connect(func(): unlock("tapped_out"))   # cast on an empty tank
+	SignalBus.stat_injected.connect(_on_stat_injected)              # stat milestones (→ 20)
 	SignalBus.run_started.connect(func(): _run_unlocked.clear())
 
 func _on_enemy_cancelled(_loc: Vector2, _ratings: int) -> void:
@@ -26,15 +28,33 @@ func _on_spike(type: String) -> void:
 		"UNTOUCHABLE": unlock("untouchable")
 		"FATALITY": unlock("boss_slayer")
 		"CROWD_PLEASER": unlock("crowd_pleaser")
+		"IGNITE": unlock("pyromaniac")          # set an enemy on fire (Burn affix)
+		"BOOM": unlock("michael_bay")           # a Bomb blast killed an enemy
+		"CHAIN_KILL": unlock("chain_react")     # a Chain arc killed the second enemy
+		"GRAVE_ROBBER": unlock("grave_robber")  # walked over a corpse to loot it
+		"CANCELLED": unlock("cancelled")        # the player died (end_run already emits this)
+
+# Stat milestones: pumping a stat to 20 is a re-earnable per-run feat. The STR title adapts to your
+# Race — the System loves a "strongest [thing] that ever lived" gag (hi, Princess Donut).
+func _on_stat_injected(stat: String, value: int) -> void:
+	if stat not in LootData.STAT_KEYS or value < 20:
+		return   # "ITEM"/gear refreshes and sub-20 spends don't count
+	if stat == "STR":
+		unlock("stat_max_str", "Strongest %s That Ever Lived" % GameManager.current_race)
+	else:
+		unlock("stat_max_" + stat.to_lower())
 
 # Award an achievement + its Loot Box. Dedup depends on scope:
 #   run        → once per run (reset on run_started)
 #   lifetime   → once ever (persisted to disk)
 #   repeatable → always fires, but the BOX is floor-gated (see below)
-func unlock(id: String) -> void:
+# `title_override` lets a dynamic feat name itself at unlock time (e.g. the race-adaptive STR title);
+# empty = use the definition's static title.
+func unlock(id: String, title_override: String = "") -> void:
 	if not AchievementData.ACHIEVEMENTS.has(id):
 		return
 	var a: Dictionary = AchievementData.ACHIEVEMENTS[id]
+	var title: String = title_override if title_override != "" else String(a["title"])
 	match a.get("scope", "repeatable"):
 		"lifetime":
 			if id in MetaManager.unlocked_achievements:
@@ -51,11 +71,11 @@ func unlock(id: String) -> void:
 			# a small feat that paid a box up top earns only a heckle once you're deep. Real
 			# milestones (run/lifetime) are exempt: a first is always a first, at any depth.
 			if int(a["tier"]) < _min_rewarded_tier():
-				SignalBus.achievement_unlocked.emit("%s — %s" % [a["title"], _heckle()])
+				SignalBus.achievement_unlocked.emit("%s — %s" % [title, _heckle()])
 				return
 	GameManager.add_loot_box(int(a["tier"]))
 	# Name the box tier so the ticker tells you what you actually won.
-	SignalBus.achievement_unlocked.emit("%s — %s Box" % [a["title"], LootData.tier_name(int(a["tier"]))])
+	SignalBus.achievement_unlocked.emit("%s — %s Box" % [title, LootData.tier_name(int(a["tier"]))])
 
 # The System's boredom threshold: the lowest box tier it still bothers awarding for a *repeat*
 # feat at the current depth. Floors 1-3 reward everything (tutorial drip); it demands bigger feats

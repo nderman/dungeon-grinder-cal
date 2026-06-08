@@ -38,20 +38,28 @@ func _process(delta: float) -> void:
 
 func _detonate() -> void:
 	_exploding = true
+	var killed := false
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if e is Node2D and global_position.distance_to((e as Node2D).global_position) <= _radius:
-			_hit(e)
+			if _hit(e):
+				killed = true
 	if _friendly_fire:
 		var p := get_tree().get_first_node_in_group("player")
 		if p is Node2D and global_position.distance_to((p as Node2D).global_position) <= _radius:
 			_hit(p)
+	if killed:
+		SignalBus.ratings_spike.emit("BOOM")   # "Michael Bay Approved" — a blast that actually killed
 
-func _hit(n: Node) -> void:
+# Returns true if THIS blast killed the victim (lets _detonate award the explosion-kill feat). Guards
+# on was-alive so an already-dead enemy lingering in the group (freed next frame) isn't counted.
+func _hit(n: Node) -> bool:
 	var hc := n.get_node_or_null("HealthComponent") as HealthComponent
 	if hc == null:
-		return
+		return false
+	var was_alive := hc.current_hearts > 0.0
 	var prot := n.get_node_or_null("ProtectionComponent") as ProtectionComponent
 	hc.take_damage(prot.handle_incoming_damage(_damage) if prot else _damage)
+	return was_alive and hc.current_hearts <= 0.0
 
 func _draw() -> void:
 	if _exploding:

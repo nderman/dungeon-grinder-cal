@@ -26,6 +26,7 @@ func _on_body_entered(body: Node) -> void:
 	if _collected or not body.is_in_group("player"):
 		return
 	_collected = true
+	SignalBus.ratings_spike.emit("GRAVE_ROBBER")   # "Grave Robber" — looted the dead
 	if _gold > 0:
 		GameManager.add_gold(_gold)
 		SignalBus.toast.emit("+%d gold" % _gold, global_position)

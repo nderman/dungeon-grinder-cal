@@ -57,8 +57,11 @@ static func _chain(from: Node, dmg: float) -> void:
 	var hc := best.get_node_or_null("HealthComponent") as HealthComponent
 	if hc == null:
 		return
+	var was_alive := hc.current_hearts > 0.0   # so a corpse lingering in-group isn't counted as a kill
 	var prot := best.get_node_or_null("ProtectionComponent") as ProtectionComponent
 	hc.take_damage(prot.handle_incoming_damage(dmg) if prot else dmg)
+	if was_alive and hc.current_hearts <= 0.0:
+		SignalBus.ratings_spike.emit("CHAIN_KILL")   # "Chain Reaction" — the arc finished a 2nd enemy
 	_zap(from.get_tree(), origin, (best as Node2D).global_position)
 
 # A short-lived lightning streak between two points (art-free, frees itself).
