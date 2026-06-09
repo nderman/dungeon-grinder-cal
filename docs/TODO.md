@@ -8,6 +8,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **LOOT BOX OPENING PRESENTATION** — the tier+type system is built (Bronze→Celestial × gear/weapon/
+  armor/trinket/supply/fan/boss, per-tier rarity floors), but opening is still just a HUD ticker line
+  via `box_opened` (which currently has no real consumer beyond the ticker). Make it land: a proper
+  **box-opening screen/animation** in the Safe Room (boxes pop one at a time, low→high, with a reveal),
+  and **distinct box visuals per tier/type** (Bronze vs Celestial, a glowy Boss box, a Fan gift box).
+  `box_opened` already emits a rich label ("Gold Weapon Box") to drive it. *(2026-06-08)*
 - **ENEMY/BOSS ATTACKS SHOULD USE THE EFFECTS (fire/ice/etc.)** — `StatusEffect` (burn DoT, chill
   slow) currently only flows player→enemy via `CombatEffects`. Let ENEMIES apply them back: a fire
   mob/boss attack that puts a Burn on the player, an ice attack that Chills (slows) you, etc. Needs

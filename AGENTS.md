@@ -59,7 +59,9 @@ Movement, Protection, Mana, AI, Aura, MeleeSwing, StatusEffect, CombatEffects;
 `LevelGenerator.gd`; `entities/player/Player.gd`; `project.godot` with autoloads +
 twin-stick input map. Loot is rolled into instances (base + rarity + affixes); Rare+ gear
 rolls EFFECT-affixes (Burn/Leech/Crit/Chill/Chain offensive, Armor/Regen/Dodge defensive) that
-proc on weapon hits via `CombatEffects`. Enemies: Goblin/Brute/Screamer/Sniper + Cleric/Healer
+proc on weapon hits via `CombatEffects`. Loot boxes have a **tier** (Bronze→Celestial, per-tier
+rarity floor) AND a **type** (gear/weapon/armor/trinket/supply/fan/boss — constrains the roll pool);
+achievements grant a fitting box via `AchievementData` `box_type`, opened in a Safe Room. Enemies: Goblin/Brute/Screamer/Sniper + Cleric/Healer
 elites. Boss rooms roll a **roster** (`_pick_boss_scene`): Golem (slam+swing), Hexgun (radial
 volleys), Showrunner (summons adds + ranged) — each a thin entity script on the shared components.
 **Runnable game (`Floor.tscn` = main scene):** `LevelGenerator` builds an **Open Floor** —

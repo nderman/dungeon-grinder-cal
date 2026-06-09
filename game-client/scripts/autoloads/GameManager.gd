@@ -47,7 +47,7 @@ var current_floor: int = 1
 var run_ratings: int = 0
 var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Sponsor Pod
 var is_run_active: bool = false
-var earned_loot_boxes: Array = []     # {tier, source} flagged by the achievement system
+var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
 var run_kills: int = 0                                    # mobs cancelled this run
@@ -161,8 +161,9 @@ func descend() -> void:
 	get_tree().change_scene_to_file(FLOOR_PATH)
 
 # Queue a loot box (from an achievement) and ping the HUD so the player knows it's waiting.
-func add_loot_box(tier: int) -> void:
-	earned_loot_boxes.append(tier)
+# A box carries its tier (quality) AND type (which pool it rolls); opened together in a Safe Room.
+func add_loot_box(tier: int, box_type: String = "gear") -> void:
+	earned_loot_boxes.append({"tier": tier, "type": box_type})
 	loot_boxes_changed.emit(earned_loot_boxes.size())
 
 # Corpse loot: common-tier currency picked up off the floor. Spent at shops (future arc).

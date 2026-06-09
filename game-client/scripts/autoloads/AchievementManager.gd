@@ -73,9 +73,10 @@ func unlock(id: String, title_override: String = "") -> void:
 			if int(a["tier"]) < _min_rewarded_tier():
 				SignalBus.achievement_unlocked.emit("%s — %s" % [title, _heckle()])
 				return
-	GameManager.add_loot_box(int(a["tier"]))
-	# Name the box tier so the ticker tells you what you actually won.
-	SignalBus.achievement_unlocked.emit("%s — %s Box" % [title, LootData.tier_name(int(a["tier"]))])
+	var box_type := String(a.get("box_type", "gear"))
+	GameManager.add_loot_box(int(a["tier"]), box_type)
+	# Name the box tier + type so the ticker tells you what you actually won (e.g. "Gold Weapon Box").
+	SignalBus.achievement_unlocked.emit("%s — %s %s Box" % [title, LootData.tier_name(int(a["tier"])), LootData.box_type_name(box_type)])
 
 # The System's boredom threshold: the lowest box tier it still bothers awarding for a *repeat*
 # feat at the current depth. Floors 1-3 reward everything (tutorial drip); it demands bigger feats
@@ -105,15 +106,17 @@ func open_all_boxes(stats: Dictionary) -> void:
 	var boxes: Array = GameManager.earned_loot_boxes.duplicate()
 	GameManager.earned_loot_boxes.clear()
 	GameManager.loot_boxes_changed.emit(0)   # pending counter back to zero
-	boxes.sort()
-	for tier in boxes:
-		SignalBus.box_opened.emit(LootData.tier_name(int(tier)))
-		var inst := LootData.roll(int(tier), stats)
+	boxes.sort_custom(func(a, b): return int(a["tier"]) < int(b["tier"]))   # open low tier → high
+	for box in boxes:
+		var tier := int(box["tier"])
+		var btype := String(box.get("type", "gear"))
+		SignalBus.box_opened.emit("%s %s" % [LootData.tier_name(tier), LootData.box_type_name(btype)])
+		var inst := LootData.roll(tier, stats, btype)
 		if inst.is_empty():
 			continue
 		# Consumables stock the quick bar; gear becomes an instance (auto-equip empty slot, else bag).
 		if inst["kind"] == "consumable":
-			GameManager.add_consumable(String(inst["base"]), int(tier))
+			GameManager.add_consumable(String(inst["base"]), tier)
 			SignalBus.item_acquired.emit(LootData.item_name(inst["base"]))
 		else:
 			GameManager.add_loot_instance(inst)

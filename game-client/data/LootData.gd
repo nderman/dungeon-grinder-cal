@@ -9,6 +9,22 @@ extends Node
 enum Tier { BRONZE, SILVER, GOLD, PLATINUM, LEGENDARY, CELESTIAL }
 const TIER_NAMES := ["Bronze", "Silver", "Gold", "Platinum", "Legendary", "Celestial"]
 
+# Loot box TYPES — each constrains WHAT a box can roll; the tier sets quality on top (so a "Gold
+# Weapon Box" rolls only weapons, but good ones). DCC-flavoured: a Fan box is an audience gift (rolls
+# anything, gambles harder toward high rarity); a Boss box is premium gear off a felled boss (floors
+# one rarity higher). gear/weapon/armor/trinket/supply are the targeted categories.
+const BOX_TYPE_NAMES := {
+	"gear": "Gear", "weapon": "Weapon", "armor": "Armor", "trinket": "Trinket",
+	"supply": "Supply", "fan": "Fan", "boss": "Boss",
+}
+const TRINKET_SLOTS := ["Amulet", "Ring", "Trinket"]   # jewellery slots a Trinket box draws from
+# Per-tier MINIMUM rarity (the "epic feel" — a high-tier box can't roll a Common stat-stick). Index
+# = Tier. Combined with the existing tier+1 cap, this is the floor of the rarity roll.
+const TIER_RARITY_FLOOR := [0, 0, 1, 2, 3, 4]   # Bronze..Celestial
+
+func box_type_name(t: String) -> String:
+	return BOX_TYPE_NAMES.get(t, "Gear")
+
 # Item rarity (number of affixes = rarity index). Colour tints the inventory entry.
 const RARITY_NAMES := ["Common", "Uncommon", "Rare", "Epic", "Legendary"]
 const RARITY_COLORS := [
@@ -179,13 +195,17 @@ func is_potion(id: String) -> bool:
 # Roll an item for a box tier, weighted toward the crawler's build. Returns an INSTANCE dict:
 #   consumable → {kind:"consumable", base, tier}
 #   gear       → {kind:"gear", base, slot, rarity, affixes:[{stat,amount}…]}
-func roll(tier: int, stats: Dictionary) -> Dictionary:
-	var base := _pick_base(tier, stats)
+func roll(tier: int, stats: Dictionary, box_type: String = "gear") -> Dictionary:
+	var base := _pick_base(tier, stats, box_type)
+	# A targeted box can come up empty at a low tier (e.g. a Bronze Weapon box — all real weapons are
+	# min_tier 1+). Fall back to any gear so a box is never a dud.
+	if base == "" and box_type not in ["gear", "supply", "fan"]:
+		base = _pick_base(tier, stats, "gear")
 	if base == "":
 		return {}
 	if is_consumable(base):
 		return {"kind": "consumable", "base": base, "tier": tier}
-	var rarity := _roll_rarity(tier)
+	var rarity := _roll_rarity(tier, box_type)
 	var slot := String(ITEMS[base].get("slot", "Trinket"))
 	var pool := _effect_pool_for_slot(slot)   # which effects THIS slot may roll (offense/defense)
 	var affixes := []
@@ -248,7 +268,7 @@ func _sum_effects(equipped: Dictionary, keys: Array) -> Dictionary:
 				out[e] = float(out.get(e, 0.0)) + float(af["power"])
 	return out
 
-func _pick_base(tier: int, stats: Dictionary) -> String:
+func _pick_base(tier: int, stats: Dictionary, box_type: String = "gear") -> String:
 	var top := _top_stat(stats)
 	var pool: Array[String] = []
 	for id in ITEMS:
@@ -257,6 +277,8 @@ func _pick_base(tier: int, stats: Dictionary) -> String:
 		var it: Dictionary = ITEMS[id]
 		if int(it["min_tier"]) > tier:
 			continue
+		if not _box_accepts(id, box_type):
+			continue   # wrong category for this box type
 		var weight := 1 + int(it["min_tier"])             # higher tiers favour rarer items
 		if top != "" and top in it["tags"]:
 			weight += 3                                   # Director's Algorithm: build-aware
@@ -264,12 +286,29 @@ func _pick_base(tier: int, stats: Dictionary) -> String:
 			pool.append(id)
 	return "" if pool.is_empty() else pool.pick_random()
 
-# Higher box tiers skew toward higher rarity; capped at the box tier + 1 so a Bronze box can't
-# spit a Legendary. Rarity index = affix count.
-func _roll_rarity(tier: int) -> int:
-	var r := 0
-	var cap := mini(tier + 1, RARITY_NAMES.size() - 1)
-	while r < cap and randf() < 0.45:
+# Does this item belong in a box of the given type? supply = consumables; weapon/armor/trinket =
+# their slot category; gear/boss = any equipment (no consumables); fan = anything (the gamble gift).
+func _box_accepts(id: String, box_type: String) -> bool:
+	var consumable := is_consumable(id)
+	match box_type:
+		"supply":  return consumable
+		"weapon":  return String(ITEMS[id].get("slot", "")) == "Weapon"
+		"armor":   return String(ITEMS[id].get("slot", "")) in ARMOUR_SLOTS
+		"trinket": return String(ITEMS[id].get("slot", "")) in TRINKET_SLOTS
+		"fan":     return true
+		_:         return not consumable   # gear, boss
+	return true
+
+# Rarity roll: starts at the tier's floor (epic boxes can't roll trash), climbs toward tier+1.
+# Boss boxes floor AND cap one rarity higher; Fan boxes gamble harder (steeper up-roll).
+func _roll_rarity(tier: int, box_type: String = "gear") -> int:
+	var maxr := RARITY_NAMES.size() - 1
+	var bonus := 1 if box_type == "boss" else 0
+	var floor_r := mini(TIER_RARITY_FLOOR[clampi(tier, 0, TIER_RARITY_FLOOR.size() - 1)] + bonus, maxr)
+	var cap := mini(tier + 1 + bonus, maxr)
+	var up := 0.6 if box_type == "fan" else 0.45
+	var r := floor_r
+	while r < cap and randf() < up:
 		r += 1
 	return r
 
