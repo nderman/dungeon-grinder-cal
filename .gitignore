@@ -11,6 +11,18 @@ game-client/export_presets.cfg
 assets-raw/**
 !assets-raw/.gitkeep
 
+# --- Secrets / local config: never commit (keys, tokens, signing creds) ---
+.env
+.env.*
+!.env.example
+*.secret
+secrets.cfg
+# Godot mobile signing / store keys
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+
 # --- OS / editor junk ---
 .DS_Store
 Thumbs.db
