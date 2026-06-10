@@ -23,6 +23,7 @@ const ACHIEVEMENTS := {
 	# --- Survival & misery → Supply boxes ---
 	"grave_robber": {"title": "Grave Robber",                "desc": "Looted a corpse. They won't be needing it.",     "tier": 0, "scope": "run", "box_type": "supply"},
 	"tapped_out":   {"title": "Tapped Out",                  "desc": "Cast on an empty tank. Pack a battery.",         "tier": 0, "scope": "run", "box_type": "supply"},
+	"stop_drop_roll":{"title": "Stop, Drop & Roll",          "desc": "Survived being set on fire. Hot enough for ya?", "tier": 1, "scope": "run", "box_type": "fan"},
 	"cancelled":    {"title": "Cancelled",                   "desc": "Died on live TV. The audience will remember you for roughly four seconds.", "tier": 0, "scope": "lifetime"},
 	# --- Stat milestones (re-earnable per run; STR title adapts to your Race; box fits the stat) ---
 	"stat_max_str": {"title": "Strongest That Ever Lived",   "desc": "Cranked STR to 20. Pure beefcake.",              "tier": 2, "scope": "run", "box_type": "weapon"},

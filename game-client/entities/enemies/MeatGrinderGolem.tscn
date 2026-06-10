@@ -39,6 +39,8 @@ lunge = true
 swing = true
 swing_arc = 120.0
 swing_chance = 0.5
+on_hit_effect = "burn"
+on_hit_effect_power = 1.0
 
 [node name="HealthBar" type="Node2D" parent="."]
 script = ExtResource("5_hb")

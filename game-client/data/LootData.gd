@@ -64,9 +64,12 @@ const EFFECT_AFFIXES := {
 	"armor": {"adj": "Plated",   "label": "Armor"},
 	"regen": {"adj": "Mending",  "label": "Regen"},
 	"dodge": {"adj": "Nimble",   "label": "Dodge"},
+	"fire_resist":  {"adj": "Flameproof", "label": "Fire Resist"},
+	"frost_resist": {"adj": "Frostward",  "label": "Frost Resist"},
 }
 const OFFENSE_EFFECTS := ["burn", "leech", "crit", "chill", "chain"]  # proc on your weapon hits
-const DEFENSE_EFFECTS := ["armor", "regen", "dodge"]                  # passive buffs to you
+# passive buffs to you. fire_resist/frost_resist shorten + weaken incoming Burn/Chill (StatusEffect).
+const DEFENSE_EFFECTS := ["armor", "regen", "dodge", "fire_resist", "frost_resist"]
 const EFFECT_MIN_RARITY := 2   # Rare (index 2) and above start rolling effect-affixes
 # Which effects a slot may roll: the Weapon does damage (OFFENSE), armour protects (DEFENSE), and
 # jewellery has no inherent armour value so it rolls EITHER — a Rare ring can be fiery OR protective.
@@ -241,6 +244,8 @@ func _roll_effect_power(effect: String, tier: int) -> float:
 		"armor": return snappedf(3.0 + 1.5 * tier + randf() * 4.0, 1.0)       # flat DR % (whole points)
 		"regen": return snappedf(0.5 + 0.3 * tier + randf() * 1.0, 0.1)       # bonus HP/sec
 		"dodge": return snappedf(2.0 + 0.5 * tier + randf() * 3.0, 1.0)       # +% full-dodge (whole)
+		"fire_resist":  return snappedf(0.15 + 0.05 * tier + randf() * 0.20, 0.05)  # fraction of Burn shrugged
+		"frost_resist": return snappedf(0.15 + 0.05 * tier + randf() * 0.20, 0.05)  # fraction of Chill shrugged
 	# A listed effect with no power branch would roll 0.0 silently — loud-fail in debug instead.
 	# Adding an effect means wiring it here AND in CombatEffects (offense) or _derive_vitals (defense).
 	assert(false, "LootData: no _roll_effect_power branch for effect '%s'" % effect)

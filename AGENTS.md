@@ -64,6 +64,10 @@ rarity floor) AND a **type** (gear/weapon/armor/trinket/supply/fan/boss — cons
 achievements grant a fitting box via `AchievementData` `box_type`, opened in a Safe Room. Enemies: Goblin/Brute/Screamer/Sniper + Cleric/Healer
 elites. Boss rooms roll a **roster** (`_pick_boss_scene`): Golem (slam+swing), Hexgun (radial
 volleys), Showrunner (summons adds + ranged) — each a thin entity script on the shared components.
+Enemies inflict **elemental statuses** on the player via `AIComponent.on_hit_effect` (burn/chill);
+`StatusEffect` works on player + mobs, mitigated by `Player.elemental_resist()` (Fire/Frost Resist
+affixes). Floors 3+ roll an **Inferno/Cryo theme** (`LevelGenerator.floor_element`) that makes a share
+of mobs + all elites elemental — a telegraphed hazard you gear resist for.
 **Runnable game (`Floor.tscn` = main scene):** `LevelGenerator` builds an **Open Floor** —
 a Random Walk grid of parametric `Room`s (walls + door-gaps built in code via `Room.gd`),
 doors opened between neighbours, enemies + Phase-Doors scattered, and a sub-dimensional

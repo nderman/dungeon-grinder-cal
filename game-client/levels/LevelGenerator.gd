@@ -72,10 +72,12 @@ func _ready() -> void:
 	_instantiate_rooms()
 	_build_walls()
 	_build_navmesh()
+	_roll_floor_theme()   # decide this floor's elemental hazard BEFORE spawning its mobs
 	_populate()
 	_place_stairs()
 	_place_safe_room()
 	_spawn_player()
+	_announce_floor_theme()   # banner the hazard once the player's in
 
 # --- BSP -------------------------------------------------------------------------------------
 
@@ -506,6 +508,11 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 			ai.start_active = false       # boss-room adds stay put until the arena locks…
 			if hc:
 				hc.set_invulnerable(true)   # …and can't be sniped down before you commit
+	# Elemental floor theme: a share of this floor's mobs inflict its element — unless the mob has a
+	# signature element already (e.g. the Brute's chill). Elites get one regardless (see _make_elite).
+	if ai and floor_element != "" and ai.on_hit_effect == "" and randf() < THEMED_ENEMY_CHANCE:
+		ai.on_hit_effect = floor_element
+		ai.on_hit_effect_power = THEME_POWER[floor_element]
 	# Elite upgrade (floor 3+, scaling chance): a bigger, tankier, stun-resistant version of ANY
 	# mob — the "harder enemy that forces you to adapt" rather than just inflated global stats.
 	if not dormant and randf() < _elite_chance():
@@ -517,6 +524,36 @@ const ELITE_MIN_FLOOR := 3
 const ELITE_BASE_CHANCE := 0.10   # at the first elite floor
 const ELITE_PER_FLOOR := 0.04     # +4% per floor deeper (GDD: ~+5%/floor)
 const ELITE_MAX_CHANCE := 0.40
+
+# --- Elemental floor themes -------------------------------------------------------------------
+# Deeper floors (3+) sometimes have an ELEMENT theme — an "Inferno" (burn) or "Cryo" (chill) floor.
+# On a themed floor a share of mobs inflict that status on you, and EVERY elite carries an element
+# (the floor's, or a random one off-theme). The point: a themed floor is a telegraphed hazard, so
+# resist gear becomes a planned choice. Signature-element mobs (Brute=chill) keep their own.
+const FLOOR_THEME_MIN_FLOOR := 3
+const FLOOR_THEME_CHANCE := 0.5     # share of qualifying floors that get a theme
+const THEMED_ENEMY_CHANCE := 0.6    # on a themed floor, share of mobs that gain the element
+const ELEMENTS: Array[String] = ["burn", "chill"]
+const THEME_NAMES := {"burn": "INFERNO", "chill": "CRYO"}
+const THEME_POWER := {"burn": 0.6, "chill": 0.3}   # trash-mob on-hit strength (lighter than bosses)
+const ELITE_POWER := {"burn": 1.0, "chill": 0.4}   # elites hit harder with their element
+
+var floor_element: String = ""   # "" | "burn" | "chill" — this floor's elemental hazard theme
+
+func _roll_floor_theme() -> void:
+	floor_element = ""
+	if GameManager.current_floor >= FLOOR_THEME_MIN_FLOOR and randf() < FLOOR_THEME_CHANCE:
+		floor_element = ELEMENTS.pick_random()
+
+# Floor-start hazard banner so you can gear for the element before diving in.
+func _announce_floor_theme() -> void:
+	if floor_element == "":
+		return
+	var icon := "🔥" if floor_element == "burn" else "❄"
+	var resist := "Fire Resist" if floor_element == "burn" else "Frost Resist"
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	SignalBus.toast.emit("%s %s FLOOR — pack %s" % [icon, THEME_NAMES[floor_element], resist],
+		p.global_position if p else Vector2.ZERO)
 
 func _elite_chance() -> float:
 	var f := GameManager.current_floor
@@ -537,6 +574,11 @@ func _make_elite(e: Node, hc: Node, ai: Node) -> void:
 	if ai:
 		ai.damage_hearts *= 1.35
 		ai.stun_resist = maxf(ai.stun_resist, 0.3)
+		# Elites ALWAYS carry an element at elite strength: keep an existing one (signature/theme),
+		# else take the floor's, else a random one even on an un-themed floor.
+		var el: String = ai.on_hit_effect if ai.on_hit_effect != "" else (floor_element if floor_element != "" else ELEMENTS.pick_random())
+		ai.on_hit_effect = el
+		ai.on_hit_effect_power = ELITE_POWER.get(el, 0.5)
 
 # Roll a boss archetype: the default boss_scene plus every entry in boss_pool, uniform. The tier
 # (Floor vs Neighborhood) scales HP/damage/size on top, so any archetype works at either rank.

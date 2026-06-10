@@ -1,7 +1,10 @@
 # StatusEffect.gd
-# A timed on-hit status attached to a VICTIM (enemy) by CombatEffects:
+# A timed on-hit status attached to a VICTIM (an enemy via CombatEffects, OR the player via an
+# enemy's elemental attack):
 #   BURN  — ticks damage-over-time into the victim's HealthComponent (a fire DoT).
-#   CHILL — drops the victim's AIComponent.speed_mult so it crawls, restored when the status ends.
+#   CHILL — drops the victim's speed_mult so it crawls (AIComponent for mobs, the Player node for the
+#           player), restored when the status ends.
+# Resistant victims (the player, via fire/frost-resist gear) take a weaker, shorter status — see apply().
 # One node per (victim, kind): a fresh hit REFRESHES the timer and keeps the stronger power instead
 # of stacking nodes. Art-free _draw paints a small marker above the body so the status reads on
 # screen. Self-frees on expiry (chill restores speed first); dies with the victim like any child.
@@ -24,6 +27,13 @@ var _marker_y := -26.0        # draw the marker above the body
 static func apply(victim: Node, k: String, power: float, seconds: float) -> void:
 	if not is_instance_valid(victim) or power <= 0.0:
 		return
+	# Resistance gear (the player) takes a weaker AND shorter status — fully resists if it scales to 0.
+	if victim.has_method("elemental_resist"):
+		var resist := clampf(victim.elemental_resist(k), 0.0, 0.9)
+		power *= (1.0 - resist)
+		seconds *= (1.0 - resist)
+		if power <= 0.0 or seconds <= 0.0:
+			return
 	var existing := victim.get_node_or_null("Status_" + k) as StatusEffect
 	if existing != null:
 		existing._remaining = maxf(existing._remaining, seconds)
@@ -37,8 +47,8 @@ static func apply(victim: Node, k: String, power: float, seconds: float) -> void
 	s._remaining = seconds
 	s.name = "Status_" + k
 	victim.add_child(s)
-	if k == BURN:
-		SignalBus.ratings_spike.emit("IGNITE")   # "Pyromaniac" — a FRESH burn (not a refresh)
+	if k == BURN and not victim.is_in_group("player"):
+		SignalBus.ratings_spike.emit("IGNITE")   # "Pyromaniac" — YOU set an ENEMY ablaze (not yourself)
 
 func _ready() -> void:
 	if kind == CHILL:
@@ -59,15 +69,23 @@ func _process(delta: float) -> void:
 	queue_redraw()   # flicker the marker
 
 func _apply_chill() -> void:
+	_set_speed_mult(1.0 - clampf(_power, 0.0, MAX_SLOW))
+
+# Chill drives speed_mult on the mob's AIComponent, or directly on the Player node (no AIComponent).
+func _set_speed_mult(m: float) -> void:
 	var ai := get_parent().get_node_or_null("AIComponent")
 	if ai != null:
-		ai.speed_mult = 1.0 - clampf(_power, 0.0, MAX_SLOW)
+		ai.speed_mult = m
+	elif "speed_mult" in get_parent():
+		get_parent().speed_mult = m
 
 func _end() -> void:
 	if kind == CHILL:
-		var ai := get_parent().get_node_or_null("AIComponent")
-		if ai != null:
-			ai.speed_mult = 1.0
+		_set_speed_mult(1.0)
+	elif kind == BURN and get_parent().is_in_group("player"):
+		var hc := get_parent().get_node_or_null("HealthComponent") as HealthComponent
+		if hc != null and hc.current_hearts > 0.0:
+			SignalBus.ratings_spike.emit("DOUSED")   # "Stop, Drop & Roll" — survived being on fire
 	queue_free()
 
 # Art-free status marker bobbing above the body: a flickering flame for burn, a frost shard for chill.

@@ -6,6 +6,8 @@
 extends CharacterBody2D
 
 var base_speed: float = 300.0
+var speed_mult: float = 1.0    # transient move-speed multiplier; an enemy Chill (StatusEffect) drops it <1
+var _defense: Dictionary = {}  # cached defensive effect-affixes (incl. fire/frost resist) from gear
 var current_stats: Dictionary = {"STR": 4, "DEX": 4, "INT": 4, "CON": 4, "CHA": 4}   # fallback (test bench); real stats come from GameManager
 
 @onready var health_comp: HealthComponent = $HealthComponent
@@ -104,14 +106,23 @@ func _derive_vitals(full: bool) -> void:
 	else:
 		health_comp.set_max_hearts(con * 10)
 		mana_comp.set_max_mana(intel)
-	# Defensive effect-affixes (armor/regen/dodge from Rare+ gear) stack on top of the CON/DEX base.
+	# Defensive effect-affixes (armor/regen/dodge/fire_resist/frost_resist) stack on top of CON/DEX.
 	var def := LootData.defensive_effects(GameManager.equipped)
+	_defense = def   # cached so elemental_resist() can read fire/frost resist on incoming statuses
 	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
 	protection_comp.gear_dr = float(def.get("armor", 0.0))   # flat DR% from "Plated" gear
 	health_comp.regen_rate = con * HealthComponent.REGEN_PER_CON + float(def.get("regen", 0.0))
 	var dex := int(current_stats["DEX"])
 	protection_comp.dodge_chance = minf(ProtectionComponent.DODGE_CAP, dex * ProtectionComponent.DODGE_PER_DEX + float(def.get("dodge", 0.0)))
 	base_speed = 300.0 + (dex * 12.5)
+
+# How much an incoming elemental status is mitigated (0..~0.9), from resist gear. StatusEffect reads
+# this when an enemy tries to Burn/Chill you, scaling the status's power AND duration down.
+func elemental_resist(kind: String) -> float:
+	match kind:
+		StatusEffect.BURN:  return float(_defense.get("fire_resist", 0.0))
+		StatusEffect.CHILL: return float(_defense.get("frost_resist", 0.0))
+	return 0.0
 
 func _physics_process(delta: float) -> void:
 	_tick_poison(delta)
@@ -132,7 +143,7 @@ func _physics_process(delta: float) -> void:
 	# shouldn't also trigger the weapon (fire is polled, not consumed by the GUI).
 	if Input.is_action_pressed("fire") and not ModalPanel.any_open():
 		_primary_attack()
-	move_comp.handle_movement(delta, move, base_speed)
+	move_comp.handle_movement(delta, move, base_speed * speed_mult)   # speed_mult <1 while Chilled
 
 func _unhandled_input(event: InputEvent) -> void:
 	# A pending Floor-3 class pick is mandatory: freeze actions (and other panels) until it's made.

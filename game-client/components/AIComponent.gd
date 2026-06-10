@@ -28,6 +28,9 @@ var current_state: State = State.IDLE
 @export var swing_telegraph_mult: float = 0.6   # swings wind up FASTER than the base telegraph: a
 												# swing locks its arc early, so a long tell = a free
 												# sidestep. Tighter window keeps swings threatening.
+@export var on_hit_effect: String = ""          # "" | "burn" | "chill" — an elemental status this mob
+												# inflicts on the player it hits (resist gear mitigates)
+@export var on_hit_effect_power: float = 0.0    # burn: hearts/sec · chill: slow fraction
 @export var stun_resist: float = 0.0            # 0 = full stun; bosses set ~0.4-0.6 (chance to shrug + shorter)
 @export var chase_navmesh_only: bool = false    # bosses: path AROUND cover, never beeline — so cover lets
 												# you outmaneuver them (and they can't wedge charging through it)
@@ -314,6 +317,16 @@ func _hit_target() -> void:
 		dmg = prot.handle_incoming_damage(dmg)
 	if health:
 		health.take_damage(dmg)
+	_apply_on_hit_effect()
+
+# Elemental mobs put a status on whoever they hit (the player): "burn" → a fire DoT, "chill" → a
+# slow. Opt in per-mob via the on_hit_effect exports; resist gear mitigates it (see StatusEffect).
+func _apply_on_hit_effect() -> void:
+	if on_hit_effect == "" or on_hit_effect_power <= 0.0 or not is_instance_valid(target):
+		return
+	match on_hit_effect:
+		"burn":  StatusEffect.apply(target, StatusEffect.BURN, on_hit_effect_power, CombatEffects.BURN_SECONDS)
+		"chill": StatusEffect.apply(target, StatusEffect.CHILL, on_hit_effect_power, CombatEffects.CHILL_SECONDS)
 
 # Ranged attack: launch a projectile at the target, grouped onto "player" so it damages the
 # contestant (and ignores other mobs + the shooter via the Hitbox group filter).

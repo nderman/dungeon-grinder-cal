@@ -32,3 +32,5 @@ move_speed = 200.0
 swing = true
 swing_arc = 110.0
 lunge = false
+on_hit_effect = "chill"
+on_hit_effect_power = 0.35

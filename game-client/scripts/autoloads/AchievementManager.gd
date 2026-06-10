@@ -32,6 +32,7 @@ func _on_spike(type: String) -> void:
 		"BOOM": unlock("michael_bay")           # a Bomb blast killed an enemy
 		"CHAIN_KILL": unlock("chain_react")     # a Chain arc killed the second enemy
 		"GRAVE_ROBBER": unlock("grave_robber")  # walked over a corpse to loot it
+		"DOUSED": unlock("stop_drop_roll")      # a fire DoT on the player expired while still alive
 		"CANCELLED": unlock("cancelled")        # the player died (end_run already emits this)
 
 # Stat milestones: pumping a stat to 20 is a re-earnable per-run feat. The STR title adapts to your

@@ -14,18 +14,16 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   **box-opening screen/animation** in the Safe Room (boxes pop one at a time, low→high, with a reveal),
   and **distinct box visuals per tier/type** (Bronze vs Celestial, a glowy Boss box, a Fan gift box).
   `box_opened` already emits a rich label ("Gold Weapon Box") to drive it. *(2026-06-08)*
-- **ENEMY/BOSS ATTACKS SHOULD USE THE EFFECTS (fire/ice/etc.)** — `StatusEffect` (burn DoT, chill
-  slow) currently only flows player→enemy via `CombatEffects`. Let ENEMIES apply them back: a fire
-  mob/boss attack that puts a Burn on the player, an ice attack that Chills (slows) you, etc. Needs
-  `StatusEffect` to work on the player (burn ticks `apply_dot`, chill would need a player move-speed
-  hook — player speed is `base_speed`, not `AIComponent.speed_mult`). Wire via the enemy hit sites
-  (`AIComponent._hit_target`, `HitboxComponent`, projectile on-hit). Bonus: unlocks the deferred
-  **"Stop, Drop & Roll"** achievement (get set on fire) and makes the Hexgun/boss attacks scarier.
-  Could be an `@export` on AIComponent (e.g. `on_hit_effect: "burn"/"chill"`) so any mob opts in.
-  **Opens up RESISTANCE gear** — once enemies deal typed (fire/ice/…) damage, add defensive
-  effect-affixes like Fire Resist / Frost Resist (mitigate or shorten that status), a natural
-  extension of the armor/regen/dodge defensive line in `LootData`. Build the enemy-effects first,
-  then resistances have something to resist. *(2026-06-08)*
+- **ELEMENTAL ATTACKS + RESIST GEAR + FLOOR THEMES — DONE (2026-06-10).** Enemies inflict statuses
+  back via `AIComponent.on_hit_effect` ("burn"/"chill") at `_hit_target`; `StatusEffect` now works on
+  the player (chill drives `Player.speed_mult`, burn ticks apply_dot) and is mitigated by
+  `Player.elemental_resist()`. Resist affixes **Fire Resist (Flameproof)** / **Frost Resist (Frostward)**
+  shorten+weaken the matching status. Floors 3+ roll an **Inferno/Cryo** theme (`LevelGenerator.floor_element`)
+  → a share of mobs + ALL elites go elemental, banner announces the hazard. Golem=burn, Brute=chill
+  signatures. Bonus: **"Stop, Drop & Roll"** achievement (survive a burn, via a "DOUSED" spike).
+  - Follow-ups: nicer floor-intro **banner** (currently a toast); **ranged** elemental enemies (arm the
+    projectile with the effect — only melee `_hit_target` carries it today); an at-a-glance **tint** on
+    themed mobs so the hazard reads before they hit you.
 - **Boss enrage/defeat boilerplate is 3x now** — Golem/Hexgun/Showrunner each repeat the identical
   `_on_health_changed` 50%-once-enrage gate + `_on_defeated` (FATALITY spike + toast). Fine at 3, but
   before a 4th boss lands, extract a small **`BossPhaseComponent`** (watches HealthComponent, emits an
