@@ -22,3 +22,11 @@ func run() -> void:
 	approx(attacker.current_hearts, before + 10.0, "leech heals attacker for 50% of damage dealt")
 	CombatEffects.apply_on_hit(victim, 10.0, {"burn": 1.0}, attacker)
 	truthy(victim.get_node_or_null("Status_burn"), "burn affix attaches a fire DoT to the victim")
+
+	# No procs on an INVULNERABLE target (a dormant boss before the arena locks).
+	var dormant := TestStubs.body(self, &"enemies", Vector2(300, 0), 50.0)
+	dormant.get_node("HealthComponent").set_invulnerable(true)
+	var heal_before := attacker.current_hearts
+	CombatEffects.apply_on_hit(dormant, 20.0, {"burn": 1.0, "leech": 0.5}, attacker)
+	check(dormant.get_node_or_null("Status_burn") == null, "no burn procs on a dormant/invulnerable target")
+	approx(attacker.current_hearts, heal_before, "no leech off a phantom hit on an invulnerable target")

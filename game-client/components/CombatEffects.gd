@@ -25,6 +25,12 @@ static func resolve_damage(base: float, effects: Dictionary) -> Array:
 static func apply_on_hit(victim: Node, dealt: float, effects: Dictionary, attacker_hc: HealthComponent) -> void:
 	if effects.is_empty() or not is_instance_valid(victim) or dealt <= 0.0:
 		return
+	# No procs on something you can't actually hurt: a DORMANT boss (invulnerable until the arena
+	# locks) or an i-framed target. Burn's apply_dot bypasses invuln, so without this you could chip a
+	# boss down through the door before it wakes — and leech would heal off a phantom hit.
+	var vhc := victim.get_node_or_null("HealthComponent") as HealthComponent
+	if vhc != null and vhc.is_invulnerable():
+		return
 	var leech := float(effects.get("leech", 0.0))
 	if leech > 0.0 and attacker_hc != null:
 		attacker_hc.heal(dealt * leech)
