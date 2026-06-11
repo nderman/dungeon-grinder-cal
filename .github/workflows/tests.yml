@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:   # allow manual runs from the Actions tab / `gh workflow run`
 
 # A newer push to the same ref cancels the older in-flight run.
 concurrency:
