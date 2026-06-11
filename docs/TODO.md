@@ -8,6 +8,22 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ENDGAME — DONE (2026-06-11).** Bounded run: `GameManager.FINAL_FLOOR=9`, no stairs down, kill the
+  `FINAL_BOSS` (Champion, ~2× a Floor Boss) → `win_run()` → Green Room "Season Champion" screen +
+  `MetaManager.seasons_won`. Follow-ups: a UNIQUE multi-phase final boss (currently a roster boss at
+  Champion tier + its 50% enrage); guarantee a Boss room on the final floor (else only collapse-death).
+
+- **BALANCE: defensive affixes make you invulnerable by ~floor 6** (player report: INT 35, HP 120,
+  stacked Frost Resist 40% / Dodge / Regen 1.5/s / Armor across slots). DR caps at 75% but dodge +
+  resist + regen stack ON TOP with no diminishing returns, and resist/regen roll on multiple slots.
+  Tuning pass: lower per-affix magnitudes, cap TOTAL dodge/resist, soften regen, maybe diminishing
+  returns on stacked defense. Needs playtest data. Pairs with: enemies scale too soft vs a geared player.
+
+- **WEAPON DAMAGE AFFIXES (DPS feels low on high-rarity weapons)** — rarity only adds effect/stat
+  affixes, NOT base damage, so an Epic Broadsword hits exactly as hard as a Common one (player saw
+  "Epic 2.4 dmg / 4.0 DPS" and expected more). Let Rare+ weapons roll a **damage/range multiplier**
+  affix (the deferred LootData idea). Also: the inventory DPS number excludes crit/chain/burn — fold
+  at least **crit** (a clean ×(1+crit) multiplier) into the displayed effective DPS. *(2026-06-11)*
 - **BOSS ALWAYS-LOCK (ideal) — partial: safety-net shipped 2026-06-11.** Shipped: a boss arena only
   SEALS if its room is a true dead-end (degree-1 leaf, no stray corridor) — otherwise it wakes on
   approach but doesn't trap you (`_arm_boss_lock` sealable flag). This removes the "forced fight to

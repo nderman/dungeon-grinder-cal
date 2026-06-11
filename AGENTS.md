@@ -76,9 +76,12 @@ dash Space, fire mouse, cast Q, **interact E** (Phase-Door pad → Safe Room; th
 warps you back via `GameManager.last_safe_room_entrance_pos`). `CombatHUD` shows HP/mana/
 hype/ratings; death → placeholder Green Room. `Main.tscn` is kept as a single-room combat
 test bench.
+**Endgame:** the run is bounded — `GameManager.FINAL_FLOOR` (9) is the Season's last floor. It has no
+stairs down; killing its `FINAL_BOSS` (Champion) calls `GameManager.win_run()` → the Green Room shows
+a "Season Champion" screen (`MetaManager.seasons_won` prestige). Death still routes to `end_run()`.
 **Not yet built (next work):**
-- **Endgame**: a bounded run to a final floor + win state (currently descends forever); more
-  achievement variety; **art** (everything is still gray-box `Polygon2D`). See `docs/TODO.md`.
+- **Balance pass** (defensive affixes stack too hard); **art** (gray-box `Polygon2D`); weapon damage
+  affixes (rarity adds effects but not base dmg); a unique multi-phase final boss. See `docs/TODO.md`.
 - Scripts still to draft: `InputComponent` (optional — Player handles input inline now),
   `SafeRoomTerminal.gd`, `LootBoxTerminal.gd`, `SponsorDropPod.gd`, `GreenRoomUI.gd`,
   `CastingCouchUI.gd`, `FeedbackManager.gd` (the SignalBus listener that plays VFX/SFX),

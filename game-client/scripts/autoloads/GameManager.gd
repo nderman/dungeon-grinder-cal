@@ -11,6 +11,7 @@ const FLOOR_PATH := "res://Floor.tscn"
 # Floor Boss dies — whichever comes first. So you can rush the boss for its XP/loot and leave
 # early, or skip it and take the timer-opened stairs (forfeiting the boss rewards). Either way a
 # **collapse** deadline at COLLAPSE_TIME ends the floor (lethal DoT if you're still on it).
+const FINAL_FLOOR := 9                  # the Season's last floor — beat its Champion boss to WIN (no stairs down)
 const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (skip-boss path)
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
@@ -47,6 +48,7 @@ var current_floor: int = 1
 var run_ratings: int = 0
 var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Sponsor Pod
 var is_run_active: bool = false
+var run_won: bool = false        # set when you beat the final floor — the Green Room reads it for the Champion screen
 var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
@@ -124,7 +126,8 @@ func _process(delta: float) -> void:
 	if not is_run_active:
 		return
 	floor_elapsed += delta
-	if not stairs_open and floor_elapsed >= STAIRS_OPEN_TIME:
+	# On the final floor the only way out is THROUGH the Champion — no timer-skip, no stairs down.
+	if not stairs_open and not is_final_floor() and floor_elapsed >= STAIRS_OPEN_TIME:
 		open_stairs()   # timer path (skip-boss)
 	if floor_elapsed >= COLLAPSE_TIME:
 		_tick_collapse(delta)
@@ -463,8 +466,12 @@ func spend_skill_point(stat: String) -> bool:
 	SignalBus.xp_changed.emit(xp, xp_to_next(level), level)   # refresh the points pip
 	return true
 
+func is_final_floor() -> bool:
+	return current_floor >= FINAL_FLOOR
+
 func start_new_run() -> void:
 	current_floor = 1
+	run_won = false
 	run_ratings = 0
 	hype_meter = 0.0
 	xp = 0
@@ -524,8 +531,26 @@ func _check_hype_thresholds() -> void:
 		SignalBus.hype_threshold_reached.emit(0)
 	hype_changed.emit(hype_meter)
 
+# The Champion path: the final floor's boss died → you WON the Season. Bigger payout than dying
+# out, sets run_won so the Green Room shows the Champion screen, then cuts to it.
+func win_run() -> void:
+	if not is_run_active:
+		return
+	is_run_active = false
+	run_won = true
+	SignalBus.ratings_spike.emit("FATALITY")
+	SignalBus.toast.emit("SEASON CHAMPION!", Vector2.ZERO)
+	MetaManager.syndication_points += int(floor(run_ratings * 0.2))   # winners take a bigger cut
+	MetaManager.add_milestone_token(3)                                # max milestone reward
+	MetaManager.seasons_won += 1
+	MetaManager.save_persistence()
+	await get_tree().create_timer(2.5).timeout   # a beat to savour the win
+	get_tree().change_scene_to_file(GREEN_ROOM_PATH)
+
 # Called by the player's HealthComponent when hearts hit zero.
 func end_run() -> void:
+	if not is_run_active:
+		return   # idempotent: a same-frame win (win_run already flipped this) must not double-fire
 	is_run_active = false
 	SignalBus.ratings_spike.emit("CANCELLED")
 

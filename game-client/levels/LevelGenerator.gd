@@ -43,6 +43,9 @@ const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 # to survive a hit, or skip the boss via the timer. Bosses are a real gate, not a speed-bump.
 const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300, "stun_resist": 0.6, "ratings": 240}
 const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120, "stun_resist": 0.35, "ratings": 90}
+# The Season's CHAMPION — only on the final floor. A real wall: ~2× a Floor Boss's HP, hits harder,
+# bigger, faster, barely stunnable. The archetype's 50%-HP enrage is its phase 2. Death → win_run().
+const FINAL_BOSS := {"hearts": 55.0, "damage": 80.0, "scale": 1.7, "tint": Color(0.95, 0.2, 0.28), "telegraph": 0.5, "speed": 370.0, "xp": 800, "stun_resist": 0.75, "ratings": 600}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
 var corridors: Array = []        # [{rect:Rect2, a:int, b:int}] — a,b = the room indices it links
@@ -74,10 +77,13 @@ func _ready() -> void:
 	_build_navmesh()
 	_roll_floor_theme()   # decide this floor's elemental hazard BEFORE spawning its mobs
 	_populate()
-	_place_stairs()
+	if not GameManager.is_final_floor():
+		_place_stairs()   # no stairs down on the final floor — the Champion IS the only way out
 	_place_safe_room()
 	_spawn_player()
 	_announce_floor_theme()   # banner the hazard once the player's in
+	if GameManager.is_final_floor():
+		_announce_final_floor()
 
 # --- BSP -------------------------------------------------------------------------------------
 
@@ -432,7 +438,8 @@ func _populate() -> void:
 				for _i in range(randi_range(2, 4) + extra):
 					_spawn_enemy(r["node"])
 			"Boss":
-				_spawn_boss(r, FLOOR_BOSS, true)
+				# The final floor's boss is the Champion (FINAL_BOSS) — beating it WINS the run.
+				_spawn_boss(r, FINAL_BOSS if GameManager.is_final_floor() else FLOOR_BOSS, true)
 				for _i in range(maxi(0, 4 - GameManager.current_floor)):   # adds, more on lower floors
 					_spawn_enemy(r["node"], true)   # dormant — wake with the boss on lock
 			"MiniBoss":
@@ -548,6 +555,11 @@ const ELITE_POWER := {"burn": 1.0, "chill": 0.4}   # elites hit harder with thei
 
 var floor_element: String = ""   # "" | "burn" | "chill" — this floor's elemental hazard theme
 
+# Final-floor banner: this is the climax, there's no way down — kill the Champion or die trying.
+func _announce_final_floor() -> void:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	SignalBus.toast.emit("⚔ FINAL FLOOR — DEFEAT THE CHAMPION", p.global_position if p else Vector2.ZERO)
+
 func _roll_floor_theme() -> void:
 	floor_element = ""
 	if GameManager.current_floor >= FLOOR_THEME_MIN_FLOOR and randf() < FLOOR_THEME_CHANCE:
@@ -634,7 +646,8 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	# Killing the Floor Boss opens the (scattered) stairs EARLY — that plus its loot is the
 	# reward for fighting it. Skip it and the stairs open on the timer anyway.
 	if is_floor_boss and hc:
-		hc.health_depleted.connect(GameManager.open_stairs)
+		# Final floor: the Champion's death WINS the Season. Otherwise it just opens the stairs early.
+		hc.health_depleted.connect(GameManager.win_run if GameManager.is_final_floor() else GameManager.open_stairs)
 
 # Floor-1 bosses are arena-locked (DCC): the room seals the instant the player steps past a
 # doorway, until the boss falls. The lock zone is inset so the seal lands just behind the player,

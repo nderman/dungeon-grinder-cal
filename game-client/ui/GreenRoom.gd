@@ -13,9 +13,17 @@ func _ready() -> void:
 	MetaManager.meta_changed.connect(_on_meta_changed)
 
 func _refresh_summary() -> void:
-	$Subtitle.text = "Floor reached %d     Level %d     Syndication %d     Tokens %d" % [
-		GameManager.current_floor, GameManager.level, MetaManager.syndication_points, MetaManager.milestone_tokens
-	]
+	if GameManager.run_won:
+		# Champion screen — you beat the final floor's boss instead of getting Cancelled.
+		$Title.text = "SEASON CHAMPION!"
+		$Title.modulate = Color(1.0, 0.85, 0.2)
+		$Subtitle.text = "You took the Champion's head on Floor %d!     Seasons won %d     Syndication %d     Tokens %d" % [
+			GameManager.current_floor, MetaManager.seasons_won, MetaManager.syndication_points, MetaManager.milestone_tokens
+		]
+	else:
+		$Subtitle.text = "Floor reached %d     Level %d     Syndication %d     Tokens %d" % [
+			GameManager.current_floor, GameManager.level, MetaManager.syndication_points, MetaManager.milestone_tokens
+		]
 
 # "New Season" prompt pinned to the bottom, clear of the roster shop.
 func _build_continue_hint() -> void:
