@@ -256,6 +256,13 @@ func _apply_ability(a: Dictionary, level: int) -> void:
 		"self_heal":
 			health_comp.heal(value)
 			_ability_fx.play_pulse(Color(0.4, 1.0, 0.5))
+		"shield":
+			# Holy Shield: a heal burst PLUS a timed DR aura — and a golden glow that lasts the buff
+			# so you can see (and time) when you're protected. Re-cast refreshes it.
+			health_comp.heal(value)
+			var dur := float(a.get("duration", 4.0))
+			protection_comp.apply_aura(float(a.get("aura_dr", 30.0)), dur)
+			_ability_fx.play_shield(dur, Color(1.0, 0.85, 0.3))
 		"blink":
 			var from := global_position
 			_ability_blink(float(a.get("reach", 240.0)))

@@ -517,8 +517,16 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	# mob — the "harder enemy that forces you to adapt" rather than just inflated global stats.
 	if not dormant and randf() < _elite_chance():
 		_make_elite(e, hc, ai)
+	_tag_element(e, ai)   # glow indicator if it ended up elemental (signature / theme / elite)
 	room.enemies_root.add_child(e)
 	e.global_position = room.interior_point()
+
+# Give an elemental mob a glow so its threat reads before it strikes (ElementMark scales with body).
+func _tag_element(node: Node, ai: Node) -> void:
+	if ai and String(ai.on_hit_effect) != "":
+		var mark := ElementMark.new()
+		mark.element = String(ai.on_hit_effect)
+		node.add_child(mark)
 
 const ELITE_MIN_FLOOR := 3
 const ELITE_BASE_CHANCE := 0.10   # at the first elite floor
@@ -617,6 +625,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 		ai.start_active = false   # dormant until the arena locks
 	b.scale = Vector2(tier["scale"], tier["scale"])
 	b.modulate = tier["tint"]
+	_tag_element(b, ai)   # e.g. the Golem's burn glow
 	room.enemies_root.add_child(b)
 	if ai and ai.has_method("set_nav_map") and boss_nav_map.is_valid():
 		ai.set_nav_map(boss_nav_map)   # path with boss-sized clearance (no wedging on cover/walls)
@@ -636,7 +645,12 @@ func _arm_boss_lock(r: Dictionary, boss: Node) -> void:
 	var rect: Rect2 = r["rect"]
 	var inset := Vector2(minf(80.0, rect.size.x * 0.35), minf(80.0, rect.size.y * 0.35))
 	var zone := Rect2(rect.position + inset, rect.size - inset * 2.0)
-	_boss_locks.append({"zone": zone, "room": r, "boss": boss})
+	# SEAL only a true dead-end: a degree-1 leaf with no stray corridor crossing it. Otherwise a
+	# corridor to other rooms runs through this room — sealing would trap you / force the fight to
+	# explore. A non-sealable boss still WAKES on approach (you can fight it), just never seals you in.
+	var idx := rooms.find(r)
+	var sealable := idx >= 0 and degree[idx] <= 1 and not _has_stray_corridor(idx)
+	_boss_locks.append({"zone": zone, "room": r, "boss": boss, "sealable": sealable})
 
 # Watch every un-sealed boss arena; lock the instant the player is inside its zone. Deterministic
 # (position test) so it can never miss the way the old enter-signal could.
@@ -651,24 +665,26 @@ func _physics_process(_delta: float) -> void:
 		var lock: Dictionary = _boss_locks[i]
 		if (lock["zone"] as Rect2).has_point(pos):
 			_boss_locks.remove_at(i)
-			_lock_boss_arena(lock["room"], lock["boss"])
+			_lock_boss_arena(lock["room"], lock["boss"], lock.get("sealable", true))
 
-func _lock_boss_arena(r: Dictionary, boss: Node) -> void:
+func _lock_boss_arena(r: Dictionary, boss: Node, sealable: bool = true) -> void:
 	if r.get("locked", false):
 		return
 	r["locked"] = true
 	if not is_instance_valid(boss):
 		return
-	# Seal the doorways: barrier every gap in THIS boss room's perimeter walls. Barriers are
-	# stored per-room so killing one boss never unseals another's arena.
-	var rect: Rect2 = r["rect"]
-	var barriers: Array = []
-	for side in SIDES:
-		for span in _edge_spans(rect, side, true):   # true = open spans (corridor mouths)
-			var bar := _add_wall(rect, side, span, WALL * 2.5, Color(0.9, 0.2, 0.3, 0.85), 0.0)
-			if bar:
-				barriers.append(bar)
-	r["barriers"] = barriers
+	# Seal the doorways ONLY for a true dead-end arena — barrier every gap in this room's perimeter
+	# walls. A non-sealable boss (a room a corridor passes through) skips this so you're never trapped;
+	# it just wakes below. Barriers are stored per-room so killing one boss never unseals another's.
+	if sealable:
+		var rect: Rect2 = r["rect"]
+		var barriers: Array = []
+		for side in SIDES:
+			for span in _edge_spans(rect, side, true):   # true = open spans (corridor mouths)
+				var bar := _add_wall(rect, side, span, WALL * 2.5, Color(0.9, 0.2, 0.3, 0.85), 0.0)
+				if bar:
+					barriers.append(bar)
+		r["barriers"] = barriers
 	# The fight's on — wake AND make vulnerable the boss + every dormant add in the arena.
 	for e in r["node"].enemies_root.get_children():
 		var eai: Node = e.get_node_or_null("AIComponent")

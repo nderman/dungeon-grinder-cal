@@ -8,6 +8,21 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **BOSS ALWAYS-LOCK (ideal) — partial: safety-net shipped 2026-06-11.** Shipped: a boss arena only
+  SEALS if its room is a true dead-end (degree-1 leaf, no stray corridor) — otherwise it wakes on
+  approach but doesn't trap you (`_arm_boss_lock` sealable flag). This removes the "forced fight to
+  explore" bug. The boss already PREFERS a clean off-path leaf, so it locks in the common case; the
+  open fallback only fires when EVERY dead-end is crossed by a corridor (rare). **User's preferred
+  ideal: it should ALWAYS lock + never spawn on the main path.** To guarantee that, RESERVE the boss
+  leaf BEFORE carving corridors (reorder so `_carve` treats the boss room as a no-cross zone), so a
+  clean dead-end always exists. Bigger level-gen reorder — deferred. *(2026-06-11)*
+
+- **BUILD A PERSISTENT REGRESSION-TEST SUITE** — we keep writing throwaway headless tests (loot affixes,
+  box types, combat effects, elemental, floor themes, the death-teardown crash repro) then deleting
+  them. Convert the valuable ones into a `game-client/tests/` dir + a headless runner
+  (`run_tests.sh` → run each test scene/SceneTree script, grep PASS, report counts), reuse the shared
+  stubs (PlayerStub, enemy-spawn helpers, SignalBus capture). Then `/shipit`'s "test" step runs the
+  real suite instead of improvising. Catches regressions (e.g. the get_tree()-null crash) for free. *(2026-06-11)*
 - **LOOT BOX OPENING PRESENTATION** — the tier+type system is built (Bronze→Celestial × gear/weapon/
   armor/trinket/supply/fan/boss, per-tier rarity floors), but opening is still just a HUD ticker line
   via `box_opened` (which currently has no real consumer beyond the ticker). Make it land: a proper

@@ -219,8 +219,10 @@ func _change_state(new_state: State) -> void:
 		State.TELEGRAPH: _start_telegraph()
 		State.ATTACK: _execute_attack()
 		State.COOLDOWN:
+			if not is_inside_tree(): return   # scene tearing down (player died) — don't touch get_tree()
 			await get_tree().create_timer(attack_cooldown).timeout
-			_change_state(State.CHASE)
+			if is_inside_tree():
+				_change_state(State.CHASE)
 
 func _start_telegraph() -> void:
 	SignalBus.ratings_spike.emit("TELEGRAPH_START")
@@ -235,10 +237,12 @@ func _start_telegraph() -> void:
 			_swing_aim = to_t.normalized()
 	# Swings get a tighter wind-up than slams (their locked arc is otherwise a free dodge).
 	var tele := telegraph_duration * (swing_telegraph_mult if _use_swing_this_attack else 1.0)
+	if not is_inside_tree(): return   # scene tearing down (player died) — _flash_tell/get_tree would fault
 	if parent:
 		parent.velocity = Vector2.ZERO
 		_flash_tell(tele)   # very visible "about to hit you" cue on the mob itself
 	await get_tree().create_timer(tele).timeout
+	if not is_inside_tree(): return
 	if parent: parent.modulate = Color.WHITE
 	_change_state(State.ATTACK)
 
@@ -250,6 +254,7 @@ func _flash_tell(duration: float) -> void:
 	tw.tween_property(parent, "modulate", Color(1, 0.5, 0.5), duration * 0.5)
 
 func _execute_attack() -> void:
+	if not is_inside_tree(): return   # scene teardown guard (player death) — avoid a null get_tree()
 	if ranged:
 		# Don't waste the shot if you ducked behind cover during the telegraph — hold fire and
 		# reposition for a clear line instead of plinking the wall.
@@ -266,8 +271,9 @@ func _execute_attack() -> void:
 		var dir := (target.global_position - parent.global_position).normalized()
 		var elapsed := 0.0
 		while elapsed < 0.2:
-			# The mob (or target) can be killed mid-lunge — bail before touching a freed node.
-			if not is_instance_valid(parent) or not is_instance_valid(target):
+			# The mob/target can die mid-lunge, or the scene can tear down on player death — bail
+			# before touching a freed node or a null get_tree() at the await below.
+			if not is_instance_valid(parent) or not is_instance_valid(target) or not is_inside_tree():
 				break
 			parent.velocity = dir * lunge_speed
 			parent.move_and_slide()
@@ -296,8 +302,8 @@ func _do_swing() -> void:
 	var hit := false
 	var elapsed := 0.0
 	while elapsed < MeleeSwing.SWEEP_TIME:
-		if not is_instance_valid(parent) or not is_instance_valid(target):
-			return
+		if not is_instance_valid(parent) or not is_instance_valid(target) or not is_inside_tree():
+			return   # is_inside_tree guards the get_tree() await below during scene teardown (player death)
 		if not hit:
 			var to_t := target.global_position - global_position
 			var dist := to_t.length()
@@ -331,8 +337,8 @@ func _apply_on_hit_effect() -> void:
 # Ranged attack: launch a projectile at the target, grouped onto "player" so it damages the
 # contestant (and ignores other mobs + the shooter via the Hitbox group filter).
 func _fire_projectile() -> void:
-	if projectile_scene == null or not is_instance_valid(parent) or not is_instance_valid(target):
-		return
+	if projectile_scene == null or not is_instance_valid(parent) or not is_instance_valid(target) or not is_inside_tree():
+		return   # is_inside_tree: scene tearing down (player death) → get_tree().current_scene would be null
 	var proj := projectile_scene.instantiate()
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = parent.global_position

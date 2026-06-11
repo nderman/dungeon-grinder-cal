@@ -55,7 +55,7 @@ Autoloads (registered in `game-client/project.godot`, load order matters):
 
 ## Current state (what exists)
 **Implemented (GDScript):** all 6 autoloads/data scripts; components Health, Hitbox,
-Movement, Protection, Mana, AI, Aura, MeleeSwing, StatusEffect, CombatEffects;
+Movement, Protection, Mana, AI, Aura, MeleeSwing, AbilityFx, StatusEffect, CombatEffects, ElementMark;
 `LevelGenerator.gd`; `entities/player/Player.gd`; `project.godot` with autoloads +
 twin-stick input map. Loot is rolled into instances (base + rarity + affixes); Rare+ gear
 rolls EFFECT-affixes (Burn/Leech/Crit/Chill/Chain offensive, Armor/Regen/Dodge defensive) that
