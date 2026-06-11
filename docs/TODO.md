@@ -17,12 +17,11 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   leaf BEFORE carving corridors (reorder so `_carve` treats the boss room as a no-cross zone), so a
   clean dead-end always exists. Bigger level-gen reorder — deferred. *(2026-06-11)*
 
-- **BUILD A PERSISTENT REGRESSION-TEST SUITE** — we keep writing throwaway headless tests (loot affixes,
-  box types, combat effects, elemental, floor themes, the death-teardown crash repro) then deleting
-  them. Convert the valuable ones into a `game-client/tests/` dir + a headless runner
-  (`run_tests.sh` → run each test scene/SceneTree script, grep PASS, report counts), reuse the shared
-  stubs (PlayerStub, enemy-spawn helpers, SignalBus capture). Then `/shipit`'s "test" step runs the
-  real suite instead of improvising. Catches regressions (e.g. the get_tree()-null crash) for free. *(2026-06-11)*
+- **REGRESSION-TEST SUITE — DONE (2026-06-11).** `game-client/tests/` + `./tests/run_tests.sh` (one
+  headless process, autoloads load once, exits non-zero on failure). `TestCase` base + `TestStubs`
+  (PlayerStub etc.) + `TestRunner`. Seeded 8 ported tests: loot_boxes, loot_affixes, combat_effects,
+  elemental, floor_themes, boss_seal, crash_teardown (the get_tree()-null regression), holy_shield.
+  Run it as the `/shipit` test step. Follow-ups: add tests as features land; consider wiring into CI.
 - **LOOT BOX OPENING PRESENTATION** — the tier+type system is built (Bronze→Celestial × gear/weapon/
   armor/trinket/supply/fan/boss, per-tier rarity floors), but opening is still just a HUD ticker line
   via `box_opened` (which currently has no real consumer beyond the ticker). Make it land: a proper

@@ -92,6 +92,12 @@ test bench.
 5. Safe Room terminals (stat injection + loot box) → mid-run progression.
 6. `GameManager.end_run` → Green Room → `GreenRoomUI` token spend → loop closes.
 
+## Tests
+Headless regression suite in `game-client/tests/` — **`./tests/run_tests.sh`** (exits non-zero on
+failure; run it as the `/shipit` test step). One process loads autoloads once and runs every
+`test_*.gd` (each `extends TestCase`). Add a test: write `tests/test_foo.gd`, preload it into
+`TestRunner.gd`'s `TESTS`. Must be scene-driven — `godot -s` doesn't load autoloads. See `tests/README.md`.
+
 ## Conventions
 - File/class names PascalCase; component scripts end in `Component`.
 - Components fetch siblings via `get_node_or_null` and degrade gracefully if absent.
