@@ -53,7 +53,7 @@ var _player: CharacterBody2D    # cached so we don't group-scan every frame
 
 # Cached player lookup (re-resolves only if the cached node was freed, e.g. respawn).
 func _get_player() -> CharacterBody2D:
-	if not is_instance_valid(_player):
+	if not is_instance_valid(_player) and is_inside_tree():   # is_inside_tree: get_tree() null during teardown
 		var ps := get_tree().get_nodes_in_group("player")
 		_player = ps[0] as CharacterBody2D if not ps.is_empty() else null
 	return _player
@@ -144,7 +144,7 @@ func _acquire_player() -> void:
 # Alert idle mobs near me to the same target — sniping/sighting one wakes its cluster.
 # Alerted mobs do NOT re-rally (one hop), so a pack wakes, not the whole floor.
 func _rally_nearby() -> void:
-	if not is_instance_valid(target):
+	if not is_instance_valid(target) or not is_inside_tree():   # is_inside_tree guards get_tree() below
 		return
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if e == parent or not (e is Node2D):
