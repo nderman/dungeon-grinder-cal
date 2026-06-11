@@ -1,5 +1,7 @@
 # Dungeon Grinder Cal
 
+[![tests](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/tests.yml/badge.svg)](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/tests.yml)
+
 A mobile, top-down **twin-stick roguelite shooter** built in **Godot 4 (GDScript)** — Hotline-Miami
 lethality meets a snarky reality-TV "meat grinder," with permadeath, deep loot, and persistent
 meta-progression. A solo side project and an exercise in clean, scalable game architecture.
