@@ -20,6 +20,7 @@ const FIRST_WAVE_DELAY := 2.0
 @onready var health: HealthComponent = $HealthComponent
 var _enraged := false
 var _cd := FIRST_WAVE_DELAY
+var _adds: Array = []   # this boss's own living summons — the MAX_ADDS cap counts THESE, not the floor
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -36,8 +37,11 @@ func _physics_process(delta: float) -> void:
 		_summon()
 
 func _summon() -> void:
-	if add_scenes.is_empty() or _enemy_count() > MAX_ADDS:
-		return   # nothing to summon, or the arena is already full
+	# Cap on THIS boss's own living swarm — NOT the floor-wide enemy count (which, on a busy floor,
+	# was always > MAX_ADDS and silently blocked every wave). Prune dead adds, then top up.
+	_adds = _adds.filter(func(a): return is_instance_valid(a))
+	if add_scenes.is_empty() or _adds.size() >= MAX_ADDS:
+		return
 	var n := WAVE_ENRAGED if _enraged else WAVE
 	SignalBus.ratings_spike.emit("DRAMA_SPIKE")
 	SignalBus.toast.emit("ROLL THE ADDS!", global_position)
@@ -48,11 +52,7 @@ func _summon() -> void:
 		var a := scene.instantiate()
 		get_tree().current_scene.add_child(a)
 		a.global_position = global_position + Vector2(randf_range(-90.0, 90.0), randf_range(-90.0, 90.0))
-
-# Total live enemies (this boss + any arena/summoned mobs). A conservative cap: when the arena
-# already holds > MAX_ADDS, skip the wave so we never flood (summon headroom shrinks as adds pile up).
-func _enemy_count() -> int:
-	return get_tree().get_nodes_in_group("enemies").size()
+		_adds.append(a)
 
 func _on_health_changed(current: float, maximum: float) -> void:
 	if _enraged or current <= 0.0 or current > maximum * 0.5:

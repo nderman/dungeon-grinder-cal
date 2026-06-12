@@ -6,6 +6,8 @@
 extends Node
 
 var _run_unlocked: Array[String] = []   # "run"-scope achievements already granted this Episode
+const REPEAT_COOLDOWN := 12.0           # min seconds between firings of the SAME repeatable feat (anti-spam)
+var _repeat_cd: Dictionary = {}         # repeatable id → wall-clock time it may fire again
 
 func _ready() -> void:
 	SignalBus.enemy_cancelled.connect(_on_enemy_cancelled)
@@ -67,6 +69,13 @@ func unlock(id: String, title_override: String = "") -> void:
 				return
 			_run_unlocked.append(id)
 		_:
+			# Per-feat COOLDOWN: a spammy repeatable (Chain Reaction, Speed Demon) fires constantly
+			# while you clear a room — box OR heckle — and turns into ticker noise. Throttle each one
+			# to once per window so it stays a treat, not a stream. (run/lifetime milestones exempt.)
+			var now := Time.get_ticks_msec() / 1000.0
+			if now < float(_repeat_cd.get(id, 0.0)):
+				return   # still cooling down — skip silently
+			_repeat_cd[id] = now + REPEAT_COOLDOWN
 			# Repeatable performance feats are the loot drip. The System spoils rookies (DCC canon:
 			# floors 1-3 spam low-tier boxes to get them experimenting), then raises its standards —
 			# a small feat that paid a box up top earns only a heckle once you're deep. Real
