@@ -8,6 +8,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **META DEAD-ENDS once the roster is unlocked** (player hit it at Season Champion: 11 Tokens + 17955
+  Syndication, "nothing left to contract"). Milestone Tokens + Syndication have no sink after every
+  race/class is bought. Add token/syndication SINKS so prestige keeps mattering: a permanent **stat-buff
+  shop** (`MetaManager.permanent_stat_buffs` already exists, unused), a **loot-pool expansion**
+  (`permanent_loot_pool` exists too), prestige tiers, or a **New Game+** that scales the Season harder
+  per `seasons_won` for better rewards. The infra (two unused persisted fields) is half there. *(2026-06-12)*
 - **ENDGAME — DONE (2026-06-11).** Bounded run: `GameManager.FINAL_FLOOR=9`, no stairs down, kill the
   `FINAL_BOSS` (Champion, ~2× a Floor Boss) → `win_run()` → Green Room "Season Champion" screen +
   `MetaManager.seasons_won`. Follow-ups: a UNIQUE multi-phase final boss (currently a roster boss at
