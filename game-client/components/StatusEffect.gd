@@ -15,6 +15,7 @@ const BURN := "burn"
 const CHILL := "chill"
 const TICK := 0.5             # burn applies damage in half-second ticks
 const MAX_SLOW := 0.8         # chill can never freeze a mob solid (always ≥20% speed)
+const RESIST_CAP := 0.6      # fire/frost resist can shrug off at most 60% of a status (never ~immune)
 
 var kind := BURN
 var _remaining := 0.0
@@ -29,7 +30,7 @@ static func apply(victim: Node, k: String, power: float, seconds: float) -> void
 		return
 	# Resistance gear (the player) takes a weaker AND shorter status — fully resists if it scales to 0.
 	if victim.has_method("elemental_resist"):
-		var resist := clampf(victim.elemental_resist(k), 0.0, 0.9)
+		var resist := clampf(victim.elemental_resist(k), 0.0, RESIST_CAP)
 		power *= (1.0 - resist)
 		seconds *= (1.0 - resist)
 		if power <= 0.0 or seconds <= 0.0:

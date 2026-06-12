@@ -13,11 +13,11 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   `MetaManager.seasons_won`. Follow-ups: a UNIQUE multi-phase final boss (currently a roster boss at
   Champion tier + its 50% enrage); guarantee a Boss room on the final floor (else only collapse-death).
 
-- **BALANCE: defensive affixes make you invulnerable by ~floor 6** (player report: INT 35, HP 120,
-  stacked Frost Resist 40% / Dodge / Regen 1.5/s / Armor across slots). DR caps at 75% but dodge +
-  resist + regen stack ON TOP with no diminishing returns, and resist/regen roll on multiple slots.
-  Tuning pass: lower per-affix magnitudes, cap TOTAL dodge/resist, soften regen, maybe diminishing
-  returns on stacked defense. Needs playtest data. Pairs with: enemies scale too soft vs a geared player.
+- **BALANCE: defensive stacking → invulnerable — first pass applied 2026-06-12.** Gear **regen capped
+  2.5/s** (`Player.GEAR_REGEN_CAP`), **resist cap 90%→60%** (`StatusEffect.RESIST_CAP`), **dodge cap
+  50%→35%** (`ProtectionComponent.DODGE_CAP`), **enemy dmg/depth 0.25→0.35** (`GameManager.FLOOR_DMG_PER_DEPTH`).
+  Also weapon scaling fixed (STR/DEX/INT) so ranged/INT no longer dominates. PLAYTEST, then tune
+  further if still off; possible follow-up: diminishing returns on stacked defense across slots.
 
 - **WEAPON DAMAGE AFFIXES (DPS feels low on high-rarity weapons)** — rarity only adds effect/stat
   affixes, NOT base damage, so an Epic Broadsword hits exactly as hard as a Common one (player saw

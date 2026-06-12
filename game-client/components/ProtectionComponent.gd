@@ -8,7 +8,7 @@ class_name ProtectionComponent
 const DR_PER_CON := 3.6   # CON 5 → 18% (held from the old CON 12 × 1.5); caps at 75% (~CON 21+)
 const DR_CAP := 75.0
 const DODGE_PER_DEX := 1.2   # % full-dodge per DEX (DCC: DEX = reflexes/agility); caps at DODGE_CAP
-const DODGE_CAP := 50.0      # high-DEX dodges a lot, never everything
+const DODGE_CAP := 35.0      # high-DEX/Nimble dodges a lot, but never half (it stacks ON TOP of DR)
 
 var base_dr: float = 0.0   # set by Player from CON: CON * DR_PER_CON
 var gear_dr: float = 0.0   # flat % from armour (e.g. Lead-Lined Vest = 15)

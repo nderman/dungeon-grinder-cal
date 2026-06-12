@@ -16,8 +16,9 @@ const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
-const FLOOR_DMG_PER_DEPTH := 0.25      # enemy hearts/damage scale: ×(1 + 0.25·(floor−1)). Moderate —
-                                       # deep-floor difficulty comes mainly from ELITES, not stat inflation
+const FLOOR_DMG_PER_DEPTH := 0.35      # enemy hearts/damage scale: ×(1 + 0.35·(floor−1)). Raised so
+                                       # offense keeps pace with a geared player (was 0.25 → too soft
+                                       # by ~floor 6); deep-floor bite still comes mostly from ELITES
 
 # Ratings Spike reward table — {hype_pct, ratings} per achievement type.
 const SPIKE_TABLE := {
