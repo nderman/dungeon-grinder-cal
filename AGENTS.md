@@ -100,8 +100,9 @@ sets `GameManager.nightmare` at run start → enemies deal `×NIGHTMARE_DMG_MULT
 ## Telemetry
 Anonymous PostHog analytics via the in-house `addons/posthog/` SDK. `Telemetry.gd` (autoload) listens
 to `SignalBus`/`GameManager` and forwards to `PostHog.capture()` — gameplay code stays unaware. Key +
-host come from `POSTHOG_API_KEY`/`POSTHOG_HOST` env (NEVER committed; no-op without a key, so CI/clones
-send nothing). Opt-out: `MetaManager.analytics_enabled`. Remote balance experiment: `boss-hp-tuning`
+host come from `POSTHOG_API_KEY`/`POSTHOG_HOST` env, or a gitignored repo-root `.env` that the
+`EnvConfig` autoload loads for you (Godot has no native `.env` — env vars override the file). NEVER
+committed; no-op without a key, so CI/clones send nothing. Opt-out: `MetaManager.analytics_enabled`. Remote balance experiment: `boss-hp-tuning`
 flag → `Telemetry.boss_hp_mult()`. See `PostHog.md`. The test suite forces `PostHog.test_mode` (no net).
 
 ## Tests

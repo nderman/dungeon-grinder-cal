@@ -31,6 +31,7 @@ GameManager="*res://scripts/autoloads/GameManager.gd"
 FeedbackManager="*res://scripts/autoloads/FeedbackManager.gd"
 AchievementManager="*res://scripts/autoloads/AchievementManager.gd"
 PostHog="*res://addons/posthog/posthog.gd"
+EnvConfig="*res://scripts/autoloads/EnvConfig.gd"
 Telemetry="*res://scripts/autoloads/Telemetry.gd"
 
 [display]
