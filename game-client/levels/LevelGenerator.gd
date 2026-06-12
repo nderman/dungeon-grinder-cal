@@ -30,6 +30,7 @@ const MAX_DEPTH := 5
 const MIN_CHILD := 640.0      # don't split if a child would be smaller than this on the split axis
 const ROOM_MARGIN := 120.0    # inset from the leaf → the gap that corridors cross
 const ROOM_MIN := Vector2(380, 360)
+const BOSS_MIN_ROOM_DIM := 520.0   # the boss room wants at least this on its short side (room to move a big boss)
 const DOOR := 150.0           # corridor / doorway width
 const WALL := Room.WALL
 const SIDES := Room.SIDES
@@ -257,6 +258,11 @@ func _carve(ai: int, bj: int) -> void:
 
 # --- Room typing -----------------------------------------------------------------------------
 
+# A room's short side — used to keep the boss out of cramped rooms it can't manoeuvre in.
+func _room_min_dim(i: int) -> float:
+	var s: Vector2 = rooms[i]["rect"].size
+	return minf(s.x, s.y)
+
 func _designate() -> void:
 	if rooms.is_empty():
 		return
@@ -283,11 +289,18 @@ func _designate() -> void:
 		if i != spawn_i and not _has_stray_corridor(i):
 			clean.append(i)
 	var pool := clean if not clean.is_empty() else leaves
+	# A big boss (scaled Champion/Golem) wedges in a tiny room, so prefer a room big enough to move
+	# in: pick the FARTHEST big-enough leaf; if none qualify, fall back to the LARGEST leaf available.
+	var big := pool.filter(func(i): return i != spawn_i and _room_min_dim(i) >= BOSS_MIN_ROOM_DIM)
+	var candidates: Array = big if not big.is_empty() else pool
 	var boss_i := spawn_i
-	var best_d := -1
-	for i in pool:
-		if i != spawn_i and dist[i] > best_d:
-			best_d = dist[i]
+	var best := -INF
+	for i in candidates:
+		if i == spawn_i:
+			continue
+		var score := float(dist[i]) if not big.is_empty() else _room_min_dim(i)
+		if score > best:
+			best = score
 			boss_i = i
 	# Fallback: if no distinct leaf was found, take the euclidean-farthest room so a floor with
 	# ≥2 rooms always has a boss (never a no-boss / unbeatable floor).

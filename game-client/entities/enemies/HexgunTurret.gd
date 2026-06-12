@@ -35,26 +35,52 @@ func _physics_process(delta: float) -> void:
 		_cd = VOLLEY_INTERVAL_ENRAGED if _enraged else VOLLEY_INTERVAL
 		_volley()
 
-# Wind-up flash, then a full ring of bolts. The flash is the player's cue to start moving.
+# Wind-up flash, then a PATTERN — not always the same ring, so it's not a metronome you can stand
+# next to. Rolls between a gap-rotating ring and a spinning 2-/3-arm spiral that sweeps the arena.
 func _volley() -> void:
-	var n := BOLTS_ENRAGED if _enraged else BOLTS
+	var pattern := randi() % 3   # 0 ring · 1 double-spiral · 2 triple-spiral
 	var tw := create_tween()
 	tw.tween_property(self, "modulate", Color(1.7, 1.7, 0.7), TELEGRAPH * 0.65)
-	tw.tween_callback(_fire_ring.bind(n))
+	tw.tween_callback(func(): _fire_pattern(pattern))
 	tw.tween_property(self, "modulate", _base_tint, 0.2)
 
+func _fire_pattern(pattern: int) -> void:
+	match pattern:
+		1: _fire_spiral(2)
+		2: _fire_spiral(3)
+		_: _fire_ring(BOLTS_ENRAGED if _enraged else BOLTS)
+
+func _spawn_bolt(dir: Vector2) -> void:
+	var b := BOLT.instantiate()
+	get_tree().current_scene.add_child(b)
+	b.global_position = global_position
+	if b.has_method("setup"):
+		b.setup(dir, ai.damage_hearts, &"player")
+
+# A full ring fired at once; the random spin moves the safe gaps between volleys.
 func _fire_ring(n: int) -> void:
 	if not is_inside_tree():
 		return
-	var spin := randf() * TAU   # rotate each ring so the safe gaps move between volleys
+	var spin := randf() * TAU
 	for i in range(n):
-		var dir := Vector2.RIGHT.rotated(spin + TAU * float(i) / float(n))
-		var b := BOLT.instantiate()
-		get_tree().current_scene.add_child(b)
-		b.global_position = global_position
-		if b.has_method("setup"):
-			b.setup(dir, ai.damage_hearts, &"player")
+		_spawn_bolt(Vector2.RIGHT.rotated(spin + TAU * float(i) / float(n)))
 	SignalBus.spell_cast.emit("Volley", global_position)
+
+# A spinning spiral: `arms` bolts each tick while the aim ROTATES, over ~0.5s — the arms sweep the
+# floor so there's no static safe gap, you have to circle-strafe. Denser/faster when enraged.
+func _fire_spiral(arms: int) -> void:
+	if not is_inside_tree():
+		return
+	SignalBus.spell_cast.emit("Volley", global_position)
+	var shots := 10 if _enraged else 8
+	var spin := randf() * TAU
+	var step := TAU / float(shots) * 1.5   # >1 full turn so it spirals out, never closing into a ring
+	for s in range(shots):
+		if not is_inside_tree():
+			return
+		for a in range(arms):
+			_spawn_bolt(Vector2.RIGHT.rotated(spin + step * s + TAU * float(a) / float(arms)))
+		await get_tree().create_timer(0.06).timeout
 
 func _on_health_changed(current: float, maximum: float) -> void:
 	if _enraged or current <= 0.0 or current > maximum * 0.5:

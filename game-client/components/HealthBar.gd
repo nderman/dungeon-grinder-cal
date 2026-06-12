@@ -11,6 +11,8 @@ var _cur: float = 1.0
 var _max: float = 1.0
 
 func _ready() -> void:
+	z_index = 20           # absolute z so the bar reads ABOVE walls/cover, not hidden behind them
+	z_as_relative = false
 	var hc := get_parent().get_node_or_null("HealthComponent")
 	if hc:
 		hc.health_changed.connect(_on_changed)

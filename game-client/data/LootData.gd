@@ -49,7 +49,7 @@ const MELEE_DMG_PER_STR := 0.107
 const RANGED_DMG_PER_DEX := 0.08
 const MAGIC_DMG_PER_INT := 0.04
 const WEAPON_DMG_PER_POINT := {"STR": MELEE_DMG_PER_STR, "DEX": RANGED_DMG_PER_DEX, "INT": MAGIC_DMG_PER_INT}
-const MELEE_KNOCK_PER_STR := 8.0    # +8px knockback per STR
+const MELEE_KNOCK_PER_STR := 5.0    # +5px knockback per STR (was 8 — hits were punting mobs too far)
 
 # Which stat a weapon's damage scales with — its first combat-stat tag, else default by type.
 func weapon_scale_stat(base: String) -> String:
