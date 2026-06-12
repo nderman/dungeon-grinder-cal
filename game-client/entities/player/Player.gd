@@ -36,7 +36,8 @@ var _can_melee: bool = true
 # Weapon damage scaling lives in LootData (single source, shared with the inventory's DPS readout):
 # LootData.effective_weapon_damage (scales off the weapon's stat) + LootData.MELEE_KNOCK_PER_STR.
 const SPREAD_PER_DEX := 1.1         # DEX tightens the weapon's base spread (DEX ~8 ≈ old DEX 10)
-const GEAR_REGEN_CAP := 2.5         # max HP/sec from Mending (regen) gear — can't stack to immortality
+const TOTAL_REGEN_CAP := 3.0        # max HP/sec regen from ALL sources (CON + Mending gear). High CON
+                                    # alone (0.2/CON) blew past this and out-healed everything.
 const DASH_IFRAME_PER_DEX := 0.025  # +0.1s i-frames at DEX 4
 const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the MeleeSwing VFX)
 var _melee_fx: MeleeSwing            # reused sweep VFX, created on spawn
@@ -112,9 +113,9 @@ func _derive_vitals(full: bool) -> void:
 	_defense = def   # cached so elemental_resist() can read fire/frost resist on incoming statuses
 	protection_comp.base_dr = con * ProtectionComponent.DR_PER_CON
 	protection_comp.gear_dr = float(def.get("armor", 0.0))   # flat DR% from "Plated" gear
-	# Gear regen is CAPPED so you can't stack Mending pieces into invulnerable self-healing — it tops
-	# up the CON-based regen, it doesn't replace skill.
-	health_comp.regen_rate = con * HealthComponent.REGEN_PER_CON + minf(float(def.get("regen", 0.0)), GEAR_REGEN_CAP)
+	# Cap TOTAL regen (CON-based + Mending gear): at high CON the CON regen alone (~4.6/s at CON 23)
+	# out-healed all incoming damage. Capping the sum keeps regen meaningful without being immortal.
+	health_comp.regen_rate = minf(con * HealthComponent.REGEN_PER_CON + float(def.get("regen", 0.0)), TOTAL_REGEN_CAP)
 	var dex := int(current_stats["DEX"])
 	protection_comp.dodge_chance = minf(ProtectionComponent.DODGE_CAP, dex * ProtectionComponent.DODGE_PER_DEX + float(def.get("dodge", 0.0)))
 	base_speed = 300.0 + (dex * 12.5)
