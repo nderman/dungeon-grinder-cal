@@ -51,12 +51,16 @@ const MAGIC_DMG_PER_INT := 0.04
 const WEAPON_DMG_PER_POINT := {"STR": MELEE_DMG_PER_STR, "DEX": RANGED_DMG_PER_DEX, "INT": MAGIC_DMG_PER_INT}
 const MELEE_KNOCK_PER_STR := 5.0    # +5px knockback per STR (was 8 — hits were punting mobs too far)
 
-# Which stat a weapon's damage scales with — its first combat-stat tag, else default by type.
+# Which stat a weapon's damage scales with — its first tag that's VALID for the weapon TYPE: melee
+# scales off a physical stat (STR/DEX), ranged off DEX or INT (magic). This keeps a melee weapon that
+# happens to be tagged INT (e.g. the God-Emperor's Toaster) from scaling off the weak magic rate.
 func weapon_scale_stat(base: String) -> String:
-	var tags: Array = ITEMS.get(base, {}).get("tags", [])
-	if not tags.is_empty() and String(tags[0]) in WEAPON_DMG_PER_POINT:
-		return String(tags[0])
-	return "STR" if String(weapon_stats(base).get("type", "melee")) == "melee" else "DEX"
+	var ranged := String(weapon_stats(base).get("type", "melee")) == "ranged"
+	var valid := ["DEX", "INT"] if ranged else ["STR", "DEX"]
+	for t in ITEMS.get(base, {}).get("tags", []):
+		if String(t) in valid:
+			return String(t)
+	return "DEX" if ranged else "STR"
 
 # --- Effect-affixes: the "interesting" rolls that only appear on Rare+ gear ---------------------
 # Beyond flat stat bonuses, Rare+ items roll EFFECT affixes. OFFENSE effects proc on your weapon

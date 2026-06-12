@@ -51,8 +51,11 @@ func _fire_pattern(pattern: int) -> void:
 		_: _fire_ring(BOLTS_ENRAGED if _enraged else BOLTS)
 
 func _spawn_bolt(dir: Vector2) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return   # mid scene-transition (e.g. death during a spiral) — no parent to spawn into
 	var b := BOLT.instantiate()
-	get_tree().current_scene.add_child(b)
+	scene.add_child(b)
 	b.global_position = global_position
 	if b.has_method("setup"):
 		b.setup(dir, ai.damage_hearts, &"player")

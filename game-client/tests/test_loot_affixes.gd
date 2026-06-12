@@ -43,4 +43,5 @@ func run() -> void:
 	approx(LootData.effective_weapon_damage("crossbow", {"DEX": 8, "INT": 99}), 1.5 * (1.0 + 8 * LootData.RANGED_DMG_PER_DEX), "a mundane gun scales DEX, not INT")
 	approx(LootData.effective_weapon_damage("glitch_pistol", {"INT": 10, "DEX": 99}), 0.6 * (1.0 + 10 * LootData.MAGIC_DMG_PER_INT), "a MAGIC gun scales INT (modestly)")
 	eq(LootData.weapon_scale_stat("nunchucks"), "DEX", "a DEX-tagged melee weapon scales DEX")
+	eq(LootData.weapon_scale_stat("golden_toaster"), "STR", "a melee weapon tagged INT still scales a PHYSICAL stat, not the weak magic rate")
 	truthy("DPS" in LootData.instance_desc({"base": "broadsword", "affixes": []}, {"STR": 10}), "desc shows DPS when stats are passed")
