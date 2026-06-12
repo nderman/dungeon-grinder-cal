@@ -18,3 +18,12 @@ func run() -> void:
 	check(float(GEN.FINAL_BOSS["hearts"]) > float(GEN.FLOOR_BOSS["hearts"]), "the Champion has more HP than a Floor Boss")
 	check(float(GEN.FINAL_BOSS["damage"]) >= float(GEN.FLOOR_BOSS["damage"]), "the Champion hits at least as hard")
 	truthy(GameManager.has_method("win_run"), "win_run() exists as the victory path")
+
+	# Nightmare difficulty multiplies enemy damage when on, nothing when off.
+	var was_nm := GameManager.nightmare
+	GameManager.nightmare = false
+	approx(GameManager.nightmare_dmg_mult(), 1.0, "normal difficulty: no damage multiplier")
+	GameManager.nightmare = true
+	approx(GameManager.nightmare_dmg_mult(), GameManager.NIGHTMARE_DMG_MULT, "Nightmare: enemies hit harder")
+	check(GameManager.NIGHTMARE_DMG_MULT > 1.0, "Nightmare multiplier is actually a buff")
+	GameManager.nightmare = was_nm   # restore shared state

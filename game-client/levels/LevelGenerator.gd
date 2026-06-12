@@ -85,6 +85,9 @@ func _ready() -> void:
 	_announce_floor_theme()   # banner the hazard once the player's in
 	if GameManager.is_final_floor():
 		_announce_final_floor()
+	if GameManager.nightmare and GameManager.current_floor == 1:
+		var p := get_tree().get_first_node_in_group("player") as Node2D
+		SignalBus.toast.emit("☠ NIGHTMARE — the System turned up the violence", p.global_position if p else Vector2.ZERO)
 
 # --- BSP -------------------------------------------------------------------------------------
 
@@ -523,7 +526,7 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 		hc.xp_reward = int(hc.xp_reward * m)   # deeper (tougher) mobs are "higher level" → pay more XP
 	var ai := e.get_node_or_null("AIComponent")
 	if ai:
-		ai.damage_hearts *= m
+		ai.damage_hearts *= m * GameManager.nightmare_dmg_mult()   # Nightmare: enemies hit harder
 		if dormant:
 			ai.start_active = false       # boss-room adds stay put until the arena locks…
 			if hc:
@@ -642,7 +645,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 		hc.set_invulnerable(true)   # can't be sniped while dormant — must enter to fight it
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
-		ai.damage_hearts = tier["damage"] * m
+		ai.damage_hearts = tier["damage"] * m * GameManager.nightmare_dmg_mult()   # Nightmare boss bite
 		ai.telegraph_duration = tier["telegraph"]
 		ai.move_speed = tier["speed"]
 		ai.stun_resist = tier.get("stun_resist", 0.0)   # bosses shrug off / shorten Ground Slam etc.

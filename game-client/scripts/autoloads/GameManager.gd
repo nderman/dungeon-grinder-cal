@@ -50,6 +50,13 @@ var run_ratings: int = 0
 var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Sponsor Pod
 var is_run_active: bool = false
 var run_won: bool = false        # set when you beat the final floor — the Green Room reads it for the Champion screen
+var nightmare: bool = false      # this run's difficulty (copied from MetaManager.nightmare_enabled at run start)
+
+const NIGHTMARE_DMG_MULT := 1.6  # enemies hit this much harder across the board on Nightmare
+
+# Enemy-damage multiplier for the current run (1.0 normally, NIGHTMARE_DMG_MULT on Nightmare).
+func nightmare_dmg_mult() -> float:
+	return NIGHTMARE_DMG_MULT if nightmare else 1.0
 var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
@@ -473,6 +480,7 @@ func is_final_floor() -> bool:
 func start_new_run() -> void:
 	current_floor = 1
 	run_won = false
+	nightmare = MetaManager.nightmare_enabled   # lock in the difficulty chosen in the Green Room
 	run_ratings = 0
 	hype_meter = 0.0
 	xp = 0

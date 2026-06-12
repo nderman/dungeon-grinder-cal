@@ -79,6 +79,8 @@ test bench.
 **Endgame:** the run is bounded — `GameManager.FINAL_FLOOR` (9) is the Season's last floor. It has no
 stairs down; killing its `FINAL_BOSS` (Champion) calls `GameManager.win_run()` → the Green Room shows
 a "Season Champion" screen (`MetaManager.seasons_won` prestige). Death still routes to `end_run()`.
+**Nightmare mode** (`MetaManager.nightmare_enabled`, unlocked after a win, toggled in the Green Room)
+sets `GameManager.nightmare` at run start → enemies deal `×NIGHTMARE_DMG_MULT` damage (`nightmare_dmg_mult()`).
 **Not yet built (next work):**
 - **Balance pass** (defensive affixes stack too hard); **art** (gray-box `Polygon2D`); weapon damage
   affixes (rarity adds effects but not base dmg); a unique multi-phase final boss. See `docs/TODO.md`.

@@ -13,6 +13,7 @@ const BASE_STATS := {"STR": 4, "DEX": 4, "INT": 4, "CON": 4, "CHA": 4}   # DCC: 
 var syndication_points: int = 0
 var milestone_tokens: int = 0
 var seasons_won: int = 0     # Champion runs completed (beat the final floor) — prestige, persisted
+var nightmare_enabled: bool = false   # NIGHTMARE difficulty toggle (unlocked after a first win), persisted
 var unlocked_races: Array[String] = ["Human"]
 var unlocked_classes: Array[String] = ["Brawler", "Scavenger"]
 var permanent_loot_pool: Array[String] = []      # IDs available to the Director's Algorithm
@@ -78,6 +79,7 @@ func save_persistence() -> void:
 	cfg.set_value("Progression", "syndication_points", syndication_points)
 	cfg.set_value("Progression", "milestone_tokens", milestone_tokens)
 	cfg.set_value("Progression", "seasons_won", seasons_won)
+	cfg.set_value("Progression", "nightmare", nightmare_enabled)
 	cfg.set_value("Unlocks", "races", unlocked_races)
 	cfg.set_value("Unlocks", "classes", unlocked_classes)
 	cfg.set_value("Unlocks", "loot_pool", permanent_loot_pool)
@@ -92,6 +94,7 @@ func load_persistence() -> void:
 	syndication_points = cfg.get_value("Progression", "syndication_points", 0)
 	milestone_tokens = cfg.get_value("Progression", "milestone_tokens", 0)
 	seasons_won = cfg.get_value("Progression", "seasons_won", 0)
+	nightmare_enabled = cfg.get_value("Progression", "nightmare", false)
 	# .assign() coerces ConfigFile's untyped Arrays into our typed Array[String]s.
 	unlocked_races.assign(cfg.get_value("Unlocks", "races", ["Human"]))
 	unlocked_classes.assign(cfg.get_value("Unlocks", "classes", ["Brawler", "Scavenger"]))

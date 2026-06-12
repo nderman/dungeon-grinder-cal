@@ -10,7 +10,31 @@ func _ready() -> void:
 	_refresh_summary()
 	_build_shop_frame()
 	_build_continue_hint()
+	_build_nightmare_toggle()
 	MetaManager.meta_changed.connect(_on_meta_changed)
+
+# NIGHTMARE toggle — unlocked once you've won a Season. Click to flip; the choice persists and locks
+# in at the next run's start (GameManager.start_new_run reads MetaManager.nightmare_enabled).
+func _build_nightmare_toggle() -> void:
+	if MetaManager.seasons_won < 1:
+		return   # locked until you've taken a Champion's head at least once
+	var btn := Button.new()
+	btn.anchor_left = 0.3
+	btn.anchor_right = 0.7
+	btn.anchor_top = 0.86
+	btn.anchor_bottom = 0.91
+	btn.focus_mode = Control.FOCUS_NONE   # don't let it eat the SPACE/E "new Season" key
+	_update_nightmare_btn(btn)
+	btn.pressed.connect(func() -> void:
+		MetaManager.nightmare_enabled = not MetaManager.nightmare_enabled
+		MetaManager.save_persistence()
+		_update_nightmare_btn(btn))
+	add_child(btn)
+
+func _update_nightmare_btn(btn: Button) -> void:
+	var on := MetaManager.nightmare_enabled
+	btn.text = "☠ NIGHTMARE: %s   (enemies hit ×%.1f)" % ["ON" if on else "OFF", GameManager.NIGHTMARE_DMG_MULT]
+	btn.modulate = Color(1.0, 0.4, 0.4) if on else Color(0.7, 0.7, 0.75)
 
 func _refresh_summary() -> void:
 	if GameManager.run_won:

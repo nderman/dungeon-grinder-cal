@@ -8,6 +8,13 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **NIGHTMARE MODE — v1 DONE (2026-06-12).** Unlocked after a win; Green Room toggle
+  (`MetaManager.nightmare_enabled`, persisted) → `GameManager.nightmare` at run start → enemies deal
+  `×1.6` damage (`nightmare_dmg_mult()`, applied in `_spawn_enemy`/`_spawn_boss`). Follow-ups: it
+  should **reward more** (a harder mode with no extra loot/ratings is just pain — boost box tier /
+  ratings / a Nightmare-only cosmetic), and could **scale with `seasons_won`** (Nightmare+1, +2…); a
+  HUD badge while active would beat the floor-1 toast. Also a natural **token sink** if rewards gate
+  behind it.
 - **META DEAD-ENDS once the roster is unlocked** (player hit it at Season Champion: 11 Tokens + 17955
   Syndication, "nothing left to contract"). Milestone Tokens + Syndication have no sink after every
   race/class is bought. Add token/syndication SINKS so prestige keeps mattering: a permanent **stat-buff
