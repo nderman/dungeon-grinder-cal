@@ -81,8 +81,8 @@ func _on_stat(stat: String, value: int) -> void:
 	if stat in LootData.STAT_KEYS:   # skip the "ITEM"/gear-refresh churn — only real stat spends
 		PostHog.capture("stat_injected", {"stat_name": stat, "new_value": value})
 
-# The remote balance experiment: feature flag `boss-hp-tuning` (control | +15pct), read once per run
-# and cached on the SDK. LevelGenerator calls this when spawning a boss → compare boss_killed rate
-# per variant in PostHog Experiments.
+# The remote balance experiment: feature flag `boss-hp-tuning` (control | test), read once per run
+# and cached on the SDK. The `test` cohort fights bosses with +15% HP. LevelGenerator reads the
+# pushed GameManager.boss_hp_mult when spawning → compare boss_killed rate per variant in Experiments.
 func boss_hp_mult() -> float:
-	return 1.15 if PostHog.get_feature_flag("boss-hp-tuning", "control") == "+15pct" else 1.0
+	return 1.15 if PostHog.get_feature_flag("boss-hp-tuning", "control") == "test" else 1.0

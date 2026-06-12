@@ -85,9 +85,10 @@ Keep property values primitive (String/int/float/bool) — no `Vector2`, no node
 signals carry `location: Vector2`; **drop it**, it's noise for analytics.
 
 ## Feature flag / experiment (one, to prove it)
-- `boss-hp-tuning` (multivariate: `control` / `+15pct`) — `Telemetry` fetches it once at
-  `run_started`, exposes `Telemetry.variant("boss-hp-tuning")`, and the boss spawn reads it
-  to scale HP. Then compare `boss_killed` rate per variant in PostHog Experiments.
+- `boss-hp-tuning` (multivariate: `control` / `test`) — `Telemetry` fetches it once at
+  `run_started` via `boss_hp_mult()` (the `test` cohort gets +15% boss HP) and PUSHES the
+  multiplier into `GameManager.boss_hp_mult`; the boss spawn reads that plain field. Then
+  compare `boss_killed` rate per variant in PostHog Experiments.
 - Fetch flags **once per run** and cache on the autoload — never per-frame, never per-enemy.
 
 ## Implementation steps

@@ -36,8 +36,8 @@ func run() -> void:
 	# PUSHED into gameplay (GameManager.boss_hp_mult) on run_started — gameplay never reads analytics.
 	PostHog.set_feature_flags_for_test({})
 	approx(Telemetry.boss_hp_mult(), 1.0, "boss-hp flag defaults to control (×1.0)")
-	PostHog.set_feature_flags_for_test({"boss-hp-tuning": "+15pct"})
-	approx(Telemetry.boss_hp_mult(), 1.15, "boss-hp '+15pct' variant scales HP")
+	PostHog.set_feature_flags_for_test({"boss-hp-tuning": "test"})
+	approx(Telemetry.boss_hp_mult(), 1.15, "boss-hp 'test' variant scales HP +15%")
 	SignalBus.run_started.emit()
 	approx(GameManager.boss_hp_mult, 1.15, "run_started PUSHES the experiment value into GameManager")
 
