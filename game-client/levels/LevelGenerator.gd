@@ -639,7 +639,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	var b := scene.instantiate()
 	var hc := b.get_node_or_null("HealthComponent")
 	if hc:
-		hc.configured_hearts = tier["hearts"] * m
+		hc.configured_hearts = tier["hearts"] * m * GameManager.boss_hp_mult   # PostHog boss-hp experiment (pushed by Telemetry)
 		hc.xp_reward = int(tier["xp"] * m)   # deeper bosses pay more XP (scales with their toughness)
 		hc.ratings_reward = tier.get("ratings", hc.ratings_reward)   # boss = ratings + corpse-gold jackpot
 		hc.set_invulnerable(true)   # can't be sniped while dormant — must enter to fight it

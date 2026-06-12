@@ -18,9 +18,11 @@ const TESTS := [
 	preload("res://tests/test_hexgun.gd"),
 	preload("res://tests/test_showrunner.gd"),
 	preload("res://tests/test_achievements.gd"),
+	preload("res://tests/test_telemetry.gd"),
 ]
 
 func _ready() -> void:
+	PostHog.test_mode = true   # the suite records telemetry locally but NEVER hits the network
 	print("\n=== Dungeon Grinder Cal — regression suite ===")
 	var total_fails := 0
 	var failed_files := 0

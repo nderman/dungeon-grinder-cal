@@ -97,6 +97,13 @@ sets `GameManager.nightmare` at run start → enemies deal `×NIGHTMARE_DMG_MULT
 5. Safe Room terminals (stat injection + loot box) → mid-run progression.
 6. `GameManager.end_run` → Green Room → `GreenRoomUI` token spend → loop closes.
 
+## Telemetry
+Anonymous PostHog analytics via the in-house `addons/posthog/` SDK. `Telemetry.gd` (autoload) listens
+to `SignalBus`/`GameManager` and forwards to `PostHog.capture()` — gameplay code stays unaware. Key +
+host come from `POSTHOG_API_KEY`/`POSTHOG_HOST` env (NEVER committed; no-op without a key, so CI/clones
+send nothing). Opt-out: `MetaManager.analytics_enabled`. Remote balance experiment: `boss-hp-tuning`
+flag → `Telemetry.boss_hp_mult()`. See `PostHog.md`. The test suite forces `PostHog.test_mode` (no net).
+
 ## Tests
 Headless regression suite in `game-client/tests/` — **`./tests/run_tests.sh`** (exits non-zero on
 failure; run it as the `/shipit` test step). One process loads autoloads once and runs every

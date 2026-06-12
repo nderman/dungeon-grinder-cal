@@ -51,6 +51,8 @@ var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Spo
 var is_run_active: bool = false
 var run_won: bool = false        # set when you beat the final floor — the Green Room reads it for the Champion screen
 var nightmare: bool = false      # this run's difficulty (copied from MetaManager.nightmare_enabled at run start)
+var boss_hp_mult: float = 1.0    # PostHog boss-hp experiment value — Telemetry PUSHES it on run_started
+                                 # so gameplay (LevelGenerator) reads a plain field, never the analytics layer
 
 const NIGHTMARE_DMG_MULT := 1.6  # enemies hit this much harder across the board on Nightmare
 
@@ -480,6 +482,7 @@ func is_final_floor() -> bool:
 func start_new_run() -> void:
 	current_floor = 1
 	run_won = false
+	boss_hp_mult = 1.0                          # default; Telemetry overwrites from the flag on run_started
 	nightmare = MetaManager.nightmare_enabled   # lock in the difficulty chosen in the Green Room
 	run_ratings = 0
 	hype_meter = 0.0
@@ -548,6 +551,7 @@ func win_run() -> void:
 	is_run_active = false
 	run_won = true
 	SignalBus.ratings_spike.emit("FATALITY")
+	SignalBus.run_ended.emit("won")
 	SignalBus.toast.emit("SEASON CHAMPION!", Vector2.ZERO)
 	MetaManager.syndication_points += int(floor(run_ratings * 0.2))   # winners take a bigger cut
 	MetaManager.add_milestone_token(3)                                # max milestone reward
@@ -562,6 +566,7 @@ func end_run() -> void:
 		return   # idempotent: a same-frame win (win_run already flipped this) must not double-fire
 	is_run_active = false
 	SignalBus.ratings_spike.emit("CANCELLED")
+	SignalBus.run_ended.emit("died")
 
 	# The Syndicate's cut: 10% of Ratings become permanent Syndication Points.
 	MetaManager.syndication_points += int(floor(run_ratings * 0.1))
