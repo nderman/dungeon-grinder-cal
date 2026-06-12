@@ -38,7 +38,9 @@ func run() -> void:
 	eq(LootData.instance_name(w), "Burning Broadsword", "effect adjective prefixes the name")
 	eq(LootData.effect_label({"effect": "fire_resist", "power": 0.4}), "Fire Resist 40%", "resist labels as a percentage")
 
-	# Effective weapon damage (STR melee / INT ranged) + DPS.
-	approx(LootData.effective_weapon_damage("broadsword", {"STR": 10}), 1.3 * (1.0 + 10 * LootData.MELEE_DMG_PER_STR), "melee effective dmg scales STR")
-	approx(LootData.effective_weapon_damage("crossbow", {"INT": 8, "STR": 99}), 1.5 * (1.0 + 8 * LootData.RANGED_DMG_PER_INT), "ranged effective dmg scales INT not STR")
+	# Effective weapon damage scales off the weapon's PRIMARY tag: STR melee, DEX guns, INT magic.
+	approx(LootData.effective_weapon_damage("broadsword", {"STR": 10}), 1.3 * (1.0 + 10 * LootData.MELEE_DMG_PER_STR), "heavy melee scales STR")
+	approx(LootData.effective_weapon_damage("crossbow", {"DEX": 8, "INT": 99}), 1.5 * (1.0 + 8 * LootData.RANGED_DMG_PER_DEX), "a mundane gun scales DEX, not INT")
+	approx(LootData.effective_weapon_damage("glitch_pistol", {"INT": 10, "DEX": 99}), 0.6 * (1.0 + 10 * LootData.MAGIC_DMG_PER_INT), "a MAGIC gun scales INT (modestly)")
+	eq(LootData.weapon_scale_stat("nunchucks"), "DEX", "a DEX-tagged melee weapon scales DEX")
 	truthy("DPS" in LootData.instance_desc({"base": "broadsword", "affixes": []}, {"STR": 10}), "desc shows DPS when stats are passed")

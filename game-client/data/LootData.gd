@@ -42,9 +42,21 @@ const BASE_BONUS_PER_TAG := 2   # a gear item's flat bonus to each of its tagged
 
 # Weapon damage scaling (single source of truth — Player reads these). Melee scales with STR, ranged
 # with INT; knockback scales with STR. Used both in combat AND for the inventory's effective-DPS.
-const MELEE_DMG_PER_STR := 0.107    # STR 7 → ×1.75 melee
-const RANGED_DMG_PER_INT := 0.125   # INT 4 → ×1.5 ranged
+# A weapon scales off its PRIMARY tag (its affinity): STR for heavy melee, DEX for guns/finesse,
+# INT only for MAGIC weapons (the Glitch Pistol). Per-point rate by stat — STR hits hardest, DEX is
+# softer (faster/safer weapons), INT is modest on purpose so INT's real payoff is SPELLS, not a gun.
+const MELEE_DMG_PER_STR := 0.107
+const RANGED_DMG_PER_DEX := 0.08
+const MAGIC_DMG_PER_INT := 0.04
+const WEAPON_DMG_PER_POINT := {"STR": MELEE_DMG_PER_STR, "DEX": RANGED_DMG_PER_DEX, "INT": MAGIC_DMG_PER_INT}
 const MELEE_KNOCK_PER_STR := 8.0    # +8px knockback per STR
+
+# Which stat a weapon's damage scales with — its first combat-stat tag, else default by type.
+func weapon_scale_stat(base: String) -> String:
+	var tags: Array = ITEMS.get(base, {}).get("tags", [])
+	if not tags.is_empty() and String(tags[0]) in WEAPON_DMG_PER_POINT:
+		return String(tags[0])
+	return "STR" if String(weapon_stats(base).get("type", "melee")) == "melee" else "DEX"
 
 # --- Effect-affixes: the "interesting" rolls that only appear on Rare+ gear ---------------------
 # Beyond flat stat bonuses, Rare+ items roll EFFECT affixes. OFFENSE effects proc on your weapon
@@ -360,10 +372,8 @@ func effect_label(af: Dictionary) -> String:
 
 # Effective per-hit damage of a weapon for a wielder's stats (melee scales STR, ranged INT).
 func effective_weapon_damage(base: String, stats: Dictionary) -> float:
-	var w := weapon_stats(base)
-	if String(w.get("type", "melee")) == "ranged":
-		return float(w["damage"]) * (1.0 + int(stats.get("INT", 0)) * RANGED_DMG_PER_INT)
-	return float(w["damage"]) * (1.0 + int(stats.get("STR", 0)) * MELEE_DMG_PER_STR)
+	var s := weapon_scale_stat(base)
+	return float(weapon_stats(base).get("damage", FISTS["damage"])) * (1.0 + int(stats.get(s, 0)) * float(WEAPON_DMG_PER_POINT[s]))
 
 # Sustained DPS = effective per-hit ÷ cooldown — the true "which weapon hits harder" comparison.
 func effective_weapon_dps(base: String, stats: Dictionary) -> float:

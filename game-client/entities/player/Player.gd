@@ -34,7 +34,7 @@ var _can_melee: bool = true
 # Coefficients are on the DCC stat scale (start ~4-7): chosen so a starting build's outputs match
 # the old base-10 balance, but each point now matters ~2.5× more and stats climb to 100+.
 # Weapon damage scaling lives in LootData (single source, shared with the inventory's DPS readout):
-# LootData.MELEE_DMG_PER_STR / RANGED_DMG_PER_INT / MELEE_KNOCK_PER_STR.
+# LootData.effective_weapon_damage (scales off the weapon's stat) + LootData.MELEE_KNOCK_PER_STR.
 const SPREAD_PER_DEX := 1.1         # DEX tightens the weapon's base spread (DEX ~8 ≈ old DEX 10)
 const DASH_IFRAME_PER_DEX := 0.025  # +0.1s i-frames at DEX 4
 const MELEE_SWEEP_TIME := 0.18      # melee hit-sample window (matches the MeleeSwing VFX)
@@ -172,6 +172,12 @@ func _current_weapon() -> Dictionary:
 	var w: Dictionary = GameManager.equipped.get("Weapon", {})
 	return LootData.weapon_stats(String(w["base"])) if not w.is_empty() else LootData.FISTS
 
+# The equipped weapon's base id ("" = bare fists) — feeds LootData.effective_weapon_damage so combat
+# and the inventory's DPS readout share ONE scaling source (melee→STR, ranged→DEX, magic→INT).
+func _current_weapon_base() -> String:
+	var w: Dictionary = GameManager.equipped.get("Weapon", {})
+	return String(w.get("base", "")) if not w.is_empty() else ""
+
 func _primary_attack() -> void:
 	var w := _current_weapon()
 	if w["type"] == "ranged":
@@ -297,12 +303,11 @@ func _ability_blink(reach: float) -> void:
 func _attack_effects() -> Dictionary:
 	return LootData.combat_effects(GameManager.equipped)
 
-# Fire the equipped ranged weapon: damage scales with INT, spread = weapon base tightened by DEX.
-# A crit roll fattens the bolt (gold + bigger), and the shot carries the gear's on-hit effects.
+# Fire the equipped ranged weapon: damage scales with the weapon's stat (DEX for guns, INT only for
+# magic), spread = weapon base tightened by DEX. A crit fattens the bolt; the shot carries gear effects.
 func _fire(w: Dictionary) -> void:
 	_can_fire = false
-	var int_stat := int(current_stats["INT"])
-	var base_dmg: float = float(w["damage"]) * (1.0 + int_stat * LootData.RANGED_DMG_PER_INT)
+	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats)
 	var fx := _attack_effects()
 	var res := CombatEffects.resolve_damage(base_dmg, fx)
 	var crit: bool = res[1]
@@ -321,12 +326,13 @@ func _melee_attack(w: Dictionary) -> void:
 	_melee_fx.play(swing_aim, float(w["range"]), float(w["arc"]))   # the visible sweep
 	SignalBus.spell_cast.emit("Melee", global_position)
 	var fx := _attack_effects()   # gear on-hit effects, fixed for the whole swing
+	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats)
 	var already: Array = []   # enemies hit this swing (don't double-hit)
 	var elapsed := 0.0
 	while elapsed < MELEE_SWEEP_TIME:
 		if not _alive or not is_inside_tree():
 			return   # player died / floor changed mid-swing — stop touching the world
-		_melee_tick(w, swing_aim, already, fx)
+		_melee_tick(w, swing_aim, already, fx, base_dmg)
 		elapsed += get_physics_process_delta_time()
 		await get_tree().physics_frame
 	if not is_inside_tree():
@@ -334,10 +340,8 @@ func _melee_attack(w: Dictionary) -> void:
 	await get_tree().create_timer(maxf(0.0, float(w["cooldown"]) - MELEE_SWEEP_TIME)).timeout
 	_can_melee = true
 
-func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array, effects: Dictionary) -> void:
-	var str_stat := int(current_stats["STR"])
-	var base_dmg := float(w["damage"]) * (1.0 + str_stat * LootData.MELEE_DMG_PER_STR)
-	var knock := float(w["knock"]) + str_stat * LootData.MELEE_KNOCK_PER_STR
+func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array, effects: Dictionary, base_dmg: float) -> void:
+	var knock := float(w["knock"]) + int(current_stats["STR"]) * LootData.MELEE_KNOCK_PER_STR
 	var melee_range := float(w["range"])
 	var arc_half := deg_to_rad(float(w["arc"]) * 0.5)
 	for e in get_tree().get_nodes_in_group("enemies"):
