@@ -8,6 +8,29 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **TELEMETRY + LIVE A/B EXPERIMENT — DONE (2026-06-12).** Vendored **PostHog** Godot addon
+  (`addons/posthog/`, copied not submoduled so the public repo is self-contained). `Telemetry.gd`
+  autoload rides `SignalBus`/`GameManager` and forwards run/floor/boss/death/level/loot/achievement
+  events — pure listener, gameplay code stays unaware; **no-ops without an API key** so CI/clones send
+  nothing. Key+host come from `POSTHOG_API_KEY`/`POSTHOG_HOST` env OR a gitignored repo-root `.env`
+  loaded by the new `EnvConfig` autoload (Godot has no native `.env`). Opt-out via
+  `MetaManager.analytics_enabled`; tests force `PostHog.test_mode` (no network). **Live experiment**
+  "Boss HP tuning (+15%)" (PostHog id 83534, EU): flag `boss-hp-tuning` (`control`/`test`), `test`
+  cohort fights +15%-HP bosses via `Telemetry.boss_hp_mult()` PUSHED one-way into `GameManager.boss_hp_mult`
+  (LevelGenerator reads the plain field, never the analytics layer). Primary metric = boss kill rate;
+  secondaries = bosses killed / floors descended per player. **Currently a DRAFT** — launch once
+  there's play volume per variant (solo playtesting won't power the funnel). Follow-ups: launch +
+  watch deaths-by-floor / class popularity; PostHog MCP is wired so balance audits can query events
+  directly. See `PostHog.md` for the full spec.
+- **MICHAEL BAY BOX FLOOD — FIXED (2026-06-12).** Telemetry caught it on day one: `michael_bay`
+  ("Blew an enemy to chunks") minted **9 Silver Weapon Boxes on floor 3 in one session** — its trigger
+  (`BOOM`, any bomb/AoE kill) trips on nearly every kill and the only brake was the shared 12s
+  repeatable cooldown. Fix: demote **tier 1→0** (floor gate now only pays a box on floors 1-3, heckles
+  past that) + new optional per-achievement **`cooldown`** field (default 12s) set to **45s** for
+  michael_bay. The cooldown-override mechanism is reusable for any future AoE-spam feat. Regression
+  test added. *(General lesson: the achievement→loot economy needs a per-feat trigger-frequency sanity
+  check — a feat that fires on every kill can't carry the same cooldown as a skill feat.)*
+
 - **NIGHTMARE MODE — v1 DONE (2026-06-12).** Unlocked after a win; Green Room toggle
   (`MetaManager.nightmare_enabled`, persisted) → `GameManager.nightmare` at run start → enemies deal
   `×1.6` damage (`nightmare_dmg_mult()`, applied in `_spawn_enemy`/`_spawn_boss`). Follow-ups: it

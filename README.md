@@ -43,6 +43,19 @@ lets the systems below stack without tangling.
   in code), scatters enemies, cover, corpses, and sub-dimensional Safe Rooms.
 - **"Achievement → loot" economy** — a manager watches the `SignalBus` and pays out themed loot boxes
   for feats (set an enemy on fire, blow one up, max a stat), in the host AI's snarky voice.
+- **Analytics & live experiments** — an in-house **PostHog** SDK (a vendored Godot addon) rides the
+  same `SignalBus`: a `Telemetry` listener forwards run / floor / boss / death / progression events
+  with zero coupling to gameplay code, **no-ops without an API key** (so CI and fresh clones transmit
+  nothing), and honours an in-game opt-out. A server-side **feature flag drives a live A/B experiment**
+  (boss-HP tuning) — its variant is pushed *one-way* into gameplay, never read back, so the game never
+  depends on the analytics layer. Balance is data-driven: the recent loot-box-spam fix came straight
+  off the event counts.
+
+## Engineering hygiene
+
+- **Persistent regression suite** — `game-client/tests/` runs headlessly in one process (`./tests/run_tests.sh`),
+  loading autoloads once and exiting non-zero on failure. It runs in **GitHub Actions on every push/PR**
+  (the badge above) and makes no network calls.
 
 ## Tech
 
@@ -66,9 +79,13 @@ cd game-client
 
 ## Status & roadmap
 
-Combat, loot/affixes, loot boxes, bosses, and the achievement economy are in. Next up: an endgame /
-final-boss + win state, enemy-applied status effects (+ resistance gear), an art pass, and a proper
-loot-box reveal screen. Running notes live in [`docs/TODO.md`](docs/TODO.md).
+In: component combat, loot/affixes, tiered loot boxes, the boss roster, enemy elemental statuses
+(+ resist gear) and floor hazard themes, the achievement→loot economy, a bounded **endgame**
+(Floor 9 Champion → "Season Champion" win screen), a post-win **Nightmare mode**, and **anonymous
+telemetry + a live A/B experiment**. Next up: an **art pass** (gray-box → pixel sprites), a proper
+**loot-box reveal screen**, **weapon damage affixes** (rarity should lift base DPS, not just add
+effects), and **meta token sinks** so prestige keeps mattering once the roster is fully unlocked.
+Running notes live in [`docs/TODO.md`](docs/TODO.md).
 
 ## Licence
 
