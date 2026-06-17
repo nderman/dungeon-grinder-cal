@@ -14,7 +14,10 @@ var is_player: bool = false
 @export var xp_reward: int = 0               # XP this mob pays on death (bosses set higher)
 @export var ratings_reward: int = 10         # Ratings this mob pays on death (audience rail)
 @export var iframe_seconds: float = 0.4      # brief post-hit invulnerability (player)
-var _invuln: bool = false
+# Two INDEPENDENT invuln sources — they used to share one bool, so a post-hit i-frame timer expiring
+# could silently end a dash (or a dormant boss's) invuln, and vice-versa. Kept separate now.
+var _held_invuln: bool = false       # explicitly held on/off: dash i-frames AND boss dormancy (set_invulnerable)
+var _hit_invuln_until: float = 0.0   # timed post-hit i-frame window (player only); wall-clock expiry in seconds
 
 const REGEN_PER_CON := 0.2   # HP/sec per CON point (DCC: CON drives health regen); set by the Player
 var regen_rate: float = 0.0  # passive HP/sec; 0 = none (enemies leave it 0)
@@ -53,7 +56,7 @@ func set_max_hearts(heart_count: float) -> void:
 
 # Damage arrives in HEARTS, already filtered through the ProtectionComponent.
 func take_damage(amount: float) -> void:
-	if amount <= 0.0 or current_hearts <= 0.0 or _invuln:
+	if amount <= 0.0 or current_hearts <= 0.0 or is_invulnerable():
 		return
 	_deal(amount)
 	if is_player and current_hearts > 0.0 and iframe_seconds > 0.0:
@@ -76,16 +79,15 @@ func _deal(amount: float) -> void:
 		_on_cancelled()
 
 func is_invulnerable() -> bool:
-	return _invuln
+	return _held_invuln or Time.get_ticks_msec() / 1000.0 < _hit_invuln_until
 
-# Used by the Player to grant i-frames during a Dash.
+# Held invuln — the Player toggles it for the Dash window; LevelGenerator holds it on a dormant boss.
 func set_invulnerable(v: bool) -> void:
-	_invuln = v
+	_held_invuln = v
 
+# Open the timed post-hit i-frame window (no coroutine — just stamp an expiry, checked by is_invulnerable).
 func _grant_iframes() -> void:
-	_invuln = true
-	await get_tree().create_timer(iframe_seconds).timeout
-	_invuln = false
+	_hit_invuln_until = Time.get_ticks_msec() / 1000.0 + iframe_seconds
 
 func heal(amount: float) -> void:
 	if current_hearts <= 0.0:

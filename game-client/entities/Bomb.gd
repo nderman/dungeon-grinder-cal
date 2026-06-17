@@ -57,8 +57,7 @@ func _hit(n: Node) -> bool:
 	if hc == null:
 		return false
 	var was_alive := hc.current_hearts > 0.0
-	var prot := n.get_node_or_null("ProtectionComponent") as ProtectionComponent
-	hc.take_damage(prot.handle_incoming_damage(_damage) if prot else _damage)
+	Combat.deal(n, _damage)
 	return was_alive and hc.current_hearts <= 0.0
 
 func _draw() -> void:

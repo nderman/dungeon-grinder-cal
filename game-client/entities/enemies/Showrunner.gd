@@ -17,16 +17,17 @@ const FIRST_WAVE_DELAY := 2.0
 @export var add_scenes: Array[PackedScene] = []   # goblins / screamers to summon
 
 @onready var ai: AIComponent = $AIComponent
-@onready var health: HealthComponent = $HealthComponent
-var _enraged := false
+var _enraged := false   # gates faster/bigger waves; set when the phase component enrages
 var _cd := FIRST_WAVE_DELAY
 var _adds: Array = []   # this boss's own living summons — the MAX_ADDS cap counts THESE, not the floor
 
 func _ready() -> void:
 	add_to_group("enemies")
 	ai.damage_hearts *= SHOT_DMG_MULT
-	health.health_changed.connect(_on_health_changed)
-	health.health_depleted.connect(_on_defeated)
+	var phase := BossPhaseComponent.new()
+	phase.defeat_toast = "SHOW'S OVER!"
+	add_child(phase)
+	phase.enraged.connect(_on_enraged)
 
 func _physics_process(delta: float) -> void:
 	if not ai.is_active():
@@ -54,13 +55,6 @@ func _summon() -> void:
 		a.global_position = global_position + Vector2(randf_range(-90.0, 90.0), randf_range(-90.0, 90.0))
 		_adds.append(a)
 
-func _on_health_changed(current: float, maximum: float) -> void:
-	if _enraged or current <= 0.0 or current > maximum * 0.5:
-		return
+func _on_enraged() -> void:
 	_enraged = true
 	modulate = Color(1.0, 0.55, 0.7)   # frantic — calling in everyone
-	SignalBus.ratings_spike.emit("DRAMA_SPIKE")
-
-func _on_defeated() -> void:
-	SignalBus.ratings_spike.emit("FATALITY")
-	SignalBus.toast.emit("SHOW'S OVER!", global_position)

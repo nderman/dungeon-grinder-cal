@@ -15,8 +15,7 @@ const TELEGRAPH := 0.45               # wind-up flash before a ring fires (time 
 const PROJECTILE_DMG_MULT := 0.35     # tier damage is tuned for ONE melee slam; split it for many bolts
 
 @onready var ai: AIComponent = $AIComponent
-@onready var health: HealthComponent = $HealthComponent
-var _enraged := false
+var _enraged := false   # gates the denser/faster volleys; set when the phase component enrages
 var _cd := VOLLEY_INTERVAL
 var _base_tint := Color.WHITE
 
@@ -24,8 +23,10 @@ func _ready() -> void:
 	add_to_group("enemies")
 	_base_tint = modulate   # capture the tier tint set by _spawn_boss so telegraphs return to it
 	ai.damage_hearts *= PROJECTILE_DMG_MULT   # both aimed shots AND volley bolts read this — keep it fair
-	health.health_changed.connect(_on_health_changed)
-	health.health_depleted.connect(_on_defeated)
+	var phase := BossPhaseComponent.new()
+	phase.defeat_toast = "HEXGUN OFFLINE!"
+	add_child(phase)
+	phase.enraged.connect(_on_enraged)
 
 func _physics_process(delta: float) -> void:
 	if not ai.is_active():
@@ -85,15 +86,8 @@ func _fire_spiral(arms: int) -> void:
 			_spawn_bolt(Vector2.RIGHT.rotated(spin + step * s + TAU * float(a) / float(arms)))
 		await get_tree().create_timer(0.06).timeout
 
-func _on_health_changed(current: float, maximum: float) -> void:
-	if _enraged or current <= 0.0 or current > maximum * 0.5:
-		return
+func _on_enraged() -> void:
 	_enraged = true
 	ai.move_speed *= 1.3
 	_base_tint = Color(1.0, 0.6, 0.5)   # overheating — telegraphs now return to this
 	modulate = _base_tint
-	SignalBus.ratings_spike.emit("DRAMA_SPIKE")
-
-func _on_defeated() -> void:
-	SignalBus.ratings_spike.emit("FATALITY")
-	SignalBus.toast.emit("HEXGUN OFFLINE!", global_position)

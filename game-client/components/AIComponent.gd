@@ -316,14 +316,8 @@ func _do_swing() -> void:
 func _hit_target() -> void:
 	if not is_instance_valid(target):
 		return
-	var health := target.get_node_or_null("HealthComponent") as HealthComponent
-	var prot := target.get_node_or_null("ProtectionComponent") as ProtectionComponent
-	var dmg := damage_hearts
-	if prot:
-		dmg = prot.handle_incoming_damage(dmg)
-	if health:
-		health.take_damage(dmg)
-	_apply_on_hit_effect()
+	Combat.deal(target, damage_hearts)
+	_apply_on_hit_effect()   # elemental status lands on contact even if DR/i-frames ate the damage
 
 # Elemental mobs put a status on whoever they hit (the player): "burn" → a fire DoT, "chill" → a
 # slow. Opt in per-mob via the on_hit_effect exports; resist gear mitigates it (see StatusEffect).

@@ -286,11 +286,9 @@ func _ability_nova(damage: float, radius: float, stun_seconds: float = 0.0) -> v
 			continue
 		if e.global_position.distance_to(global_position) - _enemy_radius(e) > radius:
 			continue
-		var hc := e.get_node_or_null("HealthComponent") as HealthComponent
-		if hc == null:
+		if e.get_node_or_null("HealthComponent") == null:
 			continue
-		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
-		hc.take_damage(prot.handle_incoming_damage(damage) if prot else damage)
+		Combat.deal(e, damage)
 		if stun_seconds > 0.0:
 			var ai := e.get_node_or_null("AIComponent")
 			if ai and ai.has_method("stun"):
@@ -367,19 +365,16 @@ func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array, effects: Dic
 		var off := acos(clampf(swing_aim.dot(to_e / dist), -1.0, 1.0))
 		if off > arc_half + subtend:
 			continue   # outside the (body-widened) swing arc
-		var hc := e.get_node_or_null("HealthComponent") as HealthComponent
-		if hc == null:
+		if e.get_node_or_null("HealthComponent") == null:
 			continue
 		already.append(e)
-		# Crit is rolled per-enemy, then routed through the enemy's DR (same pipeline as
-		# HitboxComponent / AIComponent._hit_target), then the gear's on-hit effects proc.
+		# Crit is rolled per-enemy, then routed through the enemy's DR via Combat.deal (same pipeline
+		# as every other damage source); the actual HP removed feeds the gear's on-hit effects (leech/chain).
 		var res := CombatEffects.resolve_damage(base_dmg, effects)
-		var prot := e.get_node_or_null("ProtectionComponent") as ProtectionComponent
-		var hit: float = prot.handle_incoming_damage(res[0]) if prot else res[0]
-		hc.take_damage(hit)
+		var dealt := Combat.deal(e, res[0])
 		if res[1]:
 			SignalBus.toast.emit("CRIT!", e.global_position)
-		CombatEffects.apply_on_hit(e, hit, effects, health_comp)
+		CombatEffects.apply_on_hit(e, dealt, effects, health_comp)
 		# Shove survivors only (not a corpse). Big bosses (scale ≥ 1.3) are too heavy to shove.
 		# move_and_collide so the shove stops at walls — no punting enemies out of the map.
 		if is_instance_valid(e) and not e.is_queued_for_deletion() and e.scale.x < 1.3:

@@ -35,12 +35,8 @@ func _try_hit(victim: Node) -> void:
 	var health := victim.get_node_or_null("HealthComponent") as HealthComponent
 	if health == null:
 		return
-	var dmg := damage_hearts
-	var prot := victim.get_node_or_null("ProtectionComponent") as ProtectionComponent
-	if prot:
-		dmg = prot.handle_incoming_damage(dmg)
-	health.take_damage(dmg)
-	hit_landed.emit(victim, dmg)
+	var dealt := Combat.deal(victim, damage_hearts)
+	hit_landed.emit(victim, dealt)   # post-DR amount actually removed — drives on-hit gear effects
 	_consume()
 
 func _consume() -> void:
