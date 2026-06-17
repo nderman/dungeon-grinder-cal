@@ -48,12 +48,15 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   ratings / a Nightmare-only cosmetic), and could **scale with `seasons_won`** (Nightmare+1, +2…); a
   HUD badge while active would beat the floor-1 toast. Also a natural **token sink** if rewards gate
   behind it.
-- **META DEAD-ENDS once the roster is unlocked** (player hit it at Season Champion: 11 Tokens + 17955
-  Syndication, "nothing left to contract"). Milestone Tokens + Syndication have no sink after every
-  race/class is bought. Add token/syndication SINKS so prestige keeps mattering: a permanent **stat-buff
-  shop** (`MetaManager.permanent_stat_buffs` already exists, unused), a **loot-pool expansion**
-  (`permanent_loot_pool` exists too), prestige tiers, or a **New Game+** that scales the Season harder
-  per `seasons_won` for better rewards. The infra (two unused persisted fields) is half there. *(2026-06-12)*
+- **META DEAD-ENDS once the roster is unlocked — FIXED (2026-06-17), all 3 sinks shipped.** Player hit
+  it at Season Champion (11 Tokens + 17955 Syndication, "nothing left to contract"). Built the full sink
+  suite: (1) **Permanent stat injectors** — Syndication → permanent +1 stats (escalating per-stat cost,
+  feeds `permanent_stat_buffs`); (2) **Loot sponsorship** — Tokens → favour a weapon in the Director's
+  drop pool (wired the dead `permanent_loot_pool` into `_pick_base`, +6 weight); (3) **Prestige / NG+** —
+  Tokens → unlock NG+ tiers that scale enemies harder (HP+dmg, stacks on Nightmare) AND rewards richer
+  (ratings/XP ×, box tier +tier), gated behind a first win, selectable 0..unlocked. All in the Green Room
+  shop, persisted, covered by `test_meta.gd`. Follow-ups: a stat-injector cap or diminishing returns if
+  100+ stacking trivialises; NG+ could gate a Celestial-only weapon; sponsor armor/trinkets too (weapons-only now).
 - **ENDGAME — DONE (2026-06-11).** Bounded run: `GameManager.FINAL_FLOOR=9`, no stairs down, kill the
   `FINAL_BOSS` (Champion, ~2× a Floor Boss) → `win_run()` → Green Room "Season Champion" screen +
   `MetaManager.seasons_won`. Follow-ups: a UNIQUE multi-phase final boss (currently a roster boss at
