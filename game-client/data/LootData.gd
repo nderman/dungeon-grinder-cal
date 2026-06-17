@@ -50,6 +50,7 @@ const RANGED_DMG_PER_DEX := 0.08
 const MAGIC_DMG_PER_INT := 0.04
 const WEAPON_DMG_PER_POINT := {"STR": MELEE_DMG_PER_STR, "DEX": RANGED_DMG_PER_DEX, "INT": MAGIC_DMG_PER_INT}
 const MELEE_KNOCK_PER_STR := 5.0    # +5px knockback per STR (was 8 — hits were punting mobs too far)
+const SPONSOR_WEIGHT := 6           # drop-pool weight a token-sponsored item gets in _pick_base (MetaManager sink)
 
 # Which stat a weapon's damage scales with — its first tag that's VALID for the weapon TYPE: melee
 # scales off a physical stat (STR/DEX), ranged off DEX or INT (magic). This keeps a melee weapon that
@@ -303,6 +304,8 @@ func _pick_base(tier: int, stats: Dictionary, box_type: String = "gear") -> Stri
 		var weight := 1 + int(it["min_tier"])             # higher tiers favour rarer items
 		if top != "" and top in it["tags"]:
 			weight += 3                                   # Director's Algorithm: build-aware
+		if id in MetaManager.permanent_loot_pool:
+			weight += SPONSOR_WEIGHT                      # …and favours gear you sponsored with tokens
 		for _i in range(weight):
 			pool.append(id)
 	return "" if pool.is_empty() else pool.pick_random()

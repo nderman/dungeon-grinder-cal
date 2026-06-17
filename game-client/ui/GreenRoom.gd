@@ -120,6 +120,18 @@ func _refresh_shop() -> void:
 	for s in ["STR", "DEX", "INT", "CON", "CHA"]:
 		_shop.add_child(_injector_row(s))
 
+	# SPONSOR A WEAPON — the Token sink (post-roster). Favour a weapon in every future Season's drops.
+	var spon_header := Label.new()
+	spon_header.text = "SPONSOR A WEAPON — spend Tokens (you have %d)" % MetaManager.milestone_tokens
+	spon_header.add_theme_font_size_override("font_size", 18)
+	spon_header.modulate = Color(0.85, 0.8, 1.0)
+	spon_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_shop.add_child(spon_header)
+	for id in LootData.ITEMS:
+		var it: Dictionary = LootData.ITEMS[id]
+		if String(it.get("slot", "")) == "Weapon" and id not in LootData.STARTER_WEAPONS:
+			_shop.add_child(_sponsor_row(String(id)))
+
 func _unlock_row(id: String, type: String) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -152,6 +164,29 @@ func _injector_row(stat: String) -> Control:
 	btn.focus_mode = Control.FOCUS_NONE   # don't eat the SPACE/E "new Season" key
 	btn.pressed.connect(func() -> void: MetaManager.buy_stat_injector(stat))
 	row.add_child(btn)
+	return row
+
+# One weapon's sponsor row: a buy button, or a ★ tag once it's permanently in the drop pool.
+func _sponsor_row(id: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var lbl := Label.new()
+	lbl.text = LootData.item_name(id)
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.modulate = Color(0.85, 0.8, 1.0)
+	row.add_child(lbl)
+	if MetaManager.is_sponsored(id):
+		var tag := Label.new()
+		tag.text = "★ Sponsored"
+		tag.modulate = Color(1.0, 0.85, 0.3)
+		row.add_child(tag)
+	else:
+		var btn := Button.new()
+		btn.text = "Sponsor (%d token)" % MetaManager.SPONSOR_TOKEN_COST
+		btn.disabled = MetaManager.milestone_tokens < MetaManager.SPONSOR_TOKEN_COST
+		btn.focus_mode = Control.FOCUS_NONE   # don't eat the SPACE/E "new Season" key
+		btn.pressed.connect(func() -> void: MetaManager.sponsor_item(id))
+		row.add_child(btn)
 	return row
 
 func _unhandled_input(event: InputEvent) -> void:

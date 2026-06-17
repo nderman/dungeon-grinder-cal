@@ -7,6 +7,8 @@ func _init() -> void: test_name = "meta"
 func run() -> void:
 	var saved_syn := MetaManager.syndication_points
 	var saved_buffs := MetaManager.permanent_stat_buffs.duplicate()
+	var saved_tokens := MetaManager.milestone_tokens
+	var saved_pool := MetaManager.permanent_loot_pool.duplicate()
 
 	MetaManager.permanent_stat_buffs = {}
 	MetaManager.syndication_points = 10000
@@ -28,6 +30,20 @@ func run() -> void:
 	var stats := MetaManager.get_current_contestant_stats("Human", "Brawler")
 	check(int(stats["CON"]) >= 4 + 3, "a permanent CON injector feeds get_current_contestant_stats")
 
+	# Loot sponsorship: the Token sink. Spends a token, marks the item sponsored, refuses dup / broke.
+	MetaManager.permanent_loot_pool = []
+	MetaManager.milestone_tokens = 2
+	check(not MetaManager.is_sponsored("war_hammer"), "weapon not sponsored initially")
+	check(MetaManager.sponsor_item("war_hammer"), "sponsor succeeds with a token")
+	check(MetaManager.is_sponsored("war_hammer"), "item is now sponsored")
+	eq(MetaManager.milestone_tokens, 1, "one token spent on the sponsor")
+	check(not MetaManager.sponsor_item("war_hammer"), "can't sponsor the same item twice")
+	eq(MetaManager.milestone_tokens, 1, "no token spent on a duplicate sponsor")
+	MetaManager.milestone_tokens = 0
+	check(not MetaManager.sponsor_item("broadsword"), "sponsor refused with no tokens")
+
 	MetaManager.syndication_points = saved_syn
 	MetaManager.permanent_stat_buffs = saved_buffs
+	MetaManager.milestone_tokens = saved_tokens
+	MetaManager.permanent_loot_pool = saved_pool
 	MetaManager.save_persistence()

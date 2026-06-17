@@ -81,6 +81,24 @@ func buy_stat_injector(stat: String) -> bool:
 	meta_changed.emit()
 	return true
 
+# --- Loot sponsorship: a TOKEN sink -------------------------------------------------------------
+# Once the full roster is unlocked, Milestone Tokens had nothing left to buy. Now you SPONSOR gear:
+# the item joins permanent_loot_pool and the Director's Algorithm (LootData._pick_base) heavily
+# favours sponsored items in every future Season — steer your build's key weapons to actually drop.
+const SPONSOR_TOKEN_COST := 1
+
+func is_sponsored(id: String) -> bool:
+	return id in permanent_loot_pool
+
+func sponsor_item(id: String) -> bool:
+	if milestone_tokens < SPONSOR_TOKEN_COST or id in permanent_loot_pool:
+		return false
+	permanent_loot_pool.append(id)
+	milestone_tokens -= SPONSOR_TOKEN_COST
+	save_persistence()
+	meta_changed.emit()
+	return true
+
 # Final stat block for the current contract = base + race + class (+ permanent buffs).
 func get_current_contestant_stats(race: String, contestant_class: String) -> Dictionary:
 	var stats := BASE_STATS.duplicate()
