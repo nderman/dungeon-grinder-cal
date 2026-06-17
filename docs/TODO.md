@@ -31,6 +31,16 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   test added. *(General lesson: the achievement→loot economy needs a per-feat trigger-frequency sanity
   check — a feat that fires on every kill can't carry the same cooldown as a skill feat.)*
 
+- **WEAPON DPS vs PER-HIT — basic mobs bumped 1→2 HP (2026-06-17).** Player report: the Pipe Wrench
+  one-shot everything while the higher-DPS Rusty Shiv took 2-3 hits. Not a bug — at STR 7 (Human) the
+  shiv is 0.96/hit, the pipe 1.40/hit, and almost every basic mob had exactly 1.0 HP, so per-hit was
+  the ONLY thing that mattered on trash and the shiv's speed/DPS edge was wasted (it sat a hair under
+  the one-shot line). Fix: GlitchGoblin/Screamer/BaseEnemy 1→2 HP so kills take 2-3 hits and DPS reads.
+  **WATCH:** Screamer is a fast, no-telegraph, ~22%-spawn swarm mob — at 2 HP a swarm may be brutal.
+  If early game feels unfair, revert Screamer to 1 HP (or trim swarm size), keep Goblin at 2. Deeper
+  idea: DPS is meaningless vs 1-HP enemies generally — fast weapons only shine on 2+ HP / bosses, so
+  the weapon "feel" trade-off (fast vs heavy) only exists where enemies survive multiple hits.
+
 - **NIGHTMARE MODE — v1 DONE (2026-06-12).** Unlocked after a win; Green Room toggle
   (`MetaManager.nightmare_enabled`, persisted) → `GameManager.nightmare` at run start → enemies deal
   `×1.6` damage (`nightmare_dmg_mult()`, applied in `_spawn_enemy`/`_spawn_boss`). Follow-ups: it
@@ -90,11 +100,11 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   - Follow-ups: nicer floor-intro **banner** (currently a toast); **ranged** elemental enemies (arm the
     projectile with the effect — only melee `_hit_target` carries it today); an at-a-glance **tint** on
     themed mobs so the hazard reads before they hit you.
-- **Boss enrage/defeat boilerplate is 3x now** — Golem/Hexgun/Showrunner each repeat the identical
-  `_on_health_changed` 50%-once-enrage gate + `_on_defeated` (FATALITY spike + toast). Fine at 3, but
-  before a 4th boss lands, extract a small **`BossPhaseComponent`** (watches HealthComponent, emits an
-  `enraged` signal at a threshold + FATALITY on death) — a COMPONENT, not a base class (composition
-  mandate). Each boss script then just connects `enraged` to its own effect. *(2026-06-07, batch review)*
+- **Boss enrage/defeat boilerplate is 3x now — DONE (2026-06-17).** `components/BossPhaseComponent.gd`:
+  watches the sibling HealthComponent, emits `enraged` once at `enrage_threshold` (+ DRAMA_SPIKE) and
+  fires FATALITY + a per-boss `defeat_toast` on death. A COMPONENT, not a base class. Golem/Hexgun/
+  Showrunner each create it in `_ready`, set the toast, and connect `enraged` to their own escalation;
+  a 4th boss just drops it in. Covered by `test_boss_phase.gd`. *(flagged 2026-06-07)*
 - **ACHIEVEMENT VARIETY — batch 1 DONE (2026-06-08).** Pattern: emit a `ratings_spike` type at the
   mechanic site, map it in `AchievementManager`. Shipped 11: Pyromaniac (IGNITE), Michael Bay Approved
   (BOOM), Chain Reaction (CHAIN_KILL), Grave Robber, Tapped Out (`mana_depleted`), Cancelled
@@ -115,12 +125,11 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   (the Showrunner? the System? a celebrity guest?), each with its own arena + phases, so the ending
   isn't identical every Season. Reuses the new boss-roster pattern (`_pick_boss_scene`), just gated
   to the final floor with a dedicated final-boss pool. *(2026-06-04)*
-- **REFACTOR: extract `Combat.deal(victim, raw_dmg)` helper** — the "fetch HealthComponent, route
-  through ProtectionComponent.handle_incoming_damage if present, take_damage" tail is copy-pasted in
-  6 sites: `CombatEffects._chain`, `Player._ability_nova`, `Player._melee_tick`, `Bomb._detonate`,
-  `HitboxComponent._try_hit`, `AIComponent._hit_target`. A single static helper collapses all of
-  them. Kept out of the effect-affix commit to avoid touching hot-path combat mid-feature; do it as
-  its own validated pass. *(2026-06-03, flagged in effect-affix review)*
+- **REFACTOR: extract `Combat.deal(victim, raw_dmg)` helper — DONE (2026-06-17).** `components/Combat.gd`:
+  one static chokepoint routing raw damage through the victim's DR into its HealthComponent, returning
+  the HP actually removed. Wired into all 6 sites (CombatEffects._chain, Player nova + melee, Bomb._hit,
+  HitboxComponent, AIComponent._hit_target). Bonus: leech/chain/hit_landed now read the REAL HP removed
+  (capped on overkill) instead of uncapped post-DR. Covered by `test_combat.gd`. *(flagged 2026-06-03)*
 - **ITEMS NEED EFFECTS — v1 BUILT (2026-06-03).** Rare+ gear now rolls EFFECT affixes (not just
   flat stats): **Burn** (fire DoT), **Leech** (heal on hit), **Crit** (chance to double), **Chill**
   (slow), **Chain** (arc damage to a 2nd enemy). Summed across ALL equipped slots
@@ -567,9 +576,10 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   so stat math has lasting coverage.
 
 ### Architecture / cleanup (from the 2026-05-28 review, deferred)
-- **Invulnerability is a single shared bool** — dash i-frames (`set_invulnerable`) and post-hit
-  i-frames (`HealthComponent._grant_iframes`) both write `_invuln`; a recent hit's timer can
-  end a dash's i-frames early (and vice-versa). Use a refcount or separate dash flag.
+- **Invulnerability is a single shared bool — DONE (2026-06-17).** Split into `_held_invuln` (dash +
+  boss dormancy, via `set_invulnerable`) and a timed `_hit_invuln_until` window (player post-hit);
+  `is_invulnerable()` ORs them, so neither can cancel the other. Also dropped the `_grant_iframes`
+  await coroutine for an expiry timestamp. Covered by `test_combat.gd`.
 - **Melee knockback teleports** (`e.global_position += shove`) — ignores walls; a big shove can
   clip an enemy through thin geometry (physics depenetrates next frame, but it's not clean).
   Route through the enemy's MovementComponent / a velocity impulse, or move_and_collide.
