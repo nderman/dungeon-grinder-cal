@@ -19,6 +19,8 @@ var unlocked_races: Array[String] = ["Human"]
 var unlocked_classes: Array[String] = ["Brawler", "Scavenger"]
 var permanent_loot_pool: Array[String] = []      # IDs available to the Director's Algorithm
 var permanent_stat_buffs: Dictionary = {}         # +1s from Artifact-tier injectors
+var ng_plus_unlocked: int = 0   # highest New Game+ tier purchased (persisted)
+var ng_plus_active: int = 0     # NG+ tier applied to the next run, 0..unlocked (persisted)
 var unlocked_achievements: Array[String] = []     # one-time achievements already earned
 
 # --- RUN CACHE (cleared on death) ---
@@ -110,6 +112,33 @@ func get_current_contestant_stats(race: String, contestant_class: String) -> Dic
 		stats[s] = stats.get(s, 0) + permanent_stat_buffs[s]
 	return stats
 
+# --- Prestige / New Game+: a TOKEN sink + a difficulty/reward layer -----------------------------
+# After your first Champion run, spend Tokens to unlock NG+ tiers. A higher ACTIVE tier scales the
+# whole Season harder (enemy HP + damage) AND richer (ratings/XP + every reward box's tier), so
+# tokens always have somewhere to go and the world somewhere to grow. Stacks on top of Nightmare.
+const NG_PLUS_BASE_TOKEN_COST := 3   # tokens for NG+1; each further tier costs +2 more
+
+# Tokens to unlock the NEXT tier (NG+{ng_plus_unlocked + 1}).
+func ng_plus_cost() -> int:
+	return NG_PLUS_BASE_TOKEN_COST + ng_plus_unlocked * 2
+
+func unlock_ng_plus() -> bool:
+	var cost := ng_plus_cost()
+	if milestone_tokens < cost:
+		return false
+	milestone_tokens -= cost
+	ng_plus_unlocked += 1
+	ng_plus_active = ng_plus_unlocked   # auto-arm the freshly bought tier
+	save_persistence()
+	meta_changed.emit()
+	return true
+
+# Pick which unlocked NG+ tier the next run uses (0 = off, for an easier Season).
+func set_ng_plus_active(tier: int) -> void:
+	ng_plus_active = clampi(tier, 0, ng_plus_unlocked)
+	save_persistence()
+	meta_changed.emit()
+
 func add_to_inventory(item: Variant) -> void:
 	if item is String and item not in permanent_loot_pool:
 		permanent_loot_pool.append(item)
@@ -130,6 +159,8 @@ func save_persistence() -> void:
 	cfg.set_value("Unlocks", "classes", unlocked_classes)
 	cfg.set_value("Unlocks", "loot_pool", permanent_loot_pool)
 	cfg.set_value("Unlocks", "stat_buffs", permanent_stat_buffs)
+	cfg.set_value("Progression", "ng_plus_unlocked", ng_plus_unlocked)
+	cfg.set_value("Progression", "ng_plus_active", ng_plus_active)
 	cfg.set_value("Progression", "achievements", unlocked_achievements)
 	cfg.save(SAVE_PATH)
 
@@ -147,4 +178,6 @@ func load_persistence() -> void:
 	unlocked_classes.assign(cfg.get_value("Unlocks", "classes", ["Brawler", "Scavenger"]))
 	permanent_loot_pool.assign(cfg.get_value("Unlocks", "loot_pool", []))
 	permanent_stat_buffs = cfg.get_value("Unlocks", "stat_buffs", {})
+	ng_plus_unlocked = cfg.get_value("Progression", "ng_plus_unlocked", 0)
+	ng_plus_active = cfg.get_value("Progression", "ng_plus_active", 0)
 	unlocked_achievements.assign(cfg.get_value("Progression", "achievements", []))

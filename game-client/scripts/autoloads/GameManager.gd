@@ -51,6 +51,7 @@ var hype_meter: float = 0.0          # 0–100; overflow past 100 triggers a Spo
 var is_run_active: bool = false
 var run_won: bool = false        # set when you beat the final floor — the Green Room reads it for the Champion screen
 var nightmare: bool = false      # this run's difficulty (copied from MetaManager.nightmare_enabled at run start)
+var ng_plus: int = 0             # this run's New Game+ tier (copied from MetaManager.ng_plus_active at run start)
 var boss_hp_mult: float = 1.0    # PostHog boss-hp experiment value — Telemetry PUSHES it on run_started
                                  # so gameplay (LevelGenerator) reads a plain field, never the analytics layer
 
@@ -59,6 +60,19 @@ const NIGHTMARE_DMG_MULT := 1.6  # enemies hit this much harder across the board
 # Enemy-damage multiplier for the current run (1.0 normally, NIGHTMARE_DMG_MULT on Nightmare).
 func nightmare_dmg_mult() -> float:
 	return NIGHTMARE_DMG_MULT if nightmare else 1.0
+
+# New Game+ scaling for the current run (ng_plus 0 = all ×1.0). Harder world, richer rewards — the
+# enemy mults stack ON TOP of floor scaling + Nightmare; the reward mult feeds Syndication/XP so a
+# harder Season pays back into the meta sinks. Loot-box tier bump is applied in add_loot_box().
+const NG_PLUS_DMG_PER_TIER := 0.25
+const NG_PLUS_HP_PER_TIER := 0.25
+const NG_PLUS_REWARD_PER_TIER := 0.25
+func ng_plus_dmg_mult() -> float:
+	return 1.0 + NG_PLUS_DMG_PER_TIER * ng_plus
+func ng_plus_hp_mult() -> float:
+	return 1.0 + NG_PLUS_HP_PER_TIER * ng_plus
+func ng_plus_reward_mult() -> float:
+	return 1.0 + NG_PLUS_REWARD_PER_TIER * ng_plus
 var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
@@ -176,7 +190,8 @@ func descend() -> void:
 # Queue a loot box (from an achievement) and ping the HUD so the player knows it's waiting.
 # A box carries its tier (quality) AND type (which pool it rolls); opened together in a Safe Room.
 func add_loot_box(tier: int, box_type: String = "gear") -> void:
-	earned_loot_boxes.append({"tier": tier, "type": box_type})
+	var t := mini(tier + ng_plus, LootData.TIER_NAMES.size() - 1)   # NG+ richens every reward box (capped at Celestial)
+	earned_loot_boxes.append({"tier": t, "type": box_type})
 	loot_boxes_changed.emit(earned_loot_boxes.size())
 
 # Corpse loot: common-tier currency picked up off the floor. Spent at shops (future arc).
@@ -484,6 +499,7 @@ func start_new_run() -> void:
 	run_won = false
 	boss_hp_mult = 1.0                          # default; Telemetry overwrites from the flag on run_started
 	nightmare = MetaManager.nightmare_enabled   # lock in the difficulty chosen in the Green Room
+	ng_plus = MetaManager.ng_plus_active        # …and the New Game+ tier armed for this Season
 	run_ratings = 0
 	hype_meter = 0.0
 	xp = 0

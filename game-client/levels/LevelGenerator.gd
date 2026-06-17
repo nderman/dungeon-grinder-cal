@@ -522,11 +522,12 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var m := GameManager.floor_mult()   # deeper floors → tougher mobs
 	var hc := e.get_node_or_null("HealthComponent")
 	if hc:
-		hc.configured_hearts *= m
-		hc.xp_reward = int(hc.xp_reward * m)   # deeper (tougher) mobs are "higher level" → pay more XP
+		hc.configured_hearts *= m * GameManager.ng_plus_hp_mult()
+		hc.xp_reward = int(hc.xp_reward * m * GameManager.ng_plus_reward_mult())   # deeper/NG+ mobs pay more XP
+		hc.ratings_reward = int(hc.ratings_reward * GameManager.ng_plus_reward_mult())   # …and more Syndication
 	var ai := e.get_node_or_null("AIComponent")
 	if ai:
-		ai.damage_hearts *= m * GameManager.nightmare_dmg_mult()   # Nightmare: enemies hit harder
+		ai.damage_hearts *= m * GameManager.nightmare_dmg_mult() * GameManager.ng_plus_dmg_mult()   # Nightmare + NG+ bite
 		if dormant:
 			ai.start_active = false       # boss-room adds stay put until the arena locks…
 			if hc:
@@ -639,13 +640,13 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	var b := scene.instantiate()
 	var hc := b.get_node_or_null("HealthComponent")
 	if hc:
-		hc.configured_hearts = tier["hearts"] * m * GameManager.boss_hp_mult   # PostHog boss-hp experiment (pushed by Telemetry)
-		hc.xp_reward = int(tier["xp"] * m)   # deeper bosses pay more XP (scales with their toughness)
-		hc.ratings_reward = tier.get("ratings", hc.ratings_reward)   # boss = ratings + corpse-gold jackpot
+		hc.configured_hearts = tier["hearts"] * m * GameManager.boss_hp_mult * GameManager.ng_plus_hp_mult()   # PostHog boss-hp experiment + NG+
+		hc.xp_reward = int(tier["xp"] * m * GameManager.ng_plus_reward_mult())   # deeper/NG+ bosses pay more XP
+		hc.ratings_reward = int(tier.get("ratings", hc.ratings_reward) * GameManager.ng_plus_reward_mult())   # ratings + corpse-gold jackpot
 		hc.set_invulnerable(true)   # can't be sniped while dormant — must enter to fight it
 	var ai := b.get_node_or_null("AIComponent")
 	if ai:
-		ai.damage_hearts = tier["damage"] * m * GameManager.nightmare_dmg_mult()   # Nightmare boss bite
+		ai.damage_hearts = tier["damage"] * m * GameManager.nightmare_dmg_mult() * GameManager.ng_plus_dmg_mult()   # Nightmare + NG+ boss bite
 		ai.telegraph_duration = tier["telegraph"]
 		ai.move_speed = tier["speed"]
 		ai.stun_resist = tier.get("stun_resist", 0.0)   # bosses shrug off / shorten Ground Slam etc.

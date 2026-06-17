@@ -132,6 +132,16 @@ func _refresh_shop() -> void:
 		if String(it.get("slot", "")) == "Weapon" and id not in LootData.STARTER_WEAPONS:
 			_shop.add_child(_sponsor_row(String(id)))
 
+	# PRESTIGE / NEW GAME+ — a Token sink + difficulty layer, unlocked once you've won a Season.
+	if MetaManager.seasons_won >= 1:
+		var ng_header := Label.new()
+		ng_header.text = "PRESTIGE — New Game+ (harder Season, richer loot)"
+		ng_header.add_theme_font_size_override("font_size", 18)
+		ng_header.modulate = Color(1.0, 0.55, 0.55)
+		ng_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_shop.add_child(ng_header)
+		_shop.add_child(_ng_plus_row())
+
 func _unlock_row(id: String, type: String) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -187,6 +197,37 @@ func _sponsor_row(id: String) -> Control:
 		btn.focus_mode = Control.FOCUS_NONE   # don't eat the SPACE/E "new Season" key
 		btn.pressed.connect(func() -> void: MetaManager.sponsor_item(id))
 		row.add_child(btn)
+	return row
+
+# New Game+ controls: a current-tier readout, a −/+ active-tier selector (once anything's unlocked),
+# and the buy-the-next-tier button. All buttons skip focus so they don't eat the new-Season key.
+func _ng_plus_row() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var lbl := Label.new()
+	lbl.text = "Active NG+%d / unlocked NG+%d" % [MetaManager.ng_plus_active, MetaManager.ng_plus_unlocked]
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.modulate = Color(1.0, 0.6, 0.6)
+	row.add_child(lbl)
+	if MetaManager.ng_plus_unlocked >= 1:
+		var minus := Button.new()
+		minus.text = "−"
+		minus.focus_mode = Control.FOCUS_NONE
+		minus.disabled = MetaManager.ng_plus_active <= 0
+		minus.pressed.connect(func() -> void: MetaManager.set_ng_plus_active(MetaManager.ng_plus_active - 1))
+		row.add_child(minus)
+		var plus := Button.new()
+		plus.text = "+"
+		plus.focus_mode = Control.FOCUS_NONE
+		plus.disabled = MetaManager.ng_plus_active >= MetaManager.ng_plus_unlocked
+		plus.pressed.connect(func() -> void: MetaManager.set_ng_plus_active(MetaManager.ng_plus_active + 1))
+		row.add_child(plus)
+	var unlock := Button.new()
+	unlock.text = "Unlock NG+%d (%d tokens)" % [MetaManager.ng_plus_unlocked + 1, MetaManager.ng_plus_cost()]
+	unlock.disabled = MetaManager.milestone_tokens < MetaManager.ng_plus_cost()
+	unlock.focus_mode = Control.FOCUS_NONE
+	unlock.pressed.connect(func() -> void: MetaManager.unlock_ng_plus())
+	row.add_child(unlock)
 	return row
 
 func _unhandled_input(event: InputEvent) -> void:
