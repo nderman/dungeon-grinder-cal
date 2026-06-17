@@ -55,6 +55,32 @@ func unlock_content(id: String, type: String) -> bool:
 	meta_changed.emit()
 	return true
 
+# --- Permanent stat injectors: the SYNDICATION sink ---------------------------------------------
+# Syndication Points (10% of a run's Ratings, banked on Cancellation) used to have no sink — they
+# just piled up after the roster was unlocked. Now you spend them on permanent +1s to a stat, applied
+# to every future contestant via get_current_contestant_stats(). Cost escalates per point in the SAME
+# stat so it stays a meaningful sink at any hoard size (DCC: stats climb to 100+, so there's no cap).
+const INJECTOR_BASE_COST := 500   # Syndication for the FIRST +1 in a stat
+const INJECTOR_GROWTH := 1.5      # each further +1 in the SAME stat costs ×1.5
+
+# Syndication cost of the NEXT permanent +1 for `stat` (rises with how many you've already bought).
+func stat_injector_cost(stat: String) -> int:
+	var owned := int(permanent_stat_buffs.get(stat, 0))
+	return int(round(INJECTOR_BASE_COST * pow(INJECTOR_GROWTH, owned)))
+
+# Spend Syndication for a permanent +1 to `stat`. Returns false if it's not a real stat or you're broke.
+func buy_stat_injector(stat: String) -> bool:
+	if stat not in BASE_STATS:
+		return false
+	var cost := stat_injector_cost(stat)
+	if syndication_points < cost:
+		return false
+	syndication_points -= cost
+	permanent_stat_buffs[stat] = int(permanent_stat_buffs.get(stat, 0)) + 1
+	save_persistence()
+	meta_changed.emit()
+	return true
+
 # Final stat block for the current contract = base + race + class (+ permanent buffs).
 func get_current_contestant_stats(race: String, contestant_class: String) -> Dictionary:
 	var stats := BASE_STATS.duplicate()

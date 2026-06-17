@@ -110,6 +110,16 @@ func _refresh_shop() -> void:
 		done.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_shop.add_child(done)
 
+	# PERMANENT INJECTORS — the Syndication sink. Always shown (Syndication never "runs out" of uses).
+	var inj_header := Label.new()
+	inj_header.text = "INJECTORS — spend Syndication (you have %d)" % MetaManager.syndication_points
+	inj_header.add_theme_font_size_override("font_size", 18)
+	inj_header.modulate = Color(0.6, 1.0, 0.7)
+	inj_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_shop.add_child(inj_header)
+	for s in ["STR", "DEX", "INT", "CON", "CHA"]:
+		_shop.add_child(_injector_row(s))
+
 func _unlock_row(id: String, type: String) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -122,6 +132,25 @@ func _unlock_row(id: String, type: String) -> Control:
 	btn.text = "Unlock (1 token)"
 	btn.disabled = MetaManager.milestone_tokens <= 0
 	btn.pressed.connect(func() -> void: MetaManager.unlock_content(id, type))
+	row.add_child(btn)
+	return row
+
+# One stat's permanent-injector row: current buff + the escalating Syndication price.
+func _injector_row(stat: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var owned := int(MetaManager.permanent_stat_buffs.get(stat, 0))
+	var lbl := Label.new()
+	lbl.text = "%s  (+%d)" % [stat, owned]
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.modulate = Color(0.6, 1.0, 0.7)
+	row.add_child(lbl)
+	var cost := MetaManager.stat_injector_cost(stat)
+	var btn := Button.new()
+	btn.text = "+1  (%d syn)" % cost
+	btn.disabled = MetaManager.syndication_points < cost
+	btn.focus_mode = Control.FOCUS_NONE   # don't eat the SPACE/E "new Season" key
+	btn.pressed.connect(func() -> void: MetaManager.buy_stat_injector(stat))
 	row.add_child(btn)
 	return row
 
