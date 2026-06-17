@@ -20,7 +20,7 @@ shape = SubResource("CircleShape2D_goblin")
 
 [node name="HealthComponent" type="Node2D" parent="."]
 script = ExtResource("1_health")
-configured_hearts = 1.0
+configured_hearts = 2.0
 xp_reward = 20
 
 [node name="MovementComponent" type="Node2D" parent="."]

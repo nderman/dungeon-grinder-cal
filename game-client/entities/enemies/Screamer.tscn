@@ -17,7 +17,7 @@ polygon = PackedVector2Array(-10, -10, 10, -10, 10, 10, -10, 10)
 shape = SubResource("cs_screamer")
 
 [node name="HealthComponent" parent="."]
-configured_hearts = 1.0
+configured_hearts = 2.0
 xp_reward = 10
 
 [node name="AIComponent" parent="."]
