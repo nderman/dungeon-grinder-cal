@@ -87,12 +87,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   (PlayerStub etc.) + `TestRunner`. Seeded 8 ported tests: loot_boxes, loot_affixes, combat_effects,
   elemental, floor_themes, boss_seal, crash_teardown (the get_tree()-null regression), holy_shield.
   Run it as the `/shipit` test step. Follow-ups: add tests as features land; consider wiring into CI.
-- **LOOT BOX OPENING PRESENTATION** — the tier+type system is built (Bronze→Celestial × gear/weapon/
-  armor/trinket/supply/fan/boss, per-tier rarity floors), but opening is still just a HUD ticker line
-  via `box_opened` (which currently has no real consumer beyond the ticker). Make it land: a proper
-  **box-opening screen/animation** in the Safe Room (boxes pop one at a time, low→high, with a reveal),
-  and **distinct box visuals per tier/type** (Bronze vs Celestial, a glowy Boss box, a Fan gift box).
-  `box_opened` already emits a rich label ("Gold Weapon Box") to drive it. *(2026-06-08)*
+- **LOOT BOX OPENING PRESENTATION — reveal screen DONE (2026-06-18).** `ui/LootRevealPanel.gd`
+  (ModalPanel): the Safe-Room terminal now plays a reveal — boxes pop in one at a time low→high,
+  rarity-coloured with ✨/🌟 markers, E/SPACE fast-forwards then closes. `open_all_boxes` returns the
+  sorted haul ([{box,item,rarity,tier}]) for it. Covered by `test_loot_reveal.gd`. **Still TODO (art
+  pass):** distinct box VISUALS per tier/type (Bronze vs Celestial, a glowy Boss box, a Fan gift box)
+  + an actual open animation/particles — deferred with the rest of the gray-box → sprites work.
 - **ELEMENTAL ATTACKS + RESIST GEAR + FLOOR THEMES — DONE (2026-06-10).** Enemies inflict statuses
   back via `AIComponent.on_hit_effect` ("burn"/"chill") at `_hit_target`; `StatusEffect` now works on
   the player (chill drives `Player.speed_mult`, burn ticks apply_dot) and is mitigated by
