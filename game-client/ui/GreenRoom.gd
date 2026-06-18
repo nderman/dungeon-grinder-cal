@@ -10,26 +10,7 @@ func _ready() -> void:
 	_refresh_summary()
 	_build_shop_frame()
 	_build_continue_hint()
-	_build_nightmare_toggle()
 	MetaManager.meta_changed.connect(_on_meta_changed)
-
-# NIGHTMARE toggle — unlocked once you've won a Season. Click to flip; the choice persists and locks
-# in at the next run's start (GameManager.start_new_run reads MetaManager.nightmare_enabled).
-func _build_nightmare_toggle() -> void:
-	if MetaManager.seasons_won < 1:
-		return   # locked until you've taken a Champion's head at least once
-	var btn := Button.new()
-	btn.anchor_left = 0.3
-	btn.anchor_right = 0.7
-	btn.anchor_top = 0.86
-	btn.anchor_bottom = 0.91
-	btn.focus_mode = Control.FOCUS_NONE   # don't let it eat the SPACE/E "new Season" key
-	_update_nightmare_btn(btn)
-	btn.pressed.connect(func() -> void:
-		MetaManager.nightmare_enabled = not MetaManager.nightmare_enabled
-		MetaManager.save_persistence()
-		_update_nightmare_btn(btn))
-	add_child(btn)
 
 func _update_nightmare_btn(btn: Button) -> void:
 	var on := MetaManager.nightmare_enabled
@@ -65,7 +46,7 @@ func _build_shop_frame() -> void:
 	var holder := VBoxContainer.new()
 	holder.anchor_left = 0.28
 	holder.anchor_right = 0.72
-	holder.anchor_top = 0.6
+	holder.anchor_top = 0.3    # start just under the summary line; the ScrollContainer clips the rest
 	holder.anchor_bottom = 0.9
 	holder.add_theme_constant_override("separation", 6)
 	add_child(holder)
@@ -132,14 +113,16 @@ func _refresh_shop() -> void:
 		if String(it.get("slot", "")) == "Weapon" and id not in LootData.STARTER_WEAPONS:
 			_shop.add_child(_sponsor_row(String(id)))
 
-	# PRESTIGE / NEW GAME+ — a Token sink + difficulty layer, unlocked once you've won a Season.
+	# DIFFICULTY — Nightmare toggle + Prestige/NG+, both unlocked once you've won a Season. Lives INSIDE
+	# the scroll so it can't overlap the shop or the continue hint (the old floating button did).
 	if MetaManager.seasons_won >= 1:
-		var ng_header := Label.new()
-		ng_header.text = "PRESTIGE — New Game+ (harder Season, richer loot)"
-		ng_header.add_theme_font_size_override("font_size", 18)
-		ng_header.modulate = Color(1.0, 0.55, 0.55)
-		ng_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_shop.add_child(ng_header)
+		var diff_header := Label.new()
+		diff_header.text = "DIFFICULTY — Nightmare + New Game+ (harder Season, richer loot)"
+		diff_header.add_theme_font_size_override("font_size", 18)
+		diff_header.modulate = Color(1.0, 0.55, 0.55)
+		diff_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_shop.add_child(diff_header)
+		_shop.add_child(_nightmare_row())
 		_shop.add_child(_ng_plus_row())
 
 func _unlock_row(id: String, type: String) -> Control:
@@ -198,6 +181,18 @@ func _sponsor_row(id: String) -> Control:
 		btn.pressed.connect(func() -> void: MetaManager.sponsor_item(id))
 		row.add_child(btn)
 	return row
+
+# NIGHTMARE toggle as a shop row (was a floating button that overlapped the shop). Click to flip;
+# the choice persists and locks in at the next run's start. Updates its own text inline.
+func _nightmare_row() -> Button:
+	var btn := Button.new()
+	btn.focus_mode = Control.FOCUS_NONE   # don't eat the SPACE/E "new Season" key
+	_update_nightmare_btn(btn)
+	btn.pressed.connect(func() -> void:
+		MetaManager.nightmare_enabled = not MetaManager.nightmare_enabled
+		MetaManager.save_persistence()
+		_update_nightmare_btn(btn))
+	return btn
 
 # New Game+ controls: a current-tier readout, a −/+ active-tier selector (once anything's unlocked),
 # and the buy-the-next-tier button. All buttons skip focus so they don't eat the new-Season key.
