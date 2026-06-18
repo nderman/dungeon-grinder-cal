@@ -111,29 +111,40 @@ const HECKLES: Array[String] = [
 func _heckle() -> String:
 	return HECKLES.pick_random()
 
-# Safe-Room only: open every pending box at once, low tier -> high (DCC).
-func open_all_boxes(stats: Dictionary) -> void:
+# Safe-Room only: open every pending box at once, low tier -> high (DCC). Returns the opened results
+# (sorted low→high) as [{box, item, rarity, tier}] so the Safe Room can play a reveal — the inventory
+# add + box_opened/item_acquired emits still happen here, the reveal is pure presentation over them.
+func open_all_boxes(stats: Dictionary) -> Array:
 	if GameManager.earned_loot_boxes.is_empty():
 		SignalBus.toast.emit("No boxes to open.", _player_pos())
-		return
+		return []
 	var boxes: Array = GameManager.earned_loot_boxes.duplicate()
 	GameManager.earned_loot_boxes.clear()
 	GameManager.loot_boxes_changed.emit(0)   # pending counter back to zero
 	boxes.sort_custom(func(a, b): return int(a["tier"]) < int(b["tier"]))   # open low tier → high
+	var results: Array = []
 	for box in boxes:
 		var tier := int(box["tier"])
 		var btype := String(box.get("type", "gear"))
-		SignalBus.box_opened.emit("%s %s" % [LootData.tier_name(tier), LootData.box_type_name(btype)])
+		var box_label := "%s %s" % [LootData.tier_name(tier), LootData.box_type_name(btype)]
+		SignalBus.box_opened.emit(box_label)
 		var inst := LootData.roll(tier, stats, btype)
 		if inst.is_empty():
 			continue
 		# Consumables stock the quick bar; gear becomes an instance (auto-equip empty slot, else bag).
+		var item_label := ""
+		var rarity := -1   # -1 = consumable (no rarity colour)
 		if inst["kind"] == "consumable":
 			GameManager.add_consumable(String(inst["base"]), tier)
-			SignalBus.item_acquired.emit(LootData.item_name(inst["base"]))
+			item_label = LootData.item_name(inst["base"])
+			SignalBus.item_acquired.emit(item_label)
 		else:
 			GameManager.add_loot_instance(inst)
-			SignalBus.item_acquired.emit("%s %s" % [LootData.rarity_name(int(inst["rarity"])), LootData.instance_name(inst)])
+			rarity = int(inst["rarity"])
+			item_label = "%s %s" % [LootData.rarity_name(rarity), LootData.instance_name(inst)]
+			SignalBus.item_acquired.emit(item_label)
+		results.append({"box": box_label, "item": item_label, "rarity": rarity, "tier": tier})
+	return results
 
 func _player_pos() -> Vector2:
 	var p := get_tree().get_first_node_in_group("player") as Node2D

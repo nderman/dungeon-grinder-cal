@@ -5,4 +5,6 @@ extends InteractablePad
 
 func _on_interact() -> void:
 	var stats: Dictionary = _player.current_stats if "current_stats" in _player else {}
-	AchievementManager.open_all_boxes(stats)
+	var results := AchievementManager.open_all_boxes(stats)   # rolls + banks the haul…
+	if _player.has_method("show_loot_reveal"):
+		_player.show_loot_reveal(results)                     # …then plays the reveal over it

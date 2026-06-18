@@ -45,6 +45,7 @@ var _ability_fx: AbilityFx           # reused ability VFX (nova ring / heal puls
 var _inventory_panel: InventoryPanel  # toggled with the inventory key
 var _abilities_panel: AbilitiesPanel  # toggled with the abilities key
 var _class_panel: ClassSelectPanel    # floor-3 class pick (DCC); created only when owed
+var _loot_reveal_panel: LootRevealPanel   # the Safe-Room box-opening reveal
 var _ability_cd_until: Dictionary = {}   # ability id -> wall-clock (s) it's castable again
 
 # Potion sickness: drinking a potion before its cool-down (GameManager) ends inflicts Poison —
@@ -68,12 +69,19 @@ func _ready() -> void:
 	add_child(_inventory_panel)
 	_abilities_panel = AbilitiesPanel.new()
 	add_child(_abilities_panel)
+	_loot_reveal_panel = LootRevealPanel.new()
+	add_child(_loot_reveal_panel)
 	health_comp.health_depleted.connect(_on_death)
 	# DCC: reaching Floor 3 classless → the System makes you pick a class now (mandatory modal).
 	if GameManager.needs_class_selection():
 		_class_panel = ClassSelectPanel.new()
 		add_child(_class_panel)
 		_class_panel.toggle()
+
+# Open the Safe-Room loot reveal for a freshly-opened haul (driven by LootBoxTerminal).
+func show_loot_reveal(results: Array) -> void:
+	if not results.is_empty():
+		_loot_reveal_panel.reveal(results)
 
 # Death ("Cancelled"): freeze the contestant at once so you can't keep playing during the
 # brief Green-Room cut. GameManager.end_run (fired by HealthComponent) handles the hand-off.
