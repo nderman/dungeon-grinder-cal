@@ -8,6 +8,25 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **DCC CANON SNIPPETS → loot/achievement/ability ideas (2026-06-19, from book screenshots).**
+  - **Item-granted active abilities** (the "Tripper" spell): an ability tied to an EQUIPPED item, not
+    learned — no mana, long fixed cooldown, **lost the moment you unequip the item, and the cooldown
+    does NOT reset** when you re-equip. Tripper auto-triggers all passage/motion/heat/weight traps in a
+    radius. New mechanic for us: a high-rarity gear AFFIX (or special slot) that grants an active hotbar
+    ability while worn — pairs with the affix system + the Bomb/trap primitives. The "unequip loses it,
+    cooldown persists" constraint is the interesting balance hook (can't hot-swap to dodge cooldowns).
+  - **Themed / event-named loot boxes** ("Silver Summary Judgement box", canon "Goblin Box"): boxes
+    named by the EVENT that dropped them, not just tier×type. We have tier×type; add event-flavored
+    NAMES/skins for special triggers (a lawsuit-win box, a boss box, a sponsor box). Feeds the reveal screen.
+  - **Repeatable achievements show a stack count** ("…box! (x7)"): when a repeatable feat fires again,
+    surface "×N" rather than a fresh line. Small ticker/reveal UI tweak; we already track repeatable scope.
+  - **Achievement frequency tapers with depth/time** ("missed achievements… steadily decreasing the more
+    time we spent in the dungeon"): confirms our floor-gated heckle design is on-canon. Could add a
+    "missed achievements" view to the future Codex/Bestiary screen (Flavor-text cluster below).
+  - **Crude/funny event achievements** ("Janet Jackson's Nipple!" = featured in a live special event):
+    audience/show-event achievements beyond combat feats — ties to the Ratings/Hype rails. Naming/voice pass.
+
+
 - **TELEMETRY + LIVE A/B EXPERIMENT — DONE (2026-06-12).** Vendored **PostHog** Godot addon
   (`addons/posthog/`, copied not submoduled so the public repo is self-contained). `Telemetry.gd`
   autoload rides `SignalBus`/`GameManager` and forwards run/floor/boss/death/level/loot/achievement
