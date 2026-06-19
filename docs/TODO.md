@@ -8,6 +8,19 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **BOSS-GATED DESCENT on designated "gate floors" (2026-06-19).** Most floors let you skip down on the
+  collapse-clock (stairs open at 120s OR floor-boss death). Idea: certain LATER floors are GATE floors —
+  the only stairs sit inside a HARD boss's room, no timer-open, so you MUST beat the boss to descend.
+  Generalizes what `FINAL_FLOOR` already does (Champion-gated, no stairs) to a few mid-run floors. Pairs
+  with the **open-world generator** idea below: a big explorable floor where the exit arena is something
+  you have to FIND and clear, not a corridor you stumble into. Implementation seeds: a per-floor flag
+  (e.g. `GameManager.is_gate_floor(n)` for a fixed set like floors 4/7, or every 3rd) that (a) disables
+  the timer-open of stairs, (b) forces the stairs into the boss room + arms an always-lock seal (ties to
+  the deferred "boss always-lock + reserve the leaf before carving" reorder), and (c) rolls a tougher
+  boss tier / a from-the-hard-pool boss. Reward the gate: a guaranteed Boss box + bigger ratings pop for
+  clearing it. See [Alternate floor-layout generators] + [Floor progression] notes below.
+
+
 - **DCC CANON SNIPPETS → loot/achievement/ability ideas (2026-06-19, from book screenshots).**
   - **Item-granted active abilities** (the "Tripper" spell): an ability tied to an EQUIPPED item, not
     learned — no mana, long fixed cooldown, **lost the moment you unequip the item, and the cooldown
