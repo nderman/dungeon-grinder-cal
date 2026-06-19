@@ -46,7 +46,7 @@ func _build_shop_frame() -> void:
 	var holder := VBoxContainer.new()
 	holder.anchor_left = 0.28
 	holder.anchor_right = 0.72
-	holder.anchor_top = 0.3    # start just under the summary line; the ScrollContainer clips the rest
+	holder.anchor_top = 0.34   # below the top-anchored title + summary; the ScrollContainer clips the rest
 	holder.anchor_bottom = 0.9
 	holder.add_theme_constant_override("separation", 6)
 	add_child(holder)
