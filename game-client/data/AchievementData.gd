@@ -9,7 +9,10 @@ extends Node
 const ACHIEVEMENTS := {
 	# `box_type` (optional, default "gear") picks WHICH loot box the feat pays out — combat feats pay
 	# Weapon boxes, audience/style feats pay Fan boxes, a boss pays a premium Boss box, etc.
-	"first_blood":  {"title": "You've Killed a Mob!",        "desc": "First kill of the run.",             "tier": 0, "scope": "run"},
+	# First kill of the run pays a Silver WEAPON box — the guaranteed early-game weapon every class gets
+	# on Floor 1 (no other weapon-box feat is reachable while classless + gearless; telemetry showed
+	# Floor 1 was 0 weapon boxes out of 39). Weapon boxes must be tier ≥1 — no tier-0 weapon is droppable.
+	"first_blood":  {"title": "You've Killed a Mob!",        "desc": "First kill of the run — armed and dangerous.", "tier": 1, "scope": "run", "box_type": "weapon"},
 	"phase_finder": {"title": "Sub-Dimensional Tourist",     "desc": "Found a Phase-Door this run.",       "tier": 0, "scope": "run"},
 	"speed_demon":  {"title": "Speed Demon!",                "desc": "3 kills in 2 seconds.",              "tier": 1, "scope": "repeatable", "box_type": "fan"},
 	"crowd_pleaser":{"title": "Multi-Kill!",                 "desc": "Cancelled 2+ mobs in a single blow.", "tier": 0, "scope": "repeatable", "box_type": "fan"},
@@ -17,11 +20,12 @@ const ACHIEVEMENTS := {
 	"untouchable":  {"title": "Untouchable!",                "desc": "Dashed clean through a killer.",     "tier": 0, "scope": "repeatable", "box_type": "fan"},
 	"boss_slayer":  {"title": "Boss Slayer",                 "desc": "Put a boss in the ground.",          "tier": 2, "scope": "repeatable", "box_type": "boss"},
 	# --- Combat spectacle (show off the new affixes/primitives) → Weapon boxes ---
-	"pyromaniac":   {"title": "Pyromaniac",                  "desc": "Set a contestant on fire. The crematorium union sends its regards.", "tier": 0, "scope": "run", "box_type": "weapon"},
+	"pyromaniac":   {"title": "Pyromaniac",                  "desc": "Set a contestant on fire. The crematorium union sends its regards.", "tier": 1, "scope": "run", "box_type": "weapon"},
 	# AoE/bomb kills trip "BOOM" on basically every frag, so this is the spammiest repeatable by far
-	# (telemetry: 9 Silver boxes off floor 3 alone). Demote to tier 0 (floors 4+ heckle it, no box) and
-	# give it a long personal cooldown so even a bomb-spamming rookie can't mint a box every 12s.
-	"michael_bay":  {"title": "Michael Bay Approved",        "desc": "Blew an enemy to chunks. Do it again.",          "tier": 0, "scope": "repeatable", "box_type": "weapon", "cooldown": 45.0},
+	# (telemetry: 9 Silver boxes off floor 3 once). The 45s personal cooldown is the anti-flood lever —
+	# NOT a tier demotion: tier must stay ≥1 or the "Weapon Box" rolls non-weapon gear (no tier-0 weapon
+	# is droppable), which silently gutted early weapon supply. tier 1 + 45s = an honest, paced drip.
+	"michael_bay":  {"title": "Michael Bay Approved",        "desc": "Blew an enemy to chunks. Do it again.",          "tier": 1, "scope": "repeatable", "box_type": "weapon", "cooldown": 45.0},
 	"chain_react":  {"title": "Chain Reaction",              "desc": "One hit, two corpses. Efficient.",               "tier": 1, "scope": "repeatable", "box_type": "weapon"},
 	# --- Survival & misery → Supply boxes ---
 	"grave_robber": {"title": "Grave Robber",                "desc": "Looted a corpse. They won't be needing it.",     "tier": 0, "scope": "run", "box_type": "supply"},
