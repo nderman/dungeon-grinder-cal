@@ -45,3 +45,34 @@ func run() -> void:
 	eq(LootData.weapon_scale_stat("nunchucks"), "DEX", "a DEX-tagged melee weapon scales DEX")
 	eq(LootData.weapon_scale_stat("golden_toaster"), "STR", "a melee weapon tagged INT still scales a PHYSICAL stat, not the weak magic rate")
 	truthy("DPS" in LootData.instance_desc({"base": "broadsword", "affixes": []}, {"STR": 10}), "desc shows DPS when stats are passed")
+
+	# Weapon DAMAGE multiplier: Rare+ weapons hit harder (not just carry procs); commons stay ×1.0.
+	approx(LootData.weapon_damage_mult({"dmg_mult": 1.4}), 1.4, "weapon_damage_mult reads the rolled multiplier")
+	approx(LootData.weapon_damage_mult({}), 1.0, "no multiplier (fists / common) = ×1.0")
+	approx(LootData.effective_weapon_damage("broadsword", {"STR": 10}, 1.5),
+		1.3 * (1.0 + 10 * LootData.MELEE_DMG_PER_STR) * 1.5, "the power multiplier scales effective damage")
+	var rolled_mult := false
+	for _i in range(200):
+		var inst := LootData.roll(5, {"STR": 10}, "weapon")   # tier 5 → always a Legendary weapon
+		if String(inst.get("slot", "")) == "Weapon" and inst.has("dmg_mult") and float(inst["dmg_mult"]) > 1.0:
+			rolled_mult = true
+	check(rolled_mult, "Rare+ weapons roll a damage multiplier > 1.0")
+
+	var common_seen := false
+	var common_never := true
+	for _i in range(400):
+		var inst := LootData.roll(1, {"STR": 10}, "weapon")   # tier 1 (rarity floor 0) → commons appear
+		if String(inst.get("slot", "")) != "Weapon" or int(inst["rarity"]) >= LootData.EFFECT_MIN_RARITY:
+			continue
+		common_seen = true
+		if inst.has("dmg_mult"): common_never = false   # below-Rare weapons must NOT carry a multiplier
+	check(common_seen, "below-Rare weapons actually occur at tier 1 (the next assertion isn't vacuous)")
+	check(common_never, "below-Rare weapons never roll a damage multiplier")
+
+	# Displayed DPS folds in the weapon's own crit (crit doubles → ×(1+crit)): a Savage weapon reads higher.
+	var plain := {"base": "broadsword", "affixes": []}
+	var savage := {"base": "broadsword", "affixes": [{"effect": "crit", "power": 0.5}]}
+	approx(LootData.instance_weapon_dps(savage, {"STR": 10}),
+		LootData.instance_weapon_dps(plain, {"STR": 10}) * 1.5, "crit chance lifts the shown DPS by ×(1+crit)")
+	truthy("Power ×" in LootData.instance_desc({"base": "war_hammer", "dmg_mult": 1.4, "affixes": []}, {"STR": 10}),
+		"a weapon with a rolled multiplier shows its Power tag")

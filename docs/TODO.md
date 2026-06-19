@@ -68,11 +68,13 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   Also weapon scaling fixed (STR/DEX/INT) so ranged/INT no longer dominates. PLAYTEST, then tune
   further if still off; possible follow-up: diminishing returns on stacked defense across slots.
 
-- **WEAPON DAMAGE AFFIXES (DPS feels low on high-rarity weapons)** — rarity only adds effect/stat
-  affixes, NOT base damage, so an Epic Broadsword hits exactly as hard as a Common one (player saw
-  "Epic 2.4 dmg / 4.0 DPS" and expected more). Let Rare+ weapons roll a **damage/range multiplier**
-  affix (the deferred LootData idea). Also: the inventory DPS number excludes crit/chain/burn — fold
-  at least **crit** (a clean ×(1+crit) multiplier) into the displayed effective DPS. *(2026-06-11)*
+- **WEAPON DAMAGE AFFIXES — DONE (2026-06-19).** Rare+ WEAPONS now roll a base-damage multiplier
+  (`dmg_mult`, +20%/rarity step above Common +jitter → Rare ×1.2 / Epic ×1.4 / Legendary ×1.6), read by
+  `LootData.weapon_damage_mult` and applied in BOTH actual combat (Player `_fire`/`_melee_attack` pass
+  `_current_weapon_mult()`) and the inventory readout. Displayed DPS now folds in the weapon's own crit
+  (`instance_weapon_dps` = dps ×(1+crit)) so the number is honest; instance_desc shows a "⚔ Power ×N"
+  tag. Covered by `test_loot_affixes`. **Still deferred:** a RANGE multiplier (damage-only for now);
+  folding chain/burn into displayed DPS (crit only — the others aren't a clean per-hit multiplier).
 - **BOSS ALWAYS-LOCK (ideal) — partial: safety-net shipped 2026-06-11.** Shipped: a boss arena only
   SEALS if its room is a true dead-end (degree-1 leaf, no stray corridor) — otherwise it wakes on
   approach but doesn't trap you (`_arm_boss_lock` sealable flag). This removes the "forced fight to

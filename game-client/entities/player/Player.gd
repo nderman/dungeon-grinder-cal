@@ -190,6 +190,10 @@ func _current_weapon_base() -> String:
 	var w: Dictionary = GameManager.equipped.get("Weapon", {})
 	return String(w.get("base", "")) if not w.is_empty() else ""
 
+# The equipped weapon instance's rolled rarity damage multiplier (1.0 for fists / a plain weapon).
+func _current_weapon_mult() -> float:
+	return LootData.weapon_damage_mult(GameManager.equipped.get("Weapon", {}))
+
 func _primary_attack() -> void:
 	var w := _current_weapon()
 	if w["type"] == "ranged":
@@ -317,7 +321,7 @@ func _attack_effects() -> Dictionary:
 # magic), spread = weapon base tightened by DEX. A crit fattens the bolt; the shot carries gear effects.
 func _fire(w: Dictionary) -> void:
 	_can_fire = false
-	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats)
+	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats, _current_weapon_mult())
 	var fx := _attack_effects()
 	var res := CombatEffects.resolve_damage(base_dmg, fx)
 	var crit: bool = res[1]
@@ -336,7 +340,7 @@ func _melee_attack(w: Dictionary) -> void:
 	_melee_fx.play(swing_aim, float(w["range"]), float(w["arc"]))   # the visible sweep
 	SignalBus.spell_cast.emit("Melee", global_position)
 	var fx := _attack_effects()   # gear on-hit effects, fixed for the whole swing
-	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats)
+	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats, _current_weapon_mult())
 	var already: Array = []   # enemies hit this swing (don't double-hit)
 	var elapsed := 0.0
 	while elapsed < MELEE_SWEEP_TIME:

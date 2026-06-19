@@ -88,6 +88,7 @@ const OFFENSE_EFFECTS := ["burn", "leech", "crit", "chill", "chain"]  # proc on 
 # passive buffs to you. fire_resist/frost_resist shorten + weaken incoming Burn/Chill (StatusEffect).
 const DEFENSE_EFFECTS := ["armor", "regen", "dodge", "fire_resist", "frost_resist"]
 const EFFECT_MIN_RARITY := 2   # Rare (index 2) and above start rolling effect-affixes
+const WEAPON_POWER_PER_RARITY := 0.2   # Rare+ weapons roll a base-damage multiplier: +20% per rarity step above Common
 # Which effects a slot may roll: the Weapon does damage (OFFENSE), armour protects (DEFENSE), and
 # jewellery has no inherent armour value so it rolls EITHER — a Rare ring can be fiery OR protective.
 const ARMOUR_SLOTS := ["Head", "Chest", "Legs", "Hands"]
@@ -241,7 +242,13 @@ func roll(tier: int, stats: Dictionary, box_type: String = "gear") -> Dictionary
 			affixes.append({"effect": eff, "power": _roll_effect_power(eff, tier)})
 		else:
 			affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
-	return {"kind": "gear", "base": base, "slot": slot, "rarity": rarity, "affixes": affixes}
+	var gear := {"kind": "gear", "base": base, "slot": slot, "rarity": rarity, "affixes": affixes}
+	# Rare+ WEAPONS also roll a base-damage multiplier so rarity makes a weapon hit HARDER, not just
+	# carry procs — an Epic Broadsword should out-damage a Common one. (Weapon-only; read by
+	# weapon_damage_mult, applied in effective_weapon_damage + actual combat.)
+	if slot == "Weapon" and rarity >= EFFECT_MIN_RARITY:
+		gear["dmg_mult"] = snappedf(1.0 + WEAPON_POWER_PER_RARITY * (rarity - 1) + randf() * 0.1, 0.01)
+	return gear
 
 # Pick an effect from this slot's pool, avoiding duplicates already on the item; falls back if all used.
 func _pick_effect(used: Array, pool: Array) -> String:
@@ -377,15 +384,34 @@ func effect_label(af: Dictionary) -> String:
 		"armor", "dodge": return "%s %d%%" % [lbl, roundi(p)]
 		_: return "%s %d%%" % [lbl, roundi(p * 100.0)]
 
-# Effective per-hit damage of a weapon for a wielder's stats (melee scales STR, ranged INT).
-func effective_weapon_damage(base: String, stats: Dictionary) -> float:
+# The base-damage multiplier a weapon INSTANCE rolled (Rare+ only; 1.0 for commons / non-weapons / fists).
+func weapon_damage_mult(inst: Dictionary) -> float:
+	return float(inst.get("dmg_mult", 1.0)) if typeof(inst) == TYPE_DICTIONARY else 1.0
+
+# The honest "over time" DPS shown for a weapon instance: sustained DPS (with its rarity power) lifted
+# by the weapon's OWN crit chance (crit doubles → expected ×(1+crit)). instance_desc just formats this.
+func instance_weapon_dps(inst: Dictionary, stats: Dictionary) -> float:
+	var base := String(inst.get("base", ""))
+	return effective_weapon_dps(base, stats, weapon_damage_mult(inst)) * (1.0 + _inst_affix_power(inst, "crit"))
+
+# Total power of one effect across an INSTANCE's own affixes (e.g. its crit chance for the DPS readout).
+func _inst_affix_power(inst: Dictionary, effect: String) -> float:
+	var total := 0.0
+	for af in inst.get("affixes", []):
+		if String(af.get("effect", "")) == effect:
+			total += float(af.get("power", 0.0))
+	return total
+
+# Effective per-hit damage of a weapon for a wielder's stats (melee scales STR, ranged DEX, magic INT),
+# times the instance's rolled rarity power `mult` (1.0 = a plain base weapon).
+func effective_weapon_damage(base: String, stats: Dictionary, mult: float = 1.0) -> float:
 	var s := weapon_scale_stat(base)
-	return float(weapon_stats(base).get("damage", FISTS["damage"])) * (1.0 + int(stats.get(s, 0)) * float(WEAPON_DMG_PER_POINT[s]))
+	return float(weapon_stats(base).get("damage", FISTS["damage"])) * (1.0 + int(stats.get(s, 0)) * float(WEAPON_DMG_PER_POINT[s])) * mult
 
 # Sustained DPS = effective per-hit ÷ cooldown — the true "which weapon hits harder" comparison.
-func effective_weapon_dps(base: String, stats: Dictionary) -> float:
+func effective_weapon_dps(base: String, stats: Dictionary, mult: float = 1.0) -> float:
 	var w := weapon_stats(base)
-	return effective_weapon_damage(base, stats) / maxf(0.05, float(w.get("cooldown", 0.5)))
+	return effective_weapon_damage(base, stats, mult) / maxf(0.05, float(w.get("cooldown", 0.5)))
 
 # "melee 2.4 dmg · 4.3 DPS · +4 STR · Crit 11%"  (weapon line first, effects last). Passing `stats`
 # shows STAT-SCALED effective damage + DPS so weapons are comparable; without it, the base number.
@@ -394,10 +420,14 @@ func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 	var base := String(inst.get("base", ""))
 	if ITEMS.get(base, {}).has("weapon"):
 		var w: Dictionary = ITEMS[base]["weapon"]
+		var mult := weapon_damage_mult(inst)   # this instance's rolled rarity power
 		if stats.is_empty():
-			parts.append("%s %.1f dmg" % [w["type"], w["damage"]])
+			parts.append("%s %.1f dmg" % [w["type"], float(w["damage"]) * mult])
 		else:
-			parts.append("%s %.1f dmg · %.1f DPS" % [w["type"], effective_weapon_damage(base, stats), effective_weapon_dps(base, stats)])
+			# DPS folds in this weapon's OWN crit chance so the inventory number matches real output.
+			parts.append("%s %.1f dmg · %.1f DPS" % [w["type"], effective_weapon_damage(base, stats, mult), instance_weapon_dps(inst, stats)])
+		if mult > 1.0:
+			parts.append("⚔ Power ×%.2f" % mult)
 	var b := instance_bonus(inst)
 	for s in b:
 		parts.append("+%d %s" % [int(b[s]), s])
