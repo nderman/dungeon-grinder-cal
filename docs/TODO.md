@@ -8,6 +8,17 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **MOBILE-FIRST CONTROLS — not actually there yet (2026-06-19, flagged).** AGENTS.md says mobile-first
+  twin-stick touch, but the game is currently keyboard/mouse only (WASD move · arrows aim · Space dash ·
+  mouse fire · Q cast · E interact · 1-4 hotbar). Needs a real touch control scheme before it's mobile:
+  on-screen **dual virtual joysticks** (left = move, right = aim/fire), touch buttons for dash / cast /
+  interact / the 4 hotbar slots, and tap targets sized for thumbs. Godot has `is_touchscreen` / emulate-
+  touch-from-mouse; build an InputComponent or a HUD touch-overlay that maps touch → the existing input
+  actions so combat logic doesn't change. Also audit every UI for tap-target size (the new hotbar manage
+  + Green Room shop are mouse-click-sized today). Sizeable arc — do before any real mobile playtest. The
+  recent UI work (tap-to-arrange hotbar) was built tap-friendly on purpose, but input is still the gap.
+
+
 - **BOSS-GATED DESCENT on designated "gate floors" (2026-06-19).** Most floors let you skip down on the
   collapse-clock (stairs open at 120s OR floor-boss death). Idea: certain LATER floors are GATE floors —
   the only stairs sit inside a HARD boss's room, no timer-open, so you MUST beat the boss to descend.
@@ -222,7 +233,13 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   auto-slot on pickup, abilities auto-slot on learn → class ability + tome both bound & usable, and
   you can press the key for the SPECIFIC potion you want. Q still casts the K-panel-selected ability.
   `GameManager.hotbar` + `use_slot()` + `hotbar_slot_label()` (shared by HUD + inventory).
-  **Still TODO**: manual rearrange (drag/assign), maybe >4 slots, overflow handling beyond drop.
+  - **Manual management — DONE (2026-06-19).** Tap-to-arrange in the InventoryPanel (mobile-first): tap
+    a slot to select, tap another to SWAP (lossless reorder); an "Add:" row lists unslotted known/granted
+    abilities → tap to drop into the selected/first-free slot (never clobbers a consumable, de-dupes);
+    ✕ clears a slot (ability → back to the pool, consumable → discarded). GameManager `swap_hotbar_slots`/
+    `clear_hotbar_slot`/`assign_ability_to_slot`/`unslotted_abilities`; covered by `test_hotbar`.
+  - **Still TODO**: >4 slots; overflow handling beyond drop (a small holding queue?); the bar-full
+    consumable-drop is currently silent-on-pickup (toast only) — a manage prompt would be friendlier.
 
 - **RANGED ENEMIES: HOLD FIRE WITH NO LoS (quick AI fix)** — they currently telegraph then fire even
   if you've ducked behind cover, wasting the shot into a wall. Re-check `_has_los(target)` at the

@@ -10,7 +10,8 @@ var _scroll: ScrollContainer
 var _equip_col: VBoxContainer
 var _bag_grid: GridContainer
 var _stats_lbl: Label
-var _quick_lbl: Label
+var _hotbar_box: VBoxContainer   # interactive hotbar: tap to select/swap slots, tap a pool ability to add
+var _sel_slot: int = -1          # the slot tapped first (awaiting a swap target); -1 = none selected
 var _detail: RichTextLabel
 var _eff: Dictionary = {}   # effective stats this refresh — feeds weapon effective-DPS in descs
 
@@ -59,10 +60,9 @@ func _ready() -> void:
 	_bag_grid.add_theme_constant_override("v_separation", 8)
 	right.add_child(_bag_grid)
 
-	_quick_lbl = Label.new()
-	_quick_lbl.add_theme_font_size_override("font_size", SMALL_FONT)
-	_quick_lbl.modulate = Color(0.7, 0.8, 0.95)
-	box.add_child(_quick_lbl)
+	_hotbar_box = VBoxContainer.new()
+	_hotbar_box.add_theme_constant_override("separation", 4)
+	box.add_child(_hotbar_box)
 
 	# Detail / compare bar — updated on hover, persists the last item examined.
 	_detail = RichTextLabel.new()
@@ -72,10 +72,18 @@ func _ready() -> void:
 	_detail.custom_minimum_size = Vector2(0, 48)
 	box.add_child(_detail)
 
-	add_hint(box, "Click a bag item to equip · click equipped to remove · ✕ drops · I closes")
+	add_hint(box, "Bag: tap to equip · equipped: tap to remove · ✕ drops · Hotbar: tap a slot then another to swap, tap +Ability to add · I closes")
 	GameManager.items_changed.connect(func(): if visible: _refresh())
+	# A combat use (consumable hits 0) or a grant shuffle can move slots out from under a pending
+	# selection — drop it so the next tap can't trigger an unintended swap. (Pure select/deselect
+	# doesn't emit hotbar_changed, so this never clobbers an in-progress swap.)
+	GameManager.hotbar_changed.connect(func() -> void:
+		if visible:
+			_sel_slot = -1
+			_refresh())
 
 func _on_show() -> void:
+	_sel_slot = -1   # don't carry a stale slot selection across opens
 	_apply_size()
 	_refresh()
 
@@ -100,7 +108,7 @@ func _refresh() -> void:
 		for inst in GameManager.bag:
 			_bag_grid.add_child(_bag_card(inst))
 	_update_stats()
-	_update_quick()
+	_rebuild_hotbar()
 	_set_detail("")
 
 func _update_stats() -> void:
@@ -109,11 +117,68 @@ func _update_stats() -> void:
 		parts.append("%s %d" % [s, int(_eff.get(s, 0))])
 	_stats_lbl.text = "Effective:  " + "    ".join(parts)
 
-func _update_quick() -> void:
-	var parts: PackedStringArray = []
+# The interactive hotbar: a row of tappable slot buttons + a row of unslotted abilities to add.
+func _rebuild_hotbar() -> void:
+	_clear(_hotbar_box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var head := Label.new()
+	head.text = "Hotbar:"
+	head.modulate = Color(0.7, 0.8, 0.95)
+	row.add_child(head)
 	for i in range(GameManager.hotbar.size()):
-		parts.append("[%d] %s" % [i + 1, GameManager.hotbar_slot_label(i)])
-	_quick_lbl.text = "Hotbar:  " + "   ".join(parts)
+		row.add_child(_hotbar_slot(i))
+	_hotbar_box.add_child(row)
+
+	var pool := GameManager.unslotted_abilities()
+	if not pool.is_empty():
+		var prow := HBoxContainer.new()
+		prow.add_theme_constant_override("separation", 6)
+		var ph := Label.new()
+		ph.text = "Add:"
+		ph.modulate = Color(0.6, 0.7, 0.6)
+		prow.add_child(ph)
+		for id in pool:
+			var b := Button.new()
+			b.text = "+ %s" % AbilityLibrary.ability_name(id)
+			b.focus_mode = Control.FOCUS_NONE
+			b.modulate = Color(0.6, 0.85, 1.0)
+			b.pressed.connect(func() -> void:
+				GameManager.assign_ability_to_slot(id, _sel_slot)
+				_sel_slot = -1)   # hotbar_changed → _refresh redraws
+			prow.add_child(b)
+		_hotbar_box.add_child(prow)
+
+# One hotbar slot: a tap-to-select/swap button (highlighted when selected) + a ✕ to clear it.
+func _hotbar_slot(i: int) -> Control:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 2)
+	var b := Button.new()
+	b.text = "%d  %s" % [i + 1, GameManager.hotbar_slot_label(i)]
+	b.focus_mode = Control.FOCUS_NONE
+	b.modulate = Color(1.0, 0.9, 0.4) if i == _sel_slot else Color(0.85, 0.85, 0.9)
+	b.pressed.connect(func() -> void: _on_slot_tap(i))
+	h.add_child(b)
+	if GameManager.hotbar[i] != null:
+		var x := Button.new()
+		x.text = "✕"
+		x.focus_mode = Control.FOCUS_NONE
+		x.modulate = Color(1.0, 0.55, 0.55)
+		x.pressed.connect(func() -> void: GameManager.clear_hotbar_slot(i))
+		h.add_child(x)
+	return h
+
+# First tap selects a slot; a second tap on a DIFFERENT slot swaps them; tapping the same slot deselects.
+func _on_slot_tap(i: int) -> void:
+	if _sel_slot == i:
+		_sel_slot = -1
+		_refresh()
+	elif _sel_slot == -1:
+		_sel_slot = i
+		_refresh()
+	else:
+		GameManager.swap_hotbar_slots(_sel_slot, i)   # hotbar_changed → _refresh redraws
+		_sel_slot = -1
 
 # --- Cards ------------------------------------------------------------------------------------
 

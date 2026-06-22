@@ -374,6 +374,66 @@ func _hotbar_add_ability(id: String) -> bool:
 			return true
 	return false
 
+# --- Player hotbar management (tap-to-arrange from the inventory) -------------------------------
+
+# Swap two slots' contents — the player reorders the bar so the right thing's on the right key.
+func swap_hotbar_slots(i: int, j: int) -> void:
+	if i < 0 or j < 0 or i >= HOTBAR_SLOTS or j >= HOTBAR_SLOTS or i == j:
+		return
+	var t = hotbar[i]
+	hotbar[i] = hotbar[j]
+	hotbar[j] = t
+	hotbar_changed.emit()
+
+# Empty a slot. An ability just leaves the bar (still known/granted → reappears in unslotted_abilities);
+# a consumable is DISCARDED (explicit ✕, so not a footgun) since the bar is its only storage.
+func clear_hotbar_slot(i: int) -> void:
+	if i < 0 or i >= HOTBAR_SLOTS or hotbar[i] == null:
+		return
+	if hotbar[i].get("kind") == "consumable":
+		var p := get_tree().get_first_node_in_group("player")
+		SignalBus.toast.emit("%s discarded" % LootData.item_name(String(hotbar[i]["base"])), p.global_position if p else Vector2.ZERO)
+	hotbar[i] = null
+	hotbar_changed.emit()
+
+# Place a known/granted ability onto the bar. Prefers slot `prefer` (the tapped one); falls back to the
+# first empty slot if that's < 0 or holds a CONSUMABLE (never overwrite a consumable — it'd be lost).
+# De-dupes first so an ability is only ever in one slot. Toasts if there's nowhere to put it.
+func assign_ability_to_slot(id: String, prefer: int = -1) -> void:
+	if not AbilityLibrary.has_ability(id):
+		return
+	for k in range(HOTBAR_SLOTS):
+		if hotbar[k] != null and hotbar[k].get("kind") == "ability" and String(hotbar[k]["id"]) == id:
+			hotbar[k] = null
+	var target := prefer
+	if target < 0 or target >= HOTBAR_SLOTS or (hotbar[target] != null and hotbar[target].get("kind") == "consumable"):
+		target = -1
+		for i in range(HOTBAR_SLOTS):
+			if hotbar[i] == null:
+				target = i
+				break
+	if target < 0:
+		SignalBus.toast.emit("Hotbar full — clear a slot first", Vector2.ZERO)
+		hotbar_changed.emit()   # the de-dupe above may have changed the bar
+		return
+	hotbar[target] = {"kind": "ability", "id": id}
+	hotbar_changed.emit()
+
+# Known + granted abilities that aren't on the bar right now — the "add to a slot" pool in the inventory.
+func unslotted_abilities() -> Array[String]:
+	var slotted := {}
+	for s in hotbar:
+		if s != null and s.get("kind") == "ability":
+			slotted[String(s["id"])] = true
+	var out: Array[String] = []
+	for id in known_abilities:
+		if id not in slotted and id not in out:
+			out.append(id)
+	for id in granted_abilities:
+		if id not in slotted and id not in out:
+			out.append(id)
+	return out
+
 # Bind the cast key to a known ability.
 func select_ability(id: String) -> void:
 	if id in known_abilities and id != selected_ability:

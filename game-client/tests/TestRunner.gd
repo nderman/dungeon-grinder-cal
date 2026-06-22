@@ -24,6 +24,7 @@ const TESTS := [
 	preload("res://tests/test_meta.gd"),
 	preload("res://tests/test_loot_reveal.gd"),
 	preload("res://tests/test_granted_abilities.gd"),
+	preload("res://tests/test_hotbar.gd"),
 ]
 
 func _ready() -> void:
