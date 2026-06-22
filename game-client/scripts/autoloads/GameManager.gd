@@ -319,7 +319,14 @@ func add_consumable(base: String, tier: int) -> void:
 	var e := LootData.consumable_effect(base, tier)
 	if e.get("effect", "") == "learn":
 		var aid := String(e.get("ability", ""))
-		var msg := ("Learned %s!" % AbilityLibrary.ability_name(aid)) if learn_ability(aid) else ("%s already known." % AbilityLibrary.ability_name(aid))
+		var name := AbilityLibrary.ability_name(aid)
+		var msg: String
+		if learn_ability(aid):
+			msg = "Learned %s!" % name
+		else:
+			# Already known → a duplicate tome RANKS IT UP instead of being wasted (DCC: train the skill).
+			var lvl := level_ability_from_tome(aid)
+			msg = "%s → Lv %d!" % [name, lvl] if lvl > 0 else "%s already maxed." % name
 		var lp := get_tree().get_first_node_in_group("player")
 		SignalBus.toast.emit(msg, lp.global_position if lp else Vector2.ZERO)
 		return
@@ -445,6 +452,16 @@ func register_ability_use(id: String) -> void:
 	ability_uses[id] = int(ability_uses.get(id, 0)) + 1
 	if ability_level(id) > before:
 		abilities_changed.emit()
+
+# A duplicate tome grants a full level's worth of uses (preserving partial progress toward the next).
+# Returns the new level, or 0 if it's unknown / already at MAX_LEVEL. Caps uses at the level-15 threshold.
+func level_ability_from_tome(id: String) -> int:
+	if id not in known_abilities or ability_level(id) >= AbilityLibrary.MAX_LEVEL:
+		return 0
+	var cap := (AbilityLibrary.MAX_LEVEL - 1) * AbilityLibrary.USES_PER_LEVEL
+	ability_uses[id] = mini(int(ability_uses.get(id, 0)) + AbilityLibrary.USES_PER_LEVEL, cap)
+	abilities_changed.emit()
+	return ability_level(id)
 
 func ability_level(id: String) -> int:
 	return AbilityLibrary.level_for_uses(int(ability_uses.get(id, 0)))
