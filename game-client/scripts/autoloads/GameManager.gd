@@ -120,6 +120,7 @@ var hotbar: Array = [null, null, null, null]
 # Learnable active abilities (AbilityLibrary). Hybrid model: the class starter is re-granted every
 # run (permanent identity); tomes found mid-crawl are learned per-run. Abilities level by USE.
 var known_abilities: Array[String] = []   # AbilityLibrary ids the contestant can cast this run
+var granted_abilities: Array[String] = []  # ids granted by currently-equipped gear (lost on unequip; ≠ learned)
 var selected_ability: String = ""         # the one the cast key (Q) fires
 var ability_uses: Dictionary = {}          # id -> times cast this run (drives level-on-use)
 
@@ -272,7 +273,38 @@ func _recompute_bonuses() -> void:
 		for s in LootData.instance_bonus(equipped[slot]):
 			_item_bonuses[s] = int(_item_bonuses.get(s, 0)) + int(LootData.instance_bonus(equipped[slot])[s])
 	SignalBus.stat_injected.emit("ITEM", 0)   # Player re-derives effective vitals
+	_refresh_granted_abilities()              # gear that grants abilities adds/removes them from the bar
 	items_changed.emit()
+
+# Recompute which abilities equipped gear grants: slot newly-granted ones onto the hotbar, and pull
+# granted-only ones OFF when their item comes off. Cooldowns live on the Player and aren't reset on a
+# swap, so you can't hot-swap a granting item to dodge its cooldown WITHIN a floor (the Player is rebuilt
+# on a floor change, which does reset it). Learned abilities are untouched.
+func _refresh_granted_abilities() -> void:
+	var fresh: Array[String] = []
+	for slot in equipped:
+		for af in equipped[slot].get("affixes", []):
+			var gid := String(af.get("grant", ""))
+			if gid != "" and AbilityLibrary.has_ability(gid) and gid not in fresh:
+				fresh.append(gid)
+	for gid in granted_abilities:
+		if gid not in fresh and gid not in known_abilities:   # no longer granted, and not independently learned
+			_hotbar_remove_ability(gid)
+	for gid in fresh:
+		if gid not in granted_abilities:
+			# A granted ability is only usable from a hotbar slot (not Q-selectable) — if the bar is
+			# full, say so rather than silently swallowing the grant.
+			if not _hotbar_add_ability(gid):
+				SignalBus.toast.emit("Hotbar full — free a slot to use %s" % AbilityLibrary.ability_name(gid), Vector2.ZERO)
+	granted_abilities = fresh
+
+func _hotbar_remove_ability(id: String) -> void:
+	for i in hotbar.size():
+		var s = hotbar[i]
+		if s != null and s.get("kind") == "ability" and String(s.get("id", "")) == id:
+			hotbar[i] = null
+			hotbar_changed.emit()
+			return
 
 func add_consumable(base: String, tier: int) -> void:
 	# A tome teaches its ability the moment you pick it up — it should NOT queue behind your potions
@@ -328,17 +360,19 @@ func learn_ability(id: String) -> bool:
 	abilities_changed.emit()
 	return true
 
-# Drop a newly-learned ability into the first free hotbar slot (so a tome is instantly usable
-# alongside your class ability). No-op if already slotted or the bar is full (still castable via Q).
-func _hotbar_add_ability(id: String) -> void:
+# Drop an ability into the first free hotbar slot (so a tome/granted item is instantly usable).
+# Returns true if it's now on the bar (or already was); false if the bar is full. A LEARNED ability
+# is still castable via Q when unslotted, but a GRANTED one isn't — so callers warn on false.
+func _hotbar_add_ability(id: String) -> bool:
 	for slot in hotbar:
 		if slot != null and slot.get("kind") == "ability" and slot["id"] == id:
-			return
+			return true
 	for i in range(HOTBAR_SLOTS):
 		if hotbar[i] == null:
 			hotbar[i] = {"kind": "ability", "id": id}
 			hotbar_changed.emit()
-			return
+			return true
+	return false
 
 # Bind the cast key to a known ability.
 func select_ability(id: String) -> void:
@@ -517,6 +551,7 @@ func start_new_run() -> void:
 	hotbar = [null, null, null, null]
 	_potion_ready_at = 0.0
 	known_abilities.clear()
+	granted_abilities.clear()
 	selected_ability = ""
 	ability_uses.clear()
 	is_run_active = true

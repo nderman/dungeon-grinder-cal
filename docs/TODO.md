@@ -22,12 +22,16 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 
 - **DCC CANON SNIPPETS → loot/achievement/ability ideas (2026-06-19, from book screenshots).**
-  - **Item-granted active abilities** (the "Tripper" spell): an ability tied to an EQUIPPED item, not
-    learned — no mana, long fixed cooldown, **lost the moment you unequip the item, and the cooldown
-    does NOT reset** when you re-equip. Tripper auto-triggers all passage/motion/heat/weight traps in a
-    radius. New mechanic for us: a high-rarity gear AFFIX (or special slot) that grants an active hotbar
-    ability while worn — pairs with the affix system + the Bomb/trap primitives. The "unequip loses it,
-    cooldown persists" constraint is the interesting balance hook (can't hot-swap to dodge cooldowns).
+  - **Item-granted active abilities (the "Tripper" idea) — v1 DONE (2026-06-22).** Rare+ weapons/trinkets
+    roll a `{grant: ability_id}` affix (LootData.GRANTABLE_ABILITIES, 20% chance) → the ability auto-slots
+    on the hotbar while equipped (GameManager.granted_abilities + `_refresh_granted_abilities` off the
+    equip hook), is pulled off on unequip, and isn't added to known_abilities. Cooldown lives on the
+    Player so it persists across a same-floor swap (can't hot-swap to dodge it). Covered by
+    `test_granted_abilities`. **Follow-ups:** (a) bar-full granted ability is uncastable (toasts a warning
+    now) — let granted abilities be Q-castable as a fallback, or auto-bump a slot; (b) cooldown DOES reset
+    on floor change (Player rebuilt) — persist `_ability_cd_until` on GameManager if we want true cross-
+    floor persistence; (c) a real trap-trigger ability + the named "Detonator Gauntlet"-style flavour
+    items; (d) longer cooldowns for granted vs learned versions (item power tax).
   - **Themed / event-named loot boxes** ("Silver Summary Judgement box", canon "Goblin Box"): boxes
     named by the EVENT that dropped them, not just tier×type. We have tier×type; add event-flavored
     NAMES/skins for special triggers (a lawsuit-win box, a boss box, a sponsor box). Feeds the reveal screen.

@@ -51,6 +51,12 @@ const MAGIC_DMG_PER_INT := 0.04
 const WEAPON_DMG_PER_POINT := {"STR": MELEE_DMG_PER_STR, "DEX": RANGED_DMG_PER_DEX, "INT": MAGIC_DMG_PER_INT}
 const MELEE_KNOCK_PER_STR := 5.0    # +5px knockback per STR (was 8 — hits were punting mobs too far)
 const SPONSOR_WEIGHT := 6           # drop-pool weight a token-sponsored item gets in _pick_base (MetaManager sink)
+# Item-granted ABILITIES (the "Tripper" idea): Rare+ weapons/trinkets can roll a `grant` affix that
+# hands you an active hotbar ability WHILE EQUIPPED — no mana, its own cooldown, lost on unequip (the
+# cooldown keeps ticking across a same-floor swap so you can't hot-swap to dodge it; see
+# GameManager.granted_abilities).
+const GRANTABLE_ABILITIES := ["scrap_bomb", "ground_slam", "blink", "holy_shield"]   # skills only (no mana cost)
+const GRANT_AFFIX_CHANCE := 0.2     # chance a Rare+ weapon/trinket also grants an ability
 
 # Which stat a weapon's damage scales with — its first tag that's VALID for the weapon TYPE: melee
 # scales off a physical stat (STR/DEX), ranged off DEX or INT (magic). This keeps a melee weapon that
@@ -242,6 +248,9 @@ func roll(tier: int, stats: Dictionary, box_type: String = "gear") -> Dictionary
 			affixes.append({"effect": eff, "power": _roll_effect_power(eff, tier)})
 		else:
 			affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
+	# Rare+ weapons & trinkets can also GRANT an active ability while equipped (item-based, see consts).
+	if rarity >= EFFECT_MIN_RARITY and (slot == "Weapon" or slot in TRINKET_SLOTS) and randf() < GRANT_AFFIX_CHANCE:
+		affixes.append({"grant": GRANTABLE_ABILITIES.pick_random()})
 	var gear := {"kind": "gear", "base": base, "slot": slot, "rarity": rarity, "affixes": affixes}
 	# Rare+ WEAPONS also roll a base-damage multiplier so rarity makes a weapon hit HARDER, not just
 	# carry procs — an Epic Broadsword should out-damage a Common one. (Weapon-only; read by
@@ -434,4 +443,6 @@ func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 	for af in inst.get("affixes", []):
 		if af.has("effect"):
 			parts.append(effect_label(af))
+		elif af.has("grant"):
+			parts.append("Grants %s" % AbilityLibrary.ability_name(String(af["grant"])))
 	return " · ".join(parts)
