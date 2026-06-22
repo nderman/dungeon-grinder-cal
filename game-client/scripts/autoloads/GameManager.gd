@@ -298,13 +298,20 @@ func _refresh_granted_abilities() -> void:
 				SignalBus.toast.emit("Hotbar full — free a slot to use %s" % AbilityLibrary.ability_name(gid), Vector2.ZERO)
 	granted_abilities = fresh
 
-func _hotbar_remove_ability(id: String) -> void:
-	for i in hotbar.size():
+# Index of the hotbar slot holding ability `id`, or -1 if it isn't on the bar. The one place that
+# knows how an ability slot is shaped (dedupe guarantees an ability lives in at most one slot).
+func _hotbar_slot_of_ability(id: String) -> int:
+	for i in range(HOTBAR_SLOTS):
 		var s = hotbar[i]
 		if s != null and s.get("kind") == "ability" and String(s.get("id", "")) == id:
-			hotbar[i] = null
-			hotbar_changed.emit()
-			return
+			return i
+	return -1
+
+func _hotbar_remove_ability(id: String) -> void:
+	var i := _hotbar_slot_of_ability(id)
+	if i != -1:
+		hotbar[i] = null
+		hotbar_changed.emit()
 
 func add_consumable(base: String, tier: int) -> void:
 	# A tome teaches its ability the moment you pick it up — it should NOT queue behind your potions
@@ -364,9 +371,8 @@ func learn_ability(id: String) -> bool:
 # Returns true if it's now on the bar (or already was); false if the bar is full. A LEARNED ability
 # is still castable via Q when unslotted, but a GRANTED one isn't — so callers warn on false.
 func _hotbar_add_ability(id: String) -> bool:
-	for slot in hotbar:
-		if slot != null and slot.get("kind") == "ability" and slot["id"] == id:
-			return true
+	if _hotbar_slot_of_ability(id) != -1:
+		return true   # already on the bar
 	for i in range(HOTBAR_SLOTS):
 		if hotbar[i] == null:
 			hotbar[i] = {"kind": "ability", "id": id}
@@ -402,9 +408,9 @@ func clear_hotbar_slot(i: int) -> void:
 func assign_ability_to_slot(id: String, prefer: int = -1) -> void:
 	if not AbilityLibrary.has_ability(id):
 		return
-	for k in range(HOTBAR_SLOTS):
-		if hotbar[k] != null and hotbar[k].get("kind") == "ability" and String(hotbar[k]["id"]) == id:
-			hotbar[k] = null
+	var dup := _hotbar_slot_of_ability(id)   # de-dupe: an ability lands in exactly one slot
+	if dup != -1:
+		hotbar[dup] = null
 	var target := prefer
 	if target < 0 or target >= HOTBAR_SLOTS or (hotbar[target] != null and hotbar[target].get("kind") == "consumable"):
 		target = -1
@@ -421,16 +427,9 @@ func assign_ability_to_slot(id: String, prefer: int = -1) -> void:
 
 # Known + granted abilities that aren't on the bar right now — the "add to a slot" pool in the inventory.
 func unslotted_abilities() -> Array[String]:
-	var slotted := {}
-	for s in hotbar:
-		if s != null and s.get("kind") == "ability":
-			slotted[String(s["id"])] = true
 	var out: Array[String] = []
-	for id in known_abilities:
-		if id not in slotted and id not in out:
-			out.append(id)
-	for id in granted_abilities:
-		if id not in slotted and id not in out:
+	for id in known_abilities + granted_abilities:
+		if _hotbar_slot_of_ability(id) == -1 and id not in out:
 			out.append(id)
 	return out
 
