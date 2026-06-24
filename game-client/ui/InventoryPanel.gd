@@ -205,12 +205,14 @@ func _equipped_card(slot: String) -> Control:
 		return card
 	name_lbl.text = LootData.instance_name(inst)
 	name_lbl.modulate = LootData.rarity_color(int(inst.get("rarity", 0)))
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(name_lbl)
 
 	var desc := Label.new()
 	desc.text = LootData.instance_desc(inst, _eff)
 	desc.add_theme_font_size_override("font_size", SMALL_FONT)
 	desc.modulate = Color(0.8, 0.8, 0.85)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # wrap long affix lines instead of growing the card
 	v.add_child(desc)
 
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -237,6 +239,7 @@ func _bag_card(inst: Dictionary) -> Control:
 	name_lbl.text = LootData.instance_name(inst)
 	name_lbl.add_theme_font_size_override("font_size", NAME_FONT)
 	name_lbl.modulate = LootData.rarity_color(int(inst.get("rarity", 0)))
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(name_lbl)
 
 	var tag := Label.new()
@@ -249,6 +252,7 @@ func _bag_card(inst: Dictionary) -> Control:
 	bonus.text = LootData.instance_desc(inst, _eff)
 	bonus.add_theme_font_size_override("font_size", SMALL_FONT)
 	bonus.modulate = Color(0.82, 0.82, 0.88)
+	bonus.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # wrap long affix lines so the card keeps its width
 	v.add_child(bonus)
 
 	var drop := Button.new()
