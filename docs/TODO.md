@@ -8,6 +8,19 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **WEB BUILD LAUNCHED + launch-polish round (2026-06-24).** Live at
+  https://nderman.github.io/dungeon-grinder-cal/ — single-threaded Godot Web export (no SharedArrayBuffer
+  → no COOP/COEP → plain GitHub Pages), `deploy-web.yml` auto-deploys on push. Telemetry on web via a
+  bundled `res://posthog.key` (CI writes from the POSTHOG_API_KEY secret; `phc_` is a publishable client
+  key). Web-playtest fixes shipped same day: (a) **tofu glyphs** — the web default font lacks Arrows/
+  Misc-Symbols/Dingbats/emoji, so 📦★☠⚠⚔✕✨🌟→ were boxes; swapped all for ASCII (kept ·×— which render).
+  (b) **inventory overflow** — long affix descriptions didn't wrap → cards grew off-screen; added
+  AUTOWRAP_WORD_SMART. (c) **right-mouse secondary cast** (bind in K panel). (d) **Esc/P pause + controls
+  help**. Follow-ups: bundle a symbol font (art pass) to bring the nicer glyphs back; responsive panel
+  width for small windows; verify web telemetry events landing via the PostHog MCP after real plays.
+  **Lessons (reusable):** Godot web = single-threaded to avoid header hosting pain; default font has no
+  emoji/symbol glyphs; `user://` saves → browser IndexedDB (per-origin, wiped by clear-site-data/incognito).
+
 - **MOBILE-FIRST CONTROLS — not actually there yet (2026-06-19, flagged).** AGENTS.md says mobile-first
   twin-stick touch, but the game is currently keyboard/mouse only (WASD move · arrows aim · Space dash ·
   mouse fire · Q cast · E interact · 1-4 hotbar). Needs a real touch control scheme before it's mobile:
