@@ -121,7 +121,8 @@ var hotbar: Array = [null, null, null, null]
 # run (permanent identity); tomes found mid-crawl are learned per-run. Abilities level by USE.
 var known_abilities: Array[String] = []   # AbilityLibrary ids the contestant can cast this run
 var granted_abilities: Array[String] = []  # ids granted by currently-equipped gear (lost on unequip; ≠ learned)
-var selected_ability: String = ""         # the one the cast key (Q) fires
+var selected_ability: String = ""          # the one the cast key (Q) fires
+var secondary_ability: String = ""          # the one Right-Mouse fires (a second bindable cast)
 var ability_uses: Dictionary = {}          # id -> times cast this run (drives level-on-use)
 
 signal rating_changed(new_value: int)
@@ -446,6 +447,13 @@ func select_ability(id: String) -> void:
 		selected_ability = id
 		abilities_changed.emit()
 
+# Bind a known ability to the Right-Mouse cast (the secondary). Toggle off if it's already bound there.
+func select_secondary_ability(id: String) -> void:
+	if id not in known_abilities:
+		return
+	secondary_ability = "" if id == secondary_ability else id
+	abilities_changed.emit()
+
 # Tally a cast; emit only when it crosses a level boundary (HUD/panel refresh).
 func register_ability_use(id: String) -> void:
 	var before := ability_level(id)
@@ -629,6 +637,7 @@ func start_new_run() -> void:
 	known_abilities.clear()
 	granted_abilities.clear()
 	selected_ability = ""
+	secondary_ability = ""
 	ability_uses.clear()
 	is_run_active = true
 	MetaManager.reset_run_cache()

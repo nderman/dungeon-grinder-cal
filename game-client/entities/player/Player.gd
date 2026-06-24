@@ -178,6 +178,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_abilities_panel.toggle()
 	elif event.is_action_pressed("nano"):
 		cast_active_ability()
+	elif event.is_action_pressed("cast_secondary"):
+		cast_ability(GameManager.secondary_ability)   # Right-Mouse: the second bindable cast ("" = unbound, no-op)
 
 # The equipped weapon's type decides the attack — ranged weapons fire, melee weapons swing.
 func _current_weapon() -> Dictionary:
