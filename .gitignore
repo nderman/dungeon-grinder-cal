@@ -2,7 +2,9 @@
 game-client/.godot/
 game-client/.import/
 game-client/export.cfg
-game-client/export_presets.cfg
+# export_presets.cfg is normally ignored (it can hold signing secrets) — ours is committed on purpose
+# (Web preset, no secrets; the PostHog key is injected separately at build time and stays gitignored).
+!game-client/export_presets.cfg
 *.translation
 
 # --- Raw art / audio source files: tracked via Git LFS only, never bulk-committed ---
@@ -17,6 +19,11 @@ assets-raw/**
 !.env.example
 *.secret
 secrets.cfg
+posthog.key          # PostHog key bundled into web/exported builds — written transiently by CI, never committed
+
+# --- Build output ---
+build/
+game-client/build/
 # Godot mobile signing / store keys
 *.keystore
 *.jks
