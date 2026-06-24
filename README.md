@@ -1,6 +1,10 @@
 # Dungeon Grinder Cal
 
 [![tests](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/tests.yml/badge.svg)](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/tests.yml)
+[![deploy-web](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/deploy-web.yml/badge.svg)](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/deploy-web.yml)
+
+### ▶ [Play it in your browser](https://nderman.github.io/dungeon-grinder-cal/)
+*Desktop only for now — **keyboard + mouse** (WASD move · arrows aim · mouse fire · Space dash · Q cast · E interact · I inventory · 1–4 hotbar). Progress saves to your browser. Touch controls are on the roadmap.*
 
 A mobile, top-down **twin-stick roguelite shooter** built in **Godot 4 (GDScript)** — Hotline-Miami
 lethality meets a snarky reality-TV "meat grinder," with permadeath, deep loot, and persistent
