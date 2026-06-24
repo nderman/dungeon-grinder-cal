@@ -46,6 +46,7 @@ var _inventory_panel: InventoryPanel  # toggled with the inventory key
 var _abilities_panel: AbilitiesPanel  # toggled with the abilities key
 var _class_panel: ClassSelectPanel    # floor-3 class pick (DCC); created only when owed
 var _loot_reveal_panel: LootRevealPanel   # the Safe-Room box-opening reveal
+var _pause_menu: PauseMenu                # Esc/P pause overlay + controls help (self-manages input)
 var _ability_cd_until: Dictionary = {}   # ability id -> wall-clock (s) it's castable again
 
 # Potion sickness: drinking a potion before its cool-down (GameManager) ends inflicts Poison —
@@ -71,6 +72,8 @@ func _ready() -> void:
 	add_child(_abilities_panel)
 	_loot_reveal_panel = LootRevealPanel.new()
 	add_child(_loot_reveal_panel)
+	_pause_menu = PauseMenu.new()
+	add_child(_pause_menu)
 	health_comp.health_depleted.connect(_on_death)
 	# DCC: reaching Floor 3 classless -> the System makes you pick a class now (mandatory modal).
 	if GameManager.needs_class_selection():
