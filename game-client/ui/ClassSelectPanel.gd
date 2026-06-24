@@ -85,7 +85,7 @@ func _class_card(c: String, top: String) -> Control:
 	card.add_child(v)
 
 	var head := Label.new()
-	head.text = "%s%s%s" % ["★ " if recommended else "", c, "   (recommended)" if recommended else ""]
+	head.text = "%s%s%s" % ["* " if recommended else "", c, "   (recommended)" if recommended else ""]
 	head.add_theme_font_size_override("font_size", 18)
 	head.modulate = Color(0.95, 0.85, 0.5) if recommended else Color(0.7, 0.85, 1.0)
 	v.add_child(head)

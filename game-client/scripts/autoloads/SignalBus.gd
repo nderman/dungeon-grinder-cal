@@ -21,7 +21,7 @@ signal hype_threshold_reached(tier_index: int)      # 50% / 75% / 90%
 signal run_started()                                 # fresh Episode — reset per-run achievement dedup
 signal run_ended(outcome: String)                    # "died" | "won" — the Episode is over (Telemetry hook)
 
-# --- PROGRESSION (XP → LEVELS → SKILL POINTS) ---
+# --- PROGRESSION (XP -> LEVELS -> SKILL POINTS) ---
 # Distinct from Ratings (audience/loot) and Gold (shops). This is character growth.
 signal xp_awarded(amount: int)                       # a kill paid out XP (emitted by HealthComponent)
 signal xp_changed(xp: int, xp_to_next: int, level: int)   # HUD bar refresh

@@ -17,7 +17,7 @@ const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapse
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
 const FLOOR_DMG_PER_DEPTH := 0.35      # enemy hearts/damage scale: ×(1 + 0.35·(floor−1)). Raised so
-                                       # offense keeps pace with a geared player (was 0.25 → too soft
+                                       # offense keeps pace with a geared player (was 0.25 -> too soft
                                        # by ~floor 6); deep-floor bite still comes mostly from ELITES
 
 # Ratings Spike reward table — {hype_pct, ratings} per achievement type.
@@ -33,13 +33,13 @@ const SPIKE_TABLE := {
 # Kill-feat tuning. Two independent detectors run on the same kill stream:
 #   Speed Demon — sequential tempo (kills in quick succession)
 #   Multi-Kill  — one blow wiping a group (kills in a single-swing window)
-const SPEED_DEMON_KILLS := 3       # kills within the window → Speed Demon
+const SPEED_DEMON_KILLS := 3       # kills within the window -> Speed Demon
 const SPEED_DEMON_WINDOW := 2.0    # seconds
-const MULTIKILL_KILLS := 2         # kills inside one blow → Crowd Pleaser (multi-kill flex)
+const MULTIKILL_KILLS := 2         # kills inside one blow -> Crowd Pleaser (multi-kill flex)
 const MULTIKILL_WINDOW := 0.3      # seconds — tight enough to mean "the same attack"
 
-# CHA → Ratings generation: the audience-appeal stat multiplies every Ratings payout.
-const CHA_RATINGS_PER := 0.05      # +5% Ratings per CHA point (DCC scale: CHA 4 → +20%, as before)
+# CHA -> Ratings generation: the audience-appeal stat multiplies every Ratings payout.
+const CHA_RATINGS_PER := 0.05      # +5% Ratings per CHA point (DCC scale: CHA 4 -> +20%, as before)
 
 func _cha_mult() -> float:
 	return 1.0 + (int(current_run_stats.get("CHA", 0)) + int(_item_bonuses.get("CHA", 0))) * CHA_RATINGS_PER
@@ -89,7 +89,7 @@ var _collapse_accum: float = 0.0     # collapse-DoT tick accumulator
 # --- PROGRESSION (XP / LEVELS / SKILL POINTS) — the character-growth rail ---
 # Per DCC: kills grant XP; every level hands you 3 stat points to spend, and you may only
 # spend them in a Safe Room. Levels reset per run (roguelite); you re-grow each Season.
-const XP_PER_LEVEL_BASE := 80          # XP for L1→L2
+const XP_PER_LEVEL_BASE := 80          # XP for L1->L2
 const XP_GROWTH := 1.4                 # geometric: each level costs 1.4× the last (grindier deep)
 const SKILL_POINTS_PER_LEVEL := 3      # DCC canon
 var xp: int = 0
@@ -97,7 +97,7 @@ var level: int = 1
 var skill_points: int = 0              # unspent — banked until you reach a Safe-Room terminal
 
 func xp_to_next(lvl: int) -> int:
-	# Geometric ramp: L1→80, L2→112, L3→157, L5→307, L10→1653 … each level a real grind step deeper.
+	# Geometric ramp: L1->80, L2->112, L3->157, L5->307, L10->1653 … each level a real grind step deeper.
 	return int(round(XP_PER_LEVEL_BASE * pow(XP_GROWTH, maxi(0, lvl - 1))))
 
 # --- ACTIVE CONTRACT ---
@@ -324,9 +324,9 @@ func add_consumable(base: String, tier: int) -> void:
 		if learn_ability(aid):
 			msg = "Learned %s!" % name
 		else:
-			# Already known → a duplicate tome RANKS IT UP instead of being wasted (DCC: train the skill).
+			# Already known -> a duplicate tome RANKS IT UP instead of being wasted (DCC: train the skill).
 			var lvl := level_ability_from_tome(aid)
-			msg = "%s → Lv %d!" % [name, lvl] if lvl > 0 else "%s already maxed." % name
+			msg = "%s -> Lv %d!" % [name, lvl] if lvl > 0 else "%s already maxed." % name
 		var lp := get_tree().get_first_node_in_group("player")
 		SignalBus.toast.emit(msg, lp.global_position if lp else Vector2.ZERO)
 		return
@@ -398,8 +398,8 @@ func swap_hotbar_slots(i: int, j: int) -> void:
 	hotbar[j] = t
 	hotbar_changed.emit()
 
-# Empty a slot. An ability just leaves the bar (still known/granted → reappears in unslotted_abilities);
-# a consumable is DISCARDED (explicit ✕, so not a footgun) since the bar is its only storage.
+# Empty a slot. An ability just leaves the bar (still known/granted -> reappears in unslotted_abilities);
+# a consumable is DISCARDED (explicit x, so not a footgun) since the bar is its only storage.
 func clear_hotbar_slot(i: int) -> void:
 	if i < 0 or i >= HOTBAR_SLOTS or hotbar[i] == null:
 		return
@@ -558,7 +558,7 @@ func _on_enemy_cancelled(_loc: Vector2, ratings_earned: int) -> void:
 # Turns kills into show-off feats the audience pays for. Two independent detectors on the same
 # stream: Speed Demon (a fast sequential burst) and Multi-Kill/Crowd Pleaser (a group wiped in one
 # blow). Each fires at most once per burst — Speed Demon clears its window, Multi-Kill fires only on
-# the exact threshold kill — so neither spams every later kill. Both route through ratings_spike →
+# the exact threshold kill — so neither spams every later kill. Both route through ratings_spike ->
 # AchievementManager grants the box (floor-gated).
 func _track_kill() -> void:
 	run_kills += 1
@@ -670,7 +670,7 @@ func _check_hype_thresholds() -> void:
 		SignalBus.hype_threshold_reached.emit(0)
 	hype_changed.emit(hype_meter)
 
-# The Champion path: the final floor's boss died → you WON the Season. Bigger payout than dying
+# The Champion path: the final floor's boss died -> you WON the Season. Bigger payout than dying
 # out, sets run_won so the Green Room shows the Champion screen, then cuts to it.
 func win_run() -> void:
 	if not is_run_active:

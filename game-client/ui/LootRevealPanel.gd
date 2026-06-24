@@ -1,7 +1,7 @@
 # LootRevealPanel.gd
 # The payoff screen for cracking Loot Boxes in the Safe Room. The roll + inventory-add already
 # happened (AchievementManager.open_all_boxes); this just REVEALS the haul one box at a time, low
-# tier → high, each line popping in rarity-coloured with a marker for the good stuff — so opening a
+# tier -> high, each line popping in rarity-coloured with a marker for the good stuff — so opening a
 # Celestial box feels like an event, not a ticker blip. Tap E/SPACE to reveal the rest, then to close.
 class_name LootRevealPanel
 extends ModalPanel
@@ -30,7 +30,7 @@ func _ready() -> void:
 	_hint.modulate = Color(1, 1, 1, 0.6)
 	box.add_child(_hint)
 
-# Kick off the reveal for a freshly-opened haul ([{box, item, rarity, tier}], low→high).
+# Kick off the reveal for a freshly-opened haul ([{box, item, rarity, tier}], low->high).
 func reveal(results: Array) -> void:
 	for r in _rows_holder.get_children():
 		r.queue_free()
@@ -48,7 +48,7 @@ func reveal(results: Array) -> void:
 	_revealing = true
 	_reveal_next()
 
-# "Bronze Weapon Box   →   ✨ Epic Lead-Lined Vest" — box label muted, item in its rarity colour.
+# "Bronze Weapon Box   ->   * Epic Lead-Lined Vest" — box label muted, item in its rarity colour.
 func _make_row(res: Dictionary) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -58,7 +58,7 @@ func _make_row(res: Dictionary) -> Control:
 	box_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(box_lbl)
 	var arrow := Label.new()
-	arrow.text = "→"
+	arrow.text = "->"
 	arrow.modulate = Color(0.6, 0.6, 0.65)
 	row.add_child(arrow)
 	var item_lbl := Label.new()
@@ -69,12 +69,12 @@ func _make_row(res: Dictionary) -> Control:
 	row.add_child(item_lbl)
 	return row
 
-# A little flair for the rare stuff (Epic = ✨, Legendary = 🌟); plain otherwise.
+# A little flair for the rare stuff (Epic = *, Legendary = **); plain otherwise.
 func _marker(rarity: int) -> String:
 	if rarity >= LootData.RARITY_NAMES.size() - 1:
-		return "🌟 "
+		return "** "
 	if rarity >= 3:
-		return "✨ "
+		return "* "
 	return ""
 
 # Pop the next box in, then schedule the one after — a staggered reveal you can sit back and watch.

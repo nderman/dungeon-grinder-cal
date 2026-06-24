@@ -6,7 +6,7 @@
 #   3. bundled res://posthog.key — for EXPORTED/WEB builds, which can't read a host .env or process env.
 #      The CI build step writes it from a secret so it's never in git, but it DOES ship in the .pck —
 #      that's fine: a `phc_` key is a publishable, write-only client key, meant to live in client builds.
-# None of the three → nothing set → PostHog stays silent (a clone with no key sends nothing).
+# None of the three -> nothing set -> PostHog stays silent (a clone with no key sends nothing).
 # Register AFTER PostHog and BEFORE Telemetry in project.godot — PostHog reads api_key live on every
 # capture/flush, so setting it here (a hair after PostHog._ready) takes effect for the whole session.
 extends Node

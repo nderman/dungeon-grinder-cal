@@ -14,7 +14,7 @@ func _ready() -> void:
 
 func _update_nightmare_btn(btn: Button) -> void:
 	var on := MetaManager.nightmare_enabled
-	btn.text = "☠ NIGHTMARE: %s   (enemies hit ×%.1f)" % ["ON" if on else "OFF", GameManager.NIGHTMARE_DMG_MULT]
+	btn.text = "NIGHTMARE: %s   (enemies hit ×%.1f)" % ["ON" if on else "OFF", GameManager.NIGHTMARE_DMG_MULT]
 	btn.modulate = Color(1.0, 0.4, 0.4) if on else Color(0.7, 0.7, 0.75)
 
 func _refresh_summary() -> void:
@@ -159,7 +159,7 @@ func _injector_row(stat: String) -> Control:
 	row.add_child(btn)
 	return row
 
-# One weapon's sponsor row: a buy button, or a ★ tag once it's permanently in the drop pool.
+# One weapon's sponsor row: a buy button, or a * tag once it's permanently in the drop pool.
 func _sponsor_row(id: String) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -170,7 +170,7 @@ func _sponsor_row(id: String) -> Control:
 	row.add_child(lbl)
 	if MetaManager.is_sponsored(id):
 		var tag := Label.new()
-		tag.text = "★ Sponsored"
+		tag.text = "* Sponsored"
 		tag.modulate = Color(1.0, 0.85, 0.3)
 		row.add_child(tag)
 	else:

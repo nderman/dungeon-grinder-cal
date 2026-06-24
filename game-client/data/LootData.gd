@@ -1,6 +1,6 @@
 # LootData.gd (Autoload)
 # Loot-box tiers + the item pool + the Director's Algorithm roll. Opened items are rolled into
-# INSTANCES: a base item + a RARITY (Common→Legendary) + rolled AFFIXES (extra stat bonuses).
+# INSTANCES: a base item + a RARITY (Common->Legendary) + rolled AFFIXES (extra stat bonuses).
 # Rarity = number of affix slots, so higher-tier boxes drop more "custom" gear. Gear equips into
 # full-body + accessory slots (Weapon/Head/Chest/Legs/Hands/Amulet/2×Ring/Trinket); consumables
 # stock the quick bar.
@@ -35,7 +35,7 @@ const RARITY_COLORS := [
 # Equip-slot KEYS (paper-doll positions). Several accessories let you wear more than one item of a
 # type, so a key isn't always the item `slot` it accepts — see SLOT_ACCEPTS.
 const SLOTS := ["Weapon", "Head", "Chest", "Legs", "Hands", "Amulet", "Ring", "Ring 2", "Trinket"]
-# Equip-slot key → the item `slot` type it accepts. Defaults to the key itself (see slot_accepts).
+# Equip-slot key -> the item `slot` type it accepts. Defaults to the key itself (see slot_accepts).
 const SLOT_ACCEPTS := {"Ring 2": "Ring"}
 const STAT_KEYS := ["STR", "DEX", "INT", "CON", "CHA"]
 const BASE_BONUS_PER_TAG := 2   # a gear item's flat bonus to each of its tagged stats
@@ -220,8 +220,8 @@ func is_potion(id: String) -> bool:
 # --- Rolling -----------------------------------------------------------------------------------
 
 # Roll an item for a box tier, weighted toward the crawler's build. Returns an INSTANCE dict:
-#   consumable → {kind:"consumable", base, tier}
-#   gear       → {kind:"gear", base, slot, rarity, affixes:[{stat,amount}…]}
+#   consumable -> {kind:"consumable", base, tier}
+#   gear       -> {kind:"gear", base, slot, rarity, affixes:[{stat,amount}…]}
 func roll(tier: int, stats: Dictionary, box_type: String = "gear") -> Dictionary:
 	var base := _pick_base(tier, stats, box_type)
 	# A targeted box can come up empty at a low tier (e.g. a Bronze Weapon box — all real weapons are
@@ -398,7 +398,7 @@ func weapon_damage_mult(inst: Dictionary) -> float:
 	return float(inst.get("dmg_mult", 1.0)) if typeof(inst) == TYPE_DICTIONARY else 1.0
 
 # The honest "over time" DPS shown for a weapon instance: sustained DPS (with its rarity power) lifted
-# by the weapon's OWN crit chance (crit doubles → expected ×(1+crit)). instance_desc just formats this.
+# by the weapon's OWN crit chance (crit doubles -> expected ×(1+crit)). instance_desc just formats this.
 func instance_weapon_dps(inst: Dictionary, stats: Dictionary) -> float:
 	var base := String(inst.get("base", ""))
 	return effective_weapon_dps(base, stats, weapon_damage_mult(inst)) * (1.0 + _inst_affix_power(inst, "crit"))
@@ -436,7 +436,7 @@ func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 			# DPS folds in this weapon's OWN crit chance so the inventory number matches real output.
 			parts.append("%s %.1f dmg · %.1f DPS" % [w["type"], effective_weapon_damage(base, stats, mult), instance_weapon_dps(inst, stats)])
 		if mult > 1.0:
-			parts.append("⚔ Power ×%.2f" % mult)
+			parts.append("Power ×%.2f" % mult)
 	var b := instance_bonus(inst)
 	for s in b:
 		parts.append("+%d %s" % [int(b[s]), s])

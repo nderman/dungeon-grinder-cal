@@ -7,14 +7,14 @@ extends Node
 
 var _run_unlocked: Array[String] = []   # "run"-scope achievements already granted this Episode
 const REPEAT_COOLDOWN := 12.0           # min seconds between firings of the SAME repeatable feat (anti-spam)
-var _repeat_cd: Dictionary = {}         # repeatable id → wall-clock time it may fire again
+var _repeat_cd: Dictionary = {}         # repeatable id -> wall-clock time it may fire again
 
 func _ready() -> void:
 	SignalBus.enemy_cancelled.connect(_on_enemy_cancelled)
 	SignalBus.ratings_spike.connect(_on_spike)
 	SignalBus.phasedoor_discovered.connect(_on_phasedoor)
 	SignalBus.mana_depleted.connect(func(): unlock("tapped_out"))   # cast on an empty tank
-	SignalBus.stat_injected.connect(_on_stat_injected)              # stat milestones (→ 20)
+	SignalBus.stat_injected.connect(_on_stat_injected)              # stat milestones (-> 20)
 	SignalBus.run_started.connect(func(): _run_unlocked.clear())
 
 func _on_enemy_cancelled(_loc: Vector2, _ratings: int) -> void:
@@ -48,9 +48,9 @@ func _on_stat_injected(stat: String, value: int) -> void:
 		unlock("stat_max_" + stat.to_lower())
 
 # Award an achievement + its Loot Box. Dedup depends on scope:
-#   run        → once per run (reset on run_started)
-#   lifetime   → once ever (persisted to disk)
-#   repeatable → always fires, but the BOX is floor-gated (see below)
+#   run        -> once per run (reset on run_started)
+#   lifetime   -> once ever (persisted to disk)
+#   repeatable -> always fires, but the BOX is floor-gated (see below)
 # `title_override` lets a dynamic feat name itself at unlock time (e.g. the race-adaptive STR title);
 # empty = use the definition's static title.
 func unlock(id: String, title_override: String = "") -> void:
@@ -112,7 +112,7 @@ func _heckle() -> String:
 	return HECKLES.pick_random()
 
 # Safe-Room only: open every pending box at once, low tier -> high (DCC). Returns the opened results
-# (sorted low→high) as [{box, item, rarity, tier}] so the Safe Room can play a reveal — the inventory
+# (sorted low->high) as [{box, item, rarity, tier}] so the Safe Room can play a reveal — the inventory
 # add + box_opened/item_acquired emits still happen here, the reveal is pure presentation over them.
 func open_all_boxes(stats: Dictionary) -> Array:
 	if GameManager.earned_loot_boxes.is_empty():
@@ -121,7 +121,7 @@ func open_all_boxes(stats: Dictionary) -> Array:
 	var boxes: Array = GameManager.earned_loot_boxes.duplicate()
 	GameManager.earned_loot_boxes.clear()
 	GameManager.loot_boxes_changed.emit(0)   # pending counter back to zero
-	boxes.sort_custom(func(a, b): return int(a["tier"]) < int(b["tier"]))   # open low tier → high
+	boxes.sort_custom(func(a, b): return int(a["tier"]) < int(b["tier"]))   # open low tier -> high
 	var results: Array = []
 	for box in boxes:
 		var tier := int(box["tier"])

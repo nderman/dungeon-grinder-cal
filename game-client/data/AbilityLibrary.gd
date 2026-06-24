@@ -41,7 +41,7 @@ func ability_name(id: String) -> String:
 func is_spell(id: String) -> bool:
 	return ABILITIES.get(id, {}).get("kind", "skill") == "spell"
 
-# Use count → ability level (1..MAX_LEVEL).
+# Use count -> ability level (1..MAX_LEVEL).
 func level_for_uses(uses: int) -> int:
 	return clampi(1 + int(uses / USES_PER_LEVEL), 1, MAX_LEVEL)
 

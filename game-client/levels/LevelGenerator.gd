@@ -23,12 +23,12 @@ extends Node2D
 @export var neighborhood_bosses: int = 2         # DCC: a floor has several bosses, not one
 
 # World + BSP tuning. Bigger world + one more split depth = larger floors with more rooms
-# (→ more enemies); bigger ROOM_MARGIN = more space / longer corridors between rooms. Stairs (3)
+# (-> more enemies); bigger ROOM_MARGIN = more space / longer corridors between rooms. Stairs (3)
 # and phase-doors (2) stay capped in _designate/_place_stairs regardless of size.
 const WORLD := Vector2(5200, 3800)
 const MAX_DEPTH := 5
 const MIN_CHILD := 640.0      # don't split if a child would be smaller than this on the split axis
-const ROOM_MARGIN := 120.0    # inset from the leaf → the gap that corridors cross
+const ROOM_MARGIN := 120.0    # inset from the leaf -> the gap that corridors cross
 const ROOM_MIN := Vector2(380, 360)
 const BOSS_MIN_ROOM_DIM := 520.0   # the boss room wants at least this on its short side (room to move a big boss)
 const DOOR := 150.0           # corridor / doorway width
@@ -45,7 +45,7 @@ const STAIRS_SCENE := preload("res://entities/Stairs.tscn")
 const FLOOR_BOSS := {"hearts": 28.0, "damage": 64.0, "scale": 1.45, "tint": Color(1, 0.85, 0.85), "telegraph": 0.55, "speed": 340.0, "xp": 300, "stun_resist": 0.6, "ratings": 240}
 const NEIGHBORHOOD_BOSS := {"hearts": 11.0, "damage": 34.0, "scale": 0.95, "tint": Color(1.0, 0.65, 0.3), "telegraph": 0.7, "speed": 290.0, "xp": 120, "stun_resist": 0.35, "ratings": 90}
 # The Season's CHAMPION — only on the final floor. A real wall: ~2× a Floor Boss's HP, hits harder,
-# bigger, faster, barely stunnable. The archetype's 50%-HP enrage is its phase 2. Death → win_run().
+# bigger, faster, barely stunnable. The archetype's 50%-HP enrage is its phase 2. Death -> win_run().
 const FINAL_BOSS := {"hearts": 55.0, "damage": 80.0, "scale": 1.7, "tint": Color(0.95, 0.2, 0.28), "telegraph": 0.5, "speed": 370.0, "xp": 800, "stun_resist": 0.75, "ratings": 600}
 
 var rooms: Array = []            # [{rect:Rect2, type:String, node:Room}]
@@ -87,7 +87,7 @@ func _ready() -> void:
 		_announce_final_floor()
 	if GameManager.nightmare and GameManager.current_floor == 1:
 		var p := get_tree().get_first_node_in_group("player") as Node2D
-		SignalBus.toast.emit("☠ NIGHTMARE — the System turned up the violence", p.global_position if p else Vector2.ZERO)
+		SignalBus.toast.emit("NIGHTMARE — the System turned up the violence", p.global_position if p else Vector2.ZERO)
 
 # --- BSP -------------------------------------------------------------------------------------
 
@@ -285,7 +285,7 @@ func _designate() -> void:
 	# Boss = the FARTHEST clean leaf from spawn. "Clean" = no corridor for OTHER rooms strays
 	# through it (an MST leaf can still be physically crossed by an L-corridor between two other
 	# rooms, which would make it walk-through-able and on a path). A clean leaf has exactly its
-	# own single entrance → you only enter it deliberately.
+	# own single entrance -> you only enter it deliberately.
 	var dist := _distances(spawn_i)
 	var clean := []
 	for i in leaves:
@@ -519,7 +519,7 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	if scene == null:
 		return
 	var e := scene.instantiate()
-	var m := GameManager.floor_mult()   # deeper floors → tougher mobs
+	var m := GameManager.floor_mult()   # deeper floors -> tougher mobs
 	var hc := e.get_node_or_null("HealthComponent")
 	if hc:
 		hc.configured_hearts *= m * GameManager.ng_plus_hp_mult()
@@ -575,7 +575,7 @@ var floor_element: String = ""   # "" | "burn" | "chill" — this floor's elemen
 # Final-floor banner: this is the climax, there's no way down — kill the Champion or die trying.
 func _announce_final_floor() -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node2D
-	SignalBus.toast.emit("⚔ FINAL FLOOR — DEFEAT THE CHAMPION", p.global_position if p else Vector2.ZERO)
+	SignalBus.toast.emit("FINAL FLOOR — DEFEAT THE CHAMPION", p.global_position if p else Vector2.ZERO)
 
 func _roll_floor_theme() -> void:
 	floor_element = ""
@@ -607,7 +607,7 @@ func _make_elite(e: Node, hc: Node, ai: Node) -> void:
 	if hc:
 		hc.configured_hearts *= 2.5
 		hc.xp_reward *= 2
-		hc.ratings_reward *= 2          # → more corpse gold too (gold scales off ratings)
+		hc.ratings_reward *= 2          # -> more corpse gold too (gold scales off ratings)
 	if ai:
 		ai.damage_hearts *= 1.35
 		ai.stun_resist = maxf(ai.stun_resist, 0.3)
@@ -634,7 +634,7 @@ func _spawn_boss(r: Dictionary, tier: Dictionary, is_floor_boss: bool) -> void:
 	if scene == null:
 		_spawn_enemy(room)   # no boss configured (or an all-null pool) — fall back to a normal mob
 		return
-	var m := GameManager.floor_mult()   # deeper floors → tougher bosses
+	var m := GameManager.floor_mult()   # deeper floors -> tougher bosses
 	# NOTE: tier damage is set here, but the boss's own _ready post-scales damage_hearts (e.g. Hexgun
 	# /Showrunner soften it for many projectiles). Keep this assignment BEFORE add_child(b).
 	var b := scene.instantiate()
@@ -739,7 +739,7 @@ func _unlock_boss(r: Dictionary) -> void:
 
 # Scatter several stairs across non-boss / non-spawn rooms so the floor has multiple exits
 # reachable WITHOUT the boss (the boss only opens them early). Visible-but-locked until open.
-# Placed on the room's central vertical axis (x=0 → clear of corner cover) and offset down so it
+# Placed on the room's central vertical axis (x=0 -> clear of corner cover) and offset down so it
 # misses any center occupant (a phase-door / mini-boss).
 func _place_stairs() -> void:
 	# Only plain Combat rooms (no boss/mini-boss lock, no phase-door clash) hold stairs, and they

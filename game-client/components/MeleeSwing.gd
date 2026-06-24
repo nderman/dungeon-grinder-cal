@@ -8,7 +8,7 @@ class_name MeleeSwing
 var _range: float = 96.0
 var _arc: float = deg_to_rad(120.0)   # full cone the slash sweeps through
 var _facing: float = 0.0              # centre angle of the swing
-var _progress: float = 1.0            # 0→1 sweep; >=1 means finished (nothing drawn)
+var _progress: float = 1.0            # 0->1 sweep; >=1 means finished (nothing drawn)
 var _tint: Color = Color(0.8, 0.95, 1.0)   # slash colour (player = blue; enemies pass red)
 
 const SWEEP_TIME := 0.18
@@ -37,7 +37,7 @@ func _advance(p: float) -> void:
 func _draw() -> void:
 	if _progress >= 1.0:
 		return
-	# Leading edge travels from one side of the cone to the other as progress runs 0→1.
+	# Leading edge travels from one side of the cone to the other as progress runs 0->1.
 	var lead := _facing - _arc * 0.5 + _arc * _progress
 	var blade := deg_to_rad(BLADE_DEG)
 	var col := Color(_tint.r, _tint.g, _tint.b, (1.0 - _progress) * 0.85)

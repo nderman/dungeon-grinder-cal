@@ -1,11 +1,11 @@
 # ProtectionComponent.gd
 # Probabilistic Damage Resistance (DR). On a successful roll, ONE heart is ignored
 # (the satisfying "Clink!"). Sits between the Hitbox and the HealthComponent.
-#   Total DR% = (CON * 3.6) + flat gear DR, capped at 75%.  (DCC scale: CON ~5 → 18%, as before.)
+#   Total DR% = (CON * 3.6) + flat gear DR, capped at 75%.  (DCC scale: CON ~5 -> 18%, as before.)
 extends Node2D
 class_name ProtectionComponent
 
-const DR_PER_CON := 3.6   # CON 5 → 18% (held from the old CON 12 × 1.5); caps at 75% (~CON 21+)
+const DR_PER_CON := 3.6   # CON 5 -> 18% (held from the old CON 12 × 1.5); caps at 75% (~CON 21+)
 const DR_CAP := 75.0
 const DODGE_PER_DEX := 1.2   # % full-dodge per DEX (DCC: DEX = reflexes/agility); caps at DODGE_CAP
 const DODGE_CAP := 35.0      # high-DEX/Nimble dodges a lot, but never half (it stacks ON TOP of DR)

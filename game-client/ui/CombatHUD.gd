@@ -119,7 +119,7 @@ func _refresh_ability() -> void:
 		_ability_label.text = "Q: %s  Lv %d" % [AbilityLibrary.ability_name(id), GameManager.ability_level(id)]
 
 # A code-built sickness indicator sitting just above the quick bar. Shows the remaining potion
-# cool-down (drink before it clears → Poisoned); hidden when a potion is safe to drink.
+# cool-down (drink before it clears -> Poisoned); hidden when a potion is safe to drink.
 func _build_potion_cd() -> void:
 	_potion_cd = Label.new()
 	_potion_cd.anchor_top = 1.0
@@ -137,7 +137,7 @@ func _process(_delta: float) -> void:
 	var rem := GameManager.potion_cooldown_remaining()
 	if rem > 0.0:
 		_potion_cd.visible = true
-		_potion_cd.text = "⚠ Potion cooldown  %.1fs  (drink now = Poison)" % rem
+		_potion_cd.text = "! Potion cooldown  %.1fs  (drink now = Poison)" % rem
 	elif _potion_cd.visible:
 		_potion_cd.visible = false
 	# Grey the ability readout when it can't be cast (on cooldown / out of mana).
@@ -174,7 +174,7 @@ func _mmss(s: float) -> String:
 	return "%d:%02d" % [t / 60, t % 60]
 
 func _on_boxes(count: int) -> void:
-	boxes_label.text = "📦 %d loot box%s — open at a Safe Room" % [count, "" if count == 1 else "es"] if count > 0 else ""
+	boxes_label.text = "%d loot box%s — open at a Safe Room" % [count, "" if count == 1 else "es"] if count > 0 else ""
 
 func _refresh_hotbar() -> void:
 	# Numbered slots: "1:Ground Slam  2:Health Potion×3  3:—  4:—".
@@ -224,7 +224,7 @@ func _on_xp(current: int, to_next: int, level: int) -> void:
 	var txt := "LVL %d" % level
 	var sp: int = GameManager.skill_points
 	if sp > 0:
-		txt += "   ★%d" % sp   # banked, unspent skill points — your cue to hit a Safe-Room terminal
+		txt += "   *%d" % sp   # banked, unspent skill points — your cue to hit a Safe-Room terminal
 	level_label.text = txt
 
 func _on_levelup(level: int, _points: int) -> void:
@@ -235,7 +235,7 @@ func _on_spike(type: String) -> void:
 		_flash_ticker(SPIKE_TEXT[type])
 
 func _on_achievement(title: String) -> void:
-	_flash_ticker("★ " + title)
+	_flash_ticker("* " + title)
 
 func _on_item(item_name: String) -> void:
 	_flash_ticker("Looted: " + item_name)

@@ -44,7 +44,7 @@ var _use_swing_this_attack: bool = false  # chosen at each telegraph: swing this
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
 var _stun_tw: Tween             # active stun-flash tween, killed before re-stunning
 var speed_mult: float = 1.0     # chase-speed multiplier; a Chill status (StatusEffect) drops it <1
-var _last_health: float = 0.0   # tracked to detect "I just took damage" → aggro
+var _last_health: float = 0.0   # tracked to detect "I just took damage" -> aggro
 var target: CharacterBody2D = null
 var parent: CharacterBody2D
 var _agent: NavigationAgent2D   # paths through doorways instead of beelining into walls
@@ -319,7 +319,7 @@ func _hit_target() -> void:
 	Combat.deal(target, damage_hearts)
 	_apply_on_hit_effect()   # elemental status lands on contact even if DR/i-frames ate the damage
 
-# Elemental mobs put a status on whoever they hit (the player): "burn" → a fire DoT, "chill" → a
+# Elemental mobs put a status on whoever they hit (the player): "burn" -> a fire DoT, "chill" -> a
 # slow. Opt in per-mob via the on_hit_effect exports; resist gear mitigates it (see StatusEffect).
 func _apply_on_hit_effect() -> void:
 	if on_hit_effect == "" or on_hit_effect_power <= 0.0 or not is_instance_valid(target):
@@ -332,7 +332,7 @@ func _apply_on_hit_effect() -> void:
 # contestant (and ignores other mobs + the shooter via the Hitbox group filter).
 func _fire_projectile() -> void:
 	if projectile_scene == null or not is_instance_valid(parent) or not is_instance_valid(target) or not is_inside_tree():
-		return   # is_inside_tree: scene tearing down (player death) → get_tree().current_scene would be null
+		return   # is_inside_tree: scene tearing down (player death) -> get_tree().current_scene would be null
 	var proj := projectile_scene.instantiate()
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = parent.global_position

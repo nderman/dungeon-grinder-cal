@@ -19,7 +19,7 @@ const ACHIEVEMENTS := {
 	"near_death":   {"title": "Near Death!",                 "desc": "Survived at a sliver of health.",    "tier": 1, "scope": "repeatable", "box_type": "fan"},
 	"untouchable":  {"title": "Untouchable!",                "desc": "Dashed clean through a killer.",     "tier": 0, "scope": "repeatable", "box_type": "fan"},
 	"boss_slayer":  {"title": "Boss Slayer",                 "desc": "Put a boss in the ground.",          "tier": 2, "scope": "repeatable", "box_type": "boss"},
-	# --- Combat spectacle (show off the new affixes/primitives) → Weapon boxes ---
+	# --- Combat spectacle (show off the new affixes/primitives) -> Weapon boxes ---
 	"pyromaniac":   {"title": "Pyromaniac",                  "desc": "Set a contestant on fire. The crematorium union sends its regards.", "tier": 1, "scope": "run", "box_type": "weapon"},
 	# AoE/bomb kills trip "BOOM" on basically every frag, so this is the spammiest repeatable by far
 	# (telemetry: 9 Silver boxes off floor 3 once). The 45s personal cooldown is the anti-flood lever —
@@ -27,7 +27,7 @@ const ACHIEVEMENTS := {
 	# is droppable), which silently gutted early weapon supply. tier 1 + 45s = an honest, paced drip.
 	"michael_bay":  {"title": "Michael Bay Approved",        "desc": "Blew an enemy to chunks. Do it again.",          "tier": 1, "scope": "repeatable", "box_type": "weapon", "cooldown": 45.0},
 	"chain_react":  {"title": "Chain Reaction",              "desc": "One hit, two corpses. Efficient.",               "tier": 1, "scope": "repeatable", "box_type": "weapon"},
-	# --- Survival & misery → Supply boxes ---
+	# --- Survival & misery -> Supply boxes ---
 	"grave_robber": {"title": "Grave Robber",                "desc": "Looted a corpse. They won't be needing it.",     "tier": 0, "scope": "run", "box_type": "supply"},
 	"tapped_out":   {"title": "Tapped Out",                  "desc": "Cast on an empty tank. Pack a battery.",         "tier": 0, "scope": "run", "box_type": "supply"},
 	"stop_drop_roll":{"title": "Stop, Drop & Roll",          "desc": "Survived being set on fire. Hot enough for ya?", "tier": 1, "scope": "run", "box_type": "fan"},

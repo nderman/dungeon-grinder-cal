@@ -24,9 +24,9 @@ var _is_dashing: bool = false
 var _alive: bool = true   # cleared on death so in-flight coroutines (melee sweep) bail
 var aim_dir: Vector2 = Vector2.RIGHT
 
-# Combat is driven by the EQUIPPED WEAPON (GameManager.equipped["Weapon"] → LootData.weapon_stats).
+# Combat is driven by the EQUIPPED WEAPON (GameManager.equipped["Weapon"] -> LootData.weapon_stats).
 # Its `type` (melee/ranged) decides the primary attack; damage/cooldown/range/arc/spread come from
-# the weapon. No weapon → FISTS. STR scales melee, INT scales ranged, DEX tightens spread + i-frames.
+# the weapon. No weapon -> FISTS. STR scales melee, INT scales ranged, DEX tightens spread + i-frames.
 const BOLT_SCENE := preload("res://entities/projectiles/GlitchBolt.tscn")
 const BOMB_SCENE := preload("res://entities/Bomb.tscn")
 var _can_fire: bool = true
@@ -72,7 +72,7 @@ func _ready() -> void:
 	_loot_reveal_panel = LootRevealPanel.new()
 	add_child(_loot_reveal_panel)
 	health_comp.health_depleted.connect(_on_death)
-	# DCC: reaching Floor 3 classless → the System makes you pick a class now (mandatory modal).
+	# DCC: reaching Floor 3 classless -> the System makes you pick a class now (mandatory modal).
 	if GameManager.needs_class_selection():
 		_class_panel = ClassSelectPanel.new()
 		add_child(_class_panel)
@@ -103,13 +103,13 @@ func _on_stat_injected(_stat: String, _new_value: int) -> void:
 	current_stats = GameManager.get_effective_stats()
 	_derive_vitals(false)
 
-# Single source of truth for stat → vitals. full=true sets pools to max (spawn);
+# Single source of truth for stat -> vitals. full=true sets pools to max (spawn);
 # full=false grows them to the new max while preserving current fill.
 func _derive_vitals(full: bool) -> void:
 	var con := int(current_stats["CON"])
 	var intel := int(current_stats["INT"])
-	# HP pool = CON × 10 on the DCC stat scale (CON ~5 at start → ~50 HP, same as before; grows a
-	# lot as CON climbs). Mana = INT × 12 (INT ~4 → ~48). A continuous pool keeps heals/regen granular.
+	# HP pool = CON × 10 on the DCC stat scale (CON ~5 at start -> ~50 HP, same as before; grows a
+	# lot as CON climbs). Mana = INT × 12 (INT ~4 -> ~48). A continuous pool keeps heals/regen granular.
 	if full:
 		health_comp.initialize_health(con * 10)
 		mana_comp.initialize_mana(intel)
@@ -185,7 +185,7 @@ func _current_weapon() -> Dictionary:
 	return LootData.weapon_stats(String(w["base"])) if not w.is_empty() else LootData.FISTS
 
 # The equipped weapon's base id ("" = bare fists) — feeds LootData.effective_weapon_damage so combat
-# and the inventory's DPS readout share ONE scaling source (melee→STR, ranged→DEX, magic→INT).
+# and the inventory's DPS readout share ONE scaling source (melee->STR, ranged->DEX, magic->INT).
 func _current_weapon_base() -> String:
 	var w: Dictionary = GameManager.equipped.get("Weapon", {})
 	return String(w.get("base", "")) if not w.is_empty() else ""
@@ -212,7 +212,7 @@ func _perform_dash() -> void:
 	move_comp.execute_dash(dir)
 	await get_tree().create_timer(dash_duration).timeout
 	_is_dashing = false
-	# DEX extends the i-frame window past the dash movement (GDD: DEX → dash i-frames).
+	# DEX extends the i-frame window past the dash movement (GDD: DEX -> dash i-frames).
 	var extra := int(current_stats["DEX"]) * DASH_IFRAME_PER_DEX
 	if extra > 0.0:
 		await get_tree().create_timer(extra).timeout
@@ -450,7 +450,7 @@ func _spawn_projectile(damage: float, base_spread: float, scale_mult: float = 1.
 	if not effects.is_empty():
 		bolt.arm_effects(effects, health_comp)   # weapon fire procs gear effects; spells don't
 
-# DEX → accuracy: the weapon's base spread cone tightens as DEX rises; high DEX fires near-true.
+# DEX -> accuracy: the weapon's base spread cone tightens as DEX rises; high DEX fires near-true.
 func _spread_dir(base_spread: float) -> Vector2:
 	var dex := int(current_stats["DEX"])
 	var half := deg_to_rad(maxf(0.0, base_spread - dex * SPREAD_PER_DEX))

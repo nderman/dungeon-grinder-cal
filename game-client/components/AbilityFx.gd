@@ -8,7 +8,7 @@ class_name AbilityFx
 const DUR := 0.35
 
 var _mode := ""
-var _t := 1.0                  # 0→1 progress; >=1 = idle (nothing drawn)
+var _t := 1.0                  # 0->1 progress; >=1 = idle (nothing drawn)
 var _radius := 160.0
 var _color := Color.WHITE
 var _streak := Vector2.ZERO    # local end-point for the blink streak
@@ -59,7 +59,7 @@ func _draw() -> void:
 			draw_line(Vector2.ZERO, _streak, Color(_color.r, _color.g, _color.b, fade * 0.85), 8.0)
 		"shield":
 			# A pulsing golden ring hugging the body for the whole buff; stays strong, then fades over
-			# the final ~quarter so the drop is telegraphed. _t runs 0→1 across the buff's duration.
+			# the final ~quarter so the drop is telegraphed. _t runs 0->1 across the buff's duration.
 			var pulse := 0.7 + 0.3 * sin(_t * TAU * 9.0)
 			var edge := minf(1.0, fade * 4.0)              # full until the last 25%, then fade out
 			var a := (0.4 + 0.45 * pulse) * edge

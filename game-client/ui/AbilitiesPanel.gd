@@ -32,7 +32,7 @@ func _refresh() -> void:
 	for id in GameManager.known_abilities:
 		_list.add_child(_ability_card(String(id)))
 
-# A card per known ability; the active one gets a gold border + ★. Click selects it.
+# A card per known ability; the active one gets a gold border + *. Click selects it.
 func _ability_card(id: String) -> Control:
 	var a := AbilityLibrary.get_ability(id)
 	var is_spell := AbilityLibrary.is_spell(id)
@@ -53,7 +53,7 @@ func _ability_card(id: String) -> Control:
 	card.add_child(v)
 
 	var head := Label.new()
-	head.text = "%s%s   Lv %d" % ["★ " if selected else "", String(a.get("name", id)), GameManager.ability_level(id)]
+	head.text = "%s%s   Lv %d" % ["* " if selected else "", String(a.get("name", id)), GameManager.ability_level(id)]
 	head.add_theme_font_size_override("font_size", 18)
 	head.modulate = Color(0.55, 0.8, 1.0) if is_spell else Color(1.0, 0.7, 0.45)
 	v.add_child(head)

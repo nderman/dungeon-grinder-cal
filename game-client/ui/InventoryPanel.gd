@@ -1,6 +1,6 @@
 # InventoryPanel.gd
 # Equipment screen: a paper-doll of equip slots (click to remove) beside the bag (click to equip,
-# ✕ to drop), with rarity-framed cards, an effective-stats summary, and compare-on-hover — the
+# x to drop), with rarity-framed cards, an effective-stats summary, and compare-on-hover — the
 # detail bar shows a hovered bag item's bonuses plus the NET stat change vs whatever it'd replace.
 # Rebuilt on every change so equip/unequip/drop reflect immediately.
 extends ModalPanel
@@ -72,7 +72,7 @@ func _ready() -> void:
 	_detail.custom_minimum_size = Vector2(0, 48)
 	box.add_child(_detail)
 
-	add_hint(box, "Bag: tap to equip · equipped: tap to remove · ✕ drops · Hotbar: tap a slot then another to swap, tap +Ability to add · I closes")
+	add_hint(box, "Bag: tap to equip · equipped: tap to remove · x drops · Hotbar: tap a slot then another to swap, tap +Ability to add · I closes")
 	GameManager.items_changed.connect(func(): if visible: _refresh())
 	# A combat use (consumable hits 0) or a grant shuffle can move slots out from under a pending
 	# selection — drop it so the next tap can't trigger an unintended swap. (Pure select/deselect
@@ -145,11 +145,11 @@ func _rebuild_hotbar() -> void:
 			b.modulate = Color(0.6, 0.85, 1.0)
 			b.pressed.connect(func() -> void:
 				GameManager.assign_ability_to_slot(id, _sel_slot)
-				_sel_slot = -1)   # hotbar_changed → _refresh redraws
+				_sel_slot = -1)   # hotbar_changed -> _refresh redraws
 			prow.add_child(b)
 		_hotbar_box.add_child(prow)
 
-# One hotbar slot: a tap-to-select/swap button (highlighted when selected) + a ✕ to clear it.
+# One hotbar slot: a tap-to-select/swap button (highlighted when selected) + a x to clear it.
 func _hotbar_slot(i: int) -> Control:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 2)
@@ -161,7 +161,7 @@ func _hotbar_slot(i: int) -> Control:
 	h.add_child(b)
 	if GameManager.hotbar[i] != null:
 		var x := Button.new()
-		x.text = "✕"
+		x.text = "x"
 		x.focus_mode = Control.FOCUS_NONE
 		x.modulate = Color(1.0, 0.55, 0.55)
 		x.pressed.connect(func() -> void: GameManager.clear_hotbar_slot(i))
@@ -177,7 +177,7 @@ func _on_slot_tap(i: int) -> void:
 		_sel_slot = i
 		_refresh()
 	else:
-		GameManager.swap_hotbar_slots(_sel_slot, i)   # hotbar_changed → _refresh redraws
+		GameManager.swap_hotbar_slots(_sel_slot, i)   # hotbar_changed -> _refresh redraws
 		_sel_slot = -1
 
 # --- Cards ------------------------------------------------------------------------------------
@@ -220,7 +220,7 @@ func _equipped_card(slot: String) -> Control:
 	card.mouse_entered.connect(func() -> void: _set_detail(_item_detail(inst)))
 	return card
 
-# A bag item: name + rarity/slot tag + bonus, ✕ to drop. Click equips; hover shows compare.
+# A bag item: name + rarity/slot tag + bonus, x to drop. Click equips; hover shows compare.
 func _bag_card(inst: Dictionary) -> Control:
 	var card := _card_panel(inst)
 	card.custom_minimum_size = Vector2(228, 0)
@@ -252,7 +252,7 @@ func _bag_card(inst: Dictionary) -> Control:
 	v.add_child(bonus)
 
 	var drop := Button.new()
-	drop.text = "✕"
+	drop.text = "x"
 	drop.tooltip_text = "Drop"
 	drop.add_theme_font_size_override("font_size", SMALL_FONT)
 	drop.pressed.connect(func() -> void: GameManager.drop(inst))
@@ -301,7 +301,7 @@ func _compare_detail(inst: Dictionary) -> String:
 			deltas.append("[color=#%s]%+d %s[/color]" % [col, d, s])
 	var occ := "replaces %s" % LootData.instance_name(cur) if not cur.is_empty() else "fills empty slot"
 	var change := "   ".join(deltas) if not deltas.is_empty() else "no net change"
-	return "%s\n→ %s — %s    %s" % [head, target, occ, change]
+	return "%s\n-> %s — %s    %s" % [head, target, occ, change]
 
 func _set_detail(t: String) -> void:
 	_detail.text = t

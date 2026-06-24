@@ -11,7 +11,7 @@ var base_regen_rate: float = 1.8   # mana/sec — slow on purpose, so mana is a 
 var current_regen_rate: float = 1.8   # Batteries matter (INT still speeds it via the ×(1+INT·0.05))
 
 func initialize_mana(int_stat: int) -> void:
-	max_mana = int_stat * 12.0   # DCC scale: INT ~4 → ~48 (held from the old INT×5 at INT 10)
+	max_mana = int_stat * 12.0   # DCC scale: INT ~4 -> ~48 (held from the old INT×5 at INT 10)
 	current_mana = max_mana
 	current_regen_rate = base_regen_rate * (1.0 + (int_stat * 0.05))
 	SignalBus.mana_updated.emit(current_mana, max_mana)

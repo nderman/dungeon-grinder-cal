@@ -19,7 +19,7 @@ func setup(dir: Vector2, damage: float, group: StringName = &"enemies", scale_mu
 	direction = dir.normalized() if dir != Vector2.ZERO else Vector2.RIGHT
 	rotation = direction.angle()
 	if scale_mult != 1.0:
-		scale = Vector2.ONE * scale_mult   # scales the Visual AND the Hitbox → a fat fireball hits bigger
+		scale = Vector2.ONE * scale_mult   # scales the Visual AND the Hitbox -> a fat fireball hits bigger
 	if color.a > 0.0:                       # TRANSPARENT sentinel = keep the scene's default colour
 		($Visual as Polygon2D).color = color
 	var hb := $Hitbox as HitboxComponent
