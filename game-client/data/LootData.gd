@@ -436,7 +436,7 @@ func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 			# DPS folds in this weapon's OWN crit chance so the inventory number matches real output.
 			parts.append("%s %.1f dmg · %.1f DPS" % [w["type"], effective_weapon_damage(base, stats, mult), instance_weapon_dps(inst, stats)])
 		if mult > 1.0:
-			parts.append("Power ×%.2f" % mult)
+			parts.append("⚔ Power ×%.2f" % mult)
 	var b := instance_bonus(inst)
 	for s in b:
 		parts.append("+%d %s" % [int(b[s]), s])

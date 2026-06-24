@@ -72,7 +72,7 @@ func _ready() -> void:
 	_detail.custom_minimum_size = Vector2(0, 48)
 	box.add_child(_detail)
 
-	add_hint(box, "Bag: tap to equip · equipped: tap to remove · x drops · Hotbar: tap a slot then another to swap, tap +Ability to add · I closes")
+	add_hint(box, "Bag: tap to equip · equipped: tap to remove · ✕ drops · Hotbar: tap a slot then another to swap, tap +Ability to add · I closes")
 	GameManager.items_changed.connect(func(): if visible: _refresh())
 	# A combat use (consumable hits 0) or a grant shuffle can move slots out from under a pending
 	# selection — drop it so the next tap can't trigger an unintended swap. (Pure select/deselect
@@ -161,7 +161,7 @@ func _hotbar_slot(i: int) -> Control:
 	h.add_child(b)
 	if GameManager.hotbar[i] != null:
 		var x := Button.new()
-		x.text = "x"
+		x.text = "✕"
 		x.focus_mode = Control.FOCUS_NONE
 		x.modulate = Color(1.0, 0.55, 0.55)
 		x.pressed.connect(func() -> void: GameManager.clear_hotbar_slot(i))
@@ -256,7 +256,7 @@ func _bag_card(inst: Dictionary) -> Control:
 	v.add_child(bonus)
 
 	var drop := Button.new()
-	drop.text = "x"
+	drop.text = "✕"
 	drop.tooltip_text = "Drop"
 	drop.add_theme_font_size_override("font_size", SMALL_FONT)
 	drop.pressed.connect(func() -> void: GameManager.drop(inst))
@@ -305,7 +305,7 @@ func _compare_detail(inst: Dictionary) -> String:
 			deltas.append("[color=#%s]%+d %s[/color]" % [col, d, s])
 	var occ := "replaces %s" % LootData.instance_name(cur) if not cur.is_empty() else "fills empty slot"
 	var change := "   ".join(deltas) if not deltas.is_empty() else "no net change"
-	return "%s\n-> %s — %s    %s" % [head, target, occ, change]
+	return "%s\n→ %s — %s    %s" % [head, target, occ, change]
 
 func _set_detail(t: String) -> void:
 	_detail.text = t

@@ -40,6 +40,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation="landscape"
 
+[gui]
+
+theme/custom_font="res://assets/fonts/DejaVuSans.ttf"
+
 [input]
 
 move_left={

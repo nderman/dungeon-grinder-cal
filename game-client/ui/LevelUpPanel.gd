@@ -71,4 +71,4 @@ func _refresh() -> void:
 		_plus_buttons[s].disabled = sp <= 0
 	var con: int = int(stats.get("CON", 0))
 	var intel: int = int(stats.get("INT", 0))
-	_preview.text = "-> HP %d    Mana %d" % [con * 10, intel * 12]
+	_preview.text = "→ HP %d    Mana %d" % [con * 10, intel * 12]

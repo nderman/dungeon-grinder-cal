@@ -87,7 +87,7 @@ func _ready() -> void:
 		_announce_final_floor()
 	if GameManager.nightmare and GameManager.current_floor == 1:
 		var p := get_tree().get_first_node_in_group("player") as Node2D
-		SignalBus.toast.emit("NIGHTMARE — the System turned up the violence", p.global_position if p else Vector2.ZERO)
+		SignalBus.toast.emit("☠ NIGHTMARE — the System turned up the violence", p.global_position if p else Vector2.ZERO)
 
 # --- BSP -------------------------------------------------------------------------------------
 
@@ -575,7 +575,7 @@ var floor_element: String = ""   # "" | "burn" | "chill" — this floor's elemen
 # Final-floor banner: this is the climax, there's no way down — kill the Champion or die trying.
 func _announce_final_floor() -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node2D
-	SignalBus.toast.emit("FINAL FLOOR — DEFEAT THE CHAMPION", p.global_position if p else Vector2.ZERO)
+	SignalBus.toast.emit("⚔ FINAL FLOOR — DEFEAT THE CHAMPION", p.global_position if p else Vector2.ZERO)
 
 func _roll_floor_theme() -> void:
 	floor_element = ""

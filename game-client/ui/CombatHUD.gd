@@ -137,7 +137,7 @@ func _process(_delta: float) -> void:
 	var rem := GameManager.potion_cooldown_remaining()
 	if rem > 0.0:
 		_potion_cd.visible = true
-		_potion_cd.text = "! Potion cooldown  %.1fs  (drink now = Poison)" % rem
+		_potion_cd.text = "⚠ Potion cooldown  %.1fs  (drink now = Poison)" % rem
 	elif _potion_cd.visible:
 		_potion_cd.visible = false
 	# Grey the ability readout when it can't be cast (on cooldown / out of mana).
@@ -224,7 +224,7 @@ func _on_xp(current: int, to_next: int, level: int) -> void:
 	var txt := "LVL %d" % level
 	var sp: int = GameManager.skill_points
 	if sp > 0:
-		txt += "   *%d" % sp   # banked, unspent skill points — your cue to hit a Safe-Room terminal
+		txt += "   ★%d" % sp   # banked, unspent skill points — your cue to hit a Safe-Room terminal
 	level_label.text = txt
 
 func _on_levelup(level: int, _points: int) -> void:
@@ -235,7 +235,7 @@ func _on_spike(type: String) -> void:
 		_flash_ticker(SPIKE_TEXT[type])
 
 func _on_achievement(title: String) -> void:
-	_flash_ticker("* " + title)
+	_flash_ticker("★ " + title)
 
 func _on_item(item_name: String) -> void:
 	_flash_ticker("Looted: " + item_name)

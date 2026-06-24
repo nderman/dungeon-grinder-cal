@@ -327,7 +327,7 @@ func add_consumable(base: String, tier: int) -> void:
 		else:
 			# Already known -> a duplicate tome RANKS IT UP instead of being wasted (DCC: train the skill).
 			var lvl := level_ability_from_tome(aid)
-			msg = "%s -> Lv %d!" % [name, lvl] if lvl > 0 else "%s already maxed." % name
+			msg = "%s → Lv %d!" % [name, lvl] if lvl > 0 else "%s already maxed." % name
 		var lp := get_tree().get_first_node_in_group("player")
 		SignalBus.toast.emit(msg, lp.global_position if lp else Vector2.ZERO)
 		return

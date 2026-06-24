@@ -58,7 +58,7 @@ func _make_row(res: Dictionary) -> Control:
 	box_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(box_lbl)
 	var arrow := Label.new()
-	arrow.text = "->"
+	arrow.text = "→"
 	arrow.modulate = Color(0.6, 0.6, 0.65)
 	row.add_child(arrow)
 	var item_lbl := Label.new()
@@ -72,9 +72,9 @@ func _make_row(res: Dictionary) -> Control:
 # A little flair for the rare stuff (Epic = *, Legendary = **); plain otherwise.
 func _marker(rarity: int) -> String:
 	if rarity >= LootData.RARITY_NAMES.size() - 1:
-		return "** "
+		return "★★ "
 	if rarity >= 3:
-		return "* "
+		return "★ "
 	return ""
 
 # Pop the next box in, then schedule the one after — a staggered reveal you can sit back and watch.
