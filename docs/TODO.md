@@ -16,7 +16,8 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   Misc-Symbols/Dingbats/emoji, so 📦★☠⚠⚔✕✨🌟→ were boxes; swapped all for ASCII (kept ·×— which render).
   (b) **inventory overflow** — long affix descriptions didn't wrap → cards grew off-screen; added
   AUTOWRAP_WORD_SMART. (c) **right-mouse secondary cast** (bind in K panel). (d) **Esc/P pause + controls
-  help**. Follow-ups: bundle a symbol font (art pass) to bring the nicer glyphs back; responsive panel
+  help**. Follow-ups: ~~bundle a symbol font~~ DONE (2026-06-24, DejaVu Sans as default font + glyphs
+  restored; 📦✨🌟 stay ASCII/stars — SMP-emoji DejaVu lacks, would need an emoji font); responsive panel
   width for small windows; verify web telemetry events landing via the PostHog MCP after real plays.
   **Lessons (reusable):** Godot web = single-threaded to avoid header hosting pain; default font has no
   emoji/symbol glyphs; `user://` saves → browser IndexedDB (per-origin, wiped by clear-site-data/incognito).
