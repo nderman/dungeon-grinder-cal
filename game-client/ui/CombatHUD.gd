@@ -164,7 +164,7 @@ func _on_clock(elapsed: float, stairs_open: bool) -> void:
 		clock_label.text = "STAIRS IN %s" % _mmss(rem)
 		clock_label.modulate = Color(0.7, 0.85, 1, 1)
 	else:
-		var rem: float = GameManager.COLLAPSE_TIME - elapsed
+		var rem: float = GameManager.collapse_time() - elapsed
 		if rem <= 0.0:
 			clock_label.text = "FLOOR COLLAPSING!"
 			clock_label.modulate = Color(1, 0.3, 0.3)

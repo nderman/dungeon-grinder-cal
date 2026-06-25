@@ -14,6 +14,8 @@ const FLOOR_PATH := "res://Floor.tscn"
 const FINAL_FLOOR := 9                  # the Season's last floor — beat its Champion boss to WIN (no stairs down)
 const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (skip-boss path)
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
+const FINAL_COLLAPSE_TIME := 480.0     # …but the Champion floor gets 8 min — it's the boss fight (no stairs to flee), so a
+                                       # slow, under-geared grind-down can still finish; you just can't kite the Champion forever
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
 const COLLAPSE_WARN_LEAD := 30.0       # fire the pre-collapse banner this many seconds before it hits (telegraph)
@@ -173,6 +175,12 @@ signal hotbar_changed()                 # a slot's contents/count changed (HUD +
 func floor_mult() -> float:
 	return 1.0 + FLOOR_DMG_PER_DEPTH * float(current_floor - 1)
 
+# Collapse deadline for the CURRENT floor. The final floor gets longer — there are no stairs to flee
+# through, so it's the Champion fight, not a "stop dawdling" timer. 8 min is fair even under-geared;
+# you still can't kite the Champion forever. Single source so the clock, the banner, and the HUD agree.
+func collapse_time() -> float:
+	return FINAL_COLLAPSE_TIME if is_final_floor() else COLLAPSE_TIME
+
 # Reset the floor clock — called on every floor load (first floor + each descent).
 func begin_floor() -> void:
 	floor_elapsed = 0.0
@@ -192,12 +200,12 @@ func _process(delta: float) -> void:
 		open_stairs()   # timer path (skip-boss)
 	# Telegraph the collapse — one banner ~30s out. Matters most on the FINAL floor, where there are no
 	# stairs to flee through: it's the only warning the climax is also a DPS check against the building.
-	if not _collapse_warned and floor_elapsed >= COLLAPSE_TIME - COLLAPSE_WARN_LEAD:
+	if not _collapse_warned and floor_elapsed >= collapse_time() - COLLAPSE_WARN_LEAD:
 		_collapse_warned = true
 		SignalBus.toast.emit(
 			"⚠ THE ARENA IS COLLAPSING — FINISH IT" if is_final_floor() else "⚠ THE FLOOR IS COLLAPSING — GET OUT",
 			Vector2.ZERO)
-	if floor_elapsed >= COLLAPSE_TIME:
+	if floor_elapsed >= collapse_time():
 		_tick_collapse(delta)
 	floor_clock.emit(floor_elapsed, stairs_open)
 

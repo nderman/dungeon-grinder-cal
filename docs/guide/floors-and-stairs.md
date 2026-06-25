@@ -36,10 +36,10 @@ Reaching the milestone floors banks a **[Milestone Token](meta-progression.md)**
 Floor 9 has **no stairs down** — the only exit is **killing the Champion**, a ~2× Floor Boss (55 HP,
 hits for 80, 75% stun-resist, enrages at half).
 
-> ⏳ **The clock still runs.** Floor 9 collapses at the same **5 minutes** — and there's nowhere to flee.
-> So the finale is also a soft **DPS check**: the HUD shows a **FINISH IN m:ss** countdown, a banner warns
-> you ~30 s out, and then the arena starts crushing you (un-dodgeable). 5 minutes is generous — a normal
-> fight ends well inside it — but you can't stall or kite the Champion forever. Race the building.
+> ⏳ **The clock still runs — but longer.** Floor 9 collapses at **8 minutes** (vs 5 on the floors below):
+> there's nowhere to flee, so it's the boss fight, not a dawdle-check. The HUD shows a **FINISH IN m:ss**
+> countdown, a banner warns you ~30 s out, then the arena crushes you (un-dodgeable). 8 minutes is enough
+> to grind the Champion down even under-geared — but you still can't kite it forever. Race the building.
 
 Put it in the ground and you're **Season Champion**:
 the run is won, you bank a Token + a big Syndication cut, and `seasons_won` ticks up (unlocking

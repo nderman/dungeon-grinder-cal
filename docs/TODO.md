@@ -8,6 +8,21 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **LOOT RAMP — telemetry check (2026-06-25, flagged from playtest).** A real run reached Floor 9 on only
+  **Rare** gear and the Champion fight ran long (drove the Floor-9 collapse extension to 8 min). Question:
+  is the loot-box economy lifting players toward Epic/Legendary by the finale, or arriving under-geared the
+  norm? Once there are enough clean (`WHERE NOT abandoned`) deep runs, check via PostHog: best-equipped
+  rarity at Floor 8-9, boxes-opened per run, Safe-Room visits per run, and Floor-9 outcome (win vs
+  collapse-death) vs gear level. If under-geared-at-9 is common → look at box tier-floors by depth / Safe-
+  Room frequency / Director weighting. NOT acting yet — needs data. (Finale itself felt "hard but doable".)
+
+- **FINAL-FLOOR COLLAPSE telegraphed + lengthened (2026-06-25, DONE).** Floor 9 collapses like any floor
+  but has no stairs to flee → it's a hidden DPS-check on the Champion. The HUD collapse countdown was gated
+  on `stairs_open` (never true on 9) so it showed a stuck "STAIRS IN 0:00" then crushed you with no warning.
+  Fixed: HUD is final-floor-aware ("FINISH IN m:ss"), a one-shot banner fires ~30s out, and the collapse
+  uses `apply_dot` (un-dodgeable, matches "ignores i-frames"). Playtest showed 5 min too tight under-geared
+  → final floor now collapses at **8 min** (`FINAL_COLLAPSE_TIME`, via `collapse_time()`); floors 1-8 stay 5.
+
 - **WEB BUILD LAUNCHED + launch-polish round (2026-06-24).** Live at
   https://nderman.github.io/dungeon-grinder-cal/ — single-threaded Godot Web export (no SharedArrayBuffer
   → no COOP/COEP → plain GitHub Pages), `deploy-web.yml` auto-deploys on push. Telemetry on web via a
