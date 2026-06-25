@@ -7,8 +7,6 @@
 # MetaManager.analytics_enabled. Register AFTER PostHog + GameManager in project.godot.
 extends Node
 
-var _run_start_ms: int = 0
-
 func _ready() -> void:
 	_apply_opt_out()
 	PostHog.register({"game": "dungeon-grinder-cal"})   # stamped onto every event by the SDK
@@ -30,11 +28,12 @@ func _apply_opt_out() -> void:
 	else:
 		PostHog.opt_out()
 
+# ACTIVE play time (GameManager sums it per-frame only while a run is live), NOT wall-clock — so an
+# idle/backgrounded browser tab can't inflate it into a bogus multi-hour "run".
 func _elapsed_s() -> float:
-	return snappedf(float(Time.get_ticks_msec() - _run_start_ms) / 1000.0, 0.1) if _run_start_ms > 0 else 0.0
+	return snappedf(GameManager.run_active_seconds, 0.1)
 
 func _on_run_started() -> void:
-	_run_start_ms = Time.get_ticks_msec()
 	PostHog.reload_feature_flags()   # pull the boss-hp-tuning variant once per run, cached on the SDK
 	GameManager.boss_hp_mult = boss_hp_mult()   # PUSH the experiment value into gameplay (one-way: analytics -> game)
 	PostHog.capture("run_started", {
@@ -59,7 +58,9 @@ func _on_run_ended(outcome: String) -> void:
 		"rating": GameManager.run_ratings,
 		"gold": GameManager.gold,
 		"level": GameManager.level,
-		"run_time_s": _elapsed_s(),
+		"run_time_s": _elapsed_s(),       # ACTIVE seconds (not wall-clock)
+		"kills": GameManager.run_kills,
+		"abandoned": GameManager.run_kills == 0,   # "opened the tab and wandered off" — no kills = not a real attempt; filter these out
 	}
 	PostHog.capture("run_completed", props)
 	if outcome == "died":

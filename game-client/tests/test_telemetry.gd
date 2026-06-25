@@ -25,6 +25,24 @@ func run() -> void:
 		check(typeof(ev["properties"][k]) in [TYPE_STRING, TYPE_STRING_NAME, TYPE_INT, TYPE_FLOAT, TYPE_BOOL],
 			"property '%s' is a primitive" % k)
 
+	# run_completed reports ACTIVE play time (not wall-clock) + kills + an `abandoned` flag (no kills =
+	# "opened the tab and wandered off") so analysis can filter the noise.
+	var saved_active := GameManager.run_active_seconds
+	var saved_kills := GameManager.run_kills
+	PostHog.clear_captured()
+	GameManager.run_active_seconds = 12.3
+	GameManager.run_kills = 5
+	SignalBus.run_ended.emit("died")
+	var p: Dictionary = PostHog.last_captured("run_completed")["properties"]
+	approx(float(p["run_time_s"]), 12.3, "run_time_s reports active play time")
+	eq(int(p["kills"]), 5, "kills are reported")
+	check(p["abandoned"] == false, "a run with kills is NOT flagged abandoned")
+	GameManager.run_kills = 0
+	SignalBus.run_ended.emit("died")
+	check(PostHog.last_captured("run_completed")["properties"]["abandoned"] == true, "a zero-kill run IS flagged abandoned")
+	GameManager.run_active_seconds = saved_active
+	GameManager.run_kills = saved_kills
+
 	# "ITEM"/gear-refresh stat churn is filtered; real stat spends are captured.
 	PostHog.clear_captured()
 	SignalBus.stat_injected.emit("ITEM", 0)

@@ -85,6 +85,10 @@ var _blow_times: Array[float] = []                        # tight-window kill ti
 var floor_elapsed: float = 0.0       # seconds on the current floor
 var stairs_open: bool = false        # can the player descend yet?
 var _collapse_accum: float = 0.0     # collapse-DoT tick accumulator
+# ACTIVE play time across the run (delta-summed in _process, which only runs while a run is live and
+# the tree isn't paused/backgrounded). Telemetry reports THIS, not wall-clock — an idle/abandoned browser
+# tab freezes _process, so this never inflates into the bogus 72-minute "runs" that polluted the data.
+var run_active_seconds: float = 0.0
 
 # --- PROGRESSION (XP / LEVELS / SKILL POINTS) — the character-growth rail ---
 # Per DCC: kills grant XP; every level hands you 3 stat points to spend, and you may only
@@ -152,6 +156,7 @@ func _process(delta: float) -> void:
 	if not is_run_active:
 		return
 	floor_elapsed += delta
+	run_active_seconds += delta   # active play time for honest telemetry (frozen while idle/paused)
 	# On the final floor the only way out is THROUGH the Champion — no timer-skip, no stairs down.
 	if not stairs_open and not is_final_floor() and floor_elapsed >= STAIRS_OPEN_TIME:
 		open_stairs()   # timer path (skip-boss)
@@ -624,6 +629,7 @@ func start_new_run() -> void:
 	level = 1
 	skill_points = 0
 	run_kills = 0
+	run_active_seconds = 0.0
 	gold = 0
 	_kill_times.clear()
 	_blow_times.clear()

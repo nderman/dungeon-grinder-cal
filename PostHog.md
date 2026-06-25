@@ -70,8 +70,10 @@ Most of these already exist as signals — we're just listening. Source signals 
 | `run_started` | `SignalBus.run_started` | `class`, `race`, `meta_level`, `syndication_points` |
 | `floor_changed` | `GameManager.floor_changed` | `floor`, `run_elapsed_s` |
 | `boss_killed` | (boss death / `stairs_opened` on boss floor) | `floor`, `boss`, `hearts_left`, `floor_time_s` |
-| `player_died` | `SignalBus.player_damaged` → 0 hearts | `floor`, `cause`, `enemy`, `run_time_s`, `level`, `rating` |
-| `run_completed` | run-end (death or victory) | `outcome` (`died`/`won`), `floor_reached`, `rating`, `gold`, `run_time_s` |
+| `run_completed` | run-end (death or victory) | `outcome` (`died`/`won`), `floor_reached`, `level`, `rating`, `gold`, `run_time_s`*, `kills`, `abandoned` |
+| `player_died` | run-end with `outcome == "died"` | same props as `run_completed` |
+
+\* `run_time_s` is **active play time** (delta-summed only while a run is live), not wall-clock — an idle/backgrounded tab can't inflate it. `abandoned` = `kills == 0` ("opened the tab and wandered off"); **filter `WHERE NOT abandoned`** for real-attempt analysis.
 | `leveled_up` | `SignalBus.leveled_up` | `level`, `skill_points` |
 | `item_acquired` | `SignalBus.item_acquired` | `item`, `rarity`, `floor` |
 | `box_opened` | `SignalBus.box_opened` | `rarity`, `floor` |
