@@ -129,7 +129,7 @@ func _derive_vitals(full: bool) -> void:
 	health_comp.regen_rate = minf(con * HealthComponent.REGEN_PER_CON + float(def.get("regen", 0.0)), TOTAL_REGEN_CAP)
 	var dex := int(current_stats["DEX"])
 	protection_comp.dodge_chance = minf(ProtectionComponent.DODGE_CAP, dex * ProtectionComponent.DODGE_PER_DEX + float(def.get("dodge", 0.0)))
-	base_speed = 300.0 + (dex * 12.5)
+	base_speed = (300.0 + (dex * 12.5)) * GameManager.move_speed_mult()   # Ponderous Might: −20%
 
 # How much an incoming elemental status is mitigated (0..~0.9), from resist gear. StatusEffect reads
 # this when an enemy tries to Burn/Chill you, scaling the status's power AND duration down.
@@ -214,7 +214,7 @@ func _perform_dash() -> void:
 	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if dir == Vector2.ZERO:
 		dir = aim_dir
-	move_comp.execute_dash(dir)
+	move_comp.execute_dash(dir, GameManager.dash_dist_mult())   # Low-G Training extends the dash
 	await get_tree().create_timer(dash_duration).timeout
 	_is_dashing = false
 	# DEX extends the i-frame window past the dash movement (GDD: DEX -> dash i-frames).
@@ -239,7 +239,7 @@ func cast_ability(id: String) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if now < float(_ability_cd_until.get(id, 0.0)):
 		return   # still on cooldown
-	var cost := float(a.get("mana_cost", 0.0))
+	var cost := float(a.get("mana_cost", 0.0)) * GameManager.mana_cost_mult()   # Efficient Code: −15%
 	if cost > 0.0:
 		if mana_comp.current_mana < cost:
 			SignalBus.mana_depleted.emit()
@@ -258,7 +258,7 @@ func selected_ability_ready() -> bool:
 		return false
 	if Time.get_ticks_msec() / 1000.0 < float(_ability_cd_until.get(id, 0.0)):
 		return false
-	var cost := float(AbilityLibrary.get_ability(id).get("mana_cost", 0.0))
+	var cost := float(AbilityLibrary.get_ability(id).get("mana_cost", 0.0)) * GameManager.mana_cost_mult()   # match cast_ability
 	return cost <= 0.0 or mana_comp.current_mana >= cost
 
 # Resolve an ability's magnitude (base × scaling-stat × use-level) and run its effect + VFX.
@@ -345,7 +345,7 @@ func _melee_attack(w: Dictionary) -> void:
 	_melee_fx.play(swing_aim, float(w["range"]), float(w["arc"]))   # the visible sweep
 	SignalBus.spell_cast.emit("Melee", global_position)
 	var fx := _attack_effects()   # gear on-hit effects, fixed for the whole swing
-	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats, _current_weapon_mult())
+	var base_dmg := LootData.effective_weapon_damage(_current_weapon_base(), current_stats, _current_weapon_mult()) * GameManager.melee_damage_mult()   # Iron Fist
 	var already: Array = []   # enemies hit this swing (don't double-hit)
 	var elapsed := 0.0
 	while elapsed < MELEE_SWEEP_TIME:
@@ -360,7 +360,7 @@ func _melee_attack(w: Dictionary) -> void:
 	_can_melee = true
 
 func _melee_tick(w: Dictionary, swing_aim: Vector2, already: Array, effects: Dictionary, base_dmg: float) -> void:
-	var knock := float(w["knock"]) + int(current_stats["STR"]) * LootData.MELEE_KNOCK_PER_STR
+	var knock := (float(w["knock"]) + int(current_stats["STR"]) * LootData.MELEE_KNOCK_PER_STR) * GameManager.knockback_mult()   # Ponderous Might ×2
 	var melee_range := float(w["range"])
 	var arc_half := deg_to_rad(float(w["arc"]) * 0.5)
 	for e in get_tree().get_nodes_in_group("enemies"):

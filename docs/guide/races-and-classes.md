@@ -4,9 +4,11 @@ Your contestant = **race** (picked at run start, swappable on Floor 3) + **class
 Both add stat bonuses on top of the base 4-each. You begin with **Human** + the **Brawler/Scavenger**
 starters; spend [Milestone Tokens](meta-progression.md) in the Green Room to unlock the rest.
 
-> **Passives are flavour for now.** Each race/class lists a passive below — those are **descriptive text
-> only**, not yet wired into gameplay. Stat bonuses and class starter abilities **are** live. (Implementing
-> the passives is logged future work.)
+> **Passives — some live, some still flavour.** Stat bonuses and starter abilities are always live.
+> **Now active:** Iron Fist (+20% melee), Efficient Code (−15% mana), Low-G Training (longer dash),
+> Ponderous Might (×2 knockback, −20% speed), Viewer's Choice (stronger loot tailoring). **Still flavour
+> (being implemented):** Audience Darling, Biological Patch, Phasing Flight, Martyr's Hype, Data
+> Corruption. **Blocked:** Scavenger's Extreme Coupons (waits on a shop system).
 
 ## Races
 

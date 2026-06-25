@@ -28,11 +28,11 @@ func handle_movement(delta: float, input_dir: Vector2, current_speed: float = 30
 	parent.move_and_slide()
 
 # One-shot velocity burst. Player.gd owns the i-frame window + cooldown timing.
-func execute_dash(direction: Vector2) -> void:
+func execute_dash(direction: Vector2, speed_mult: float = 1.0) -> void:
 	var dir := direction
 	if dir == Vector2.ZERO:
 		dir = Vector2.RIGHT.rotated(parent.rotation)
-	parent.velocity = dir.normalized() * dash_speed
+	parent.velocity = dir.normalized() * dash_speed * speed_mult   # >1 = a longer dash (Low-G Training)
 	SignalBus.player_dashed.emit(parent.global_position)
 
 func apply_dash_friction(delta: float) -> void:

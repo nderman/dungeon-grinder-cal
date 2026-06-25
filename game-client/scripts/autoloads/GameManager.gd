@@ -73,6 +73,23 @@ func ng_plus_hp_mult() -> float:
 	return 1.0 + NG_PLUS_HP_PER_TIER * ng_plus
 func ng_plus_reward_mult() -> float:
 	return 1.0 + NG_PLUS_REWARD_PER_TIER * ng_plus
+
+# --- Contestant passives (granted by the current race + class) ----------------------------------
+# Each race/class grants one passive (RaceData/ClassData `passive_id`). Systems query has_passive(),
+# or one of the typed multiplier helpers below so the effect lives in one findable, testable place.
+func has_passive(id: String) -> bool:
+	return RaceData.get_passive_id(current_race) == id or ClassData.get_passive_id(current_class) == id
+
+func melee_damage_mult() -> float:
+	return 1.2 if has_passive("iron_fist") else 1.0          # Brawler — Iron Fist
+func mana_cost_mult() -> float:
+	return 0.85 if has_passive("efficient_code") else 1.0    # Technomancer — Efficient Code
+func knockback_mult() -> float:
+	return 2.0 if has_passive("ponderous_might") else 1.0    # Ogre — Ponderous Might
+func move_speed_mult() -> float:
+	return 0.8 if has_passive("ponderous_might") else 1.0    # Ogre — the speed price of Ponderous Might
+func dash_dist_mult() -> float:
+	return 1.35 if has_passive("low_g_training") else 1.0    # GravityGlitcher — Low-G Training
 var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run

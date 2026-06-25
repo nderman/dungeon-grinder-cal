@@ -3,26 +3,33 @@
 # Source: MVP Master Design — "Define the starting stats for the initial player races".
 extends Node
 
+# `passive_id` is the machine key the gameplay code checks via GameManager.has_passive(); `passive`
+# is the human blurb (UI + the player guide). Keep the two in step.
 const RACES := {
 	"Human": {
 		"bonuses": {},   # Pure baseline. The control group.
-		"passive": "Viewer's Choice: stronger build-aware loot tailoring (2.0x vs 1.5x).",
+		"passive_id": "viewers_choice",
+		"passive": "Viewer's Choice: stronger build-aware loot tailoring.",
 	},
 	"Ogre": {
 		"bonuses": {"CON": 3},
-		"passive": "Ponderous Might: 100% melee knockback; move speed -20%.",
+		"passive_id": "ponderous_might",
+		"passive": "Ponderous Might: double melee knockback; move speed -20%.",
 	},
 	"Cat": {
 		"bonuses": {"DEX": 3, "CHA": 1},
+		"passive_id": "audience_darling",
 		"passive": "Audience Darling: faster Hype gen; chance to Hiss-stun adjacent mobs.",
 	},
 	"Trollkin": {
 		"bonuses": {"STR": 3},
-		"passive": "Biological Patch: regen 1 heart after 10s without taking damage.",
+		"passive_id": "biological_patch",
+		"passive": "Biological Patch: regen after 10s without taking damage.",
 	},
 	"AeroWraith": {
 		"bonuses": {"DEX": 3},
-		"passive": "Phasing Flight: ignore floor hazards; dash briefly through walls.",
+		"passive_id": "phasing_flight",
+		"passive": "Phasing Flight: dash briefly through walls.",
 	},
 }
 
@@ -31,3 +38,6 @@ func get_bonuses(race: String) -> Dictionary:
 
 func get_passive(race: String) -> String:
 	return RACES.get(race, {}).get("passive", "")
+
+func get_passive_id(race: String) -> String:
+	return RACES.get(race, {}).get("passive_id", "")

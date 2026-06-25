@@ -319,7 +319,7 @@ func _pick_base(tier: int, stats: Dictionary, box_type: String = "gear") -> Stri
 			continue   # wrong category for this box type
 		var weight := 1 + int(it["min_tier"])             # higher tiers favour rarer items
 		if top != "" and top in it["tags"]:
-			weight += 3                                   # Director's Algorithm: build-aware
+			weight += 6 if GameManager.has_passive("viewers_choice") else 3   # Director's Algorithm: build-aware (Human's Viewer's Choice doubles it)
 		if id in MetaManager.permanent_loot_pool:
 			weight += SPONSOR_WEIGHT                      # …and favours gear you sponsored with tokens
 		for _i in range(weight):
