@@ -16,6 +16,7 @@ const STAIRS_OPEN_TIME := 120.0        # stairs auto-open at this elapsed time (
 const COLLAPSE_TIME := 300.0           # floor collapses (lethal) at this elapsed time
 const COLLAPSE_DMG := 20.0             # HP per tick once collapsing (= 1 old heart)
 const COLLAPSE_INTERVAL := 0.5         # seconds between collapse ticks
+const COLLAPSE_WARN_LEAD := 30.0       # fire the pre-collapse banner this many seconds before it hits (telegraph)
 const FLOOR_DMG_PER_DEPTH := 0.35      # enemy hearts/damage scale: ×(1 + 0.35·(floor−1)). Raised so
                                        # offense keeps pace with a geared player (was 0.25 -> too soft
                                        # by ~floor 6); deep-floor bite still comes mostly from ELITES
@@ -112,6 +113,7 @@ var _blow_times: Array[float] = []                        # tight-window kill ti
 var floor_elapsed: float = 0.0       # seconds on the current floor
 var stairs_open: bool = false        # can the player descend yet?
 var _collapse_accum: float = 0.0     # collapse-DoT tick accumulator
+var _collapse_warned: bool = false   # has the pre-collapse banner fired this floor? (one-shot, re-armed per floor)
 # ACTIVE play time across the run (delta-summed in _process, which only runs while a run is live and
 # the tree isn't paused/backgrounded). Telemetry reports THIS, not wall-clock — an idle/abandoned browser
 # tab freezes _process, so this never inflates into the bogus 72-minute "runs" that polluted the data.
@@ -176,6 +178,7 @@ func begin_floor() -> void:
 	floor_elapsed = 0.0
 	stairs_open = false
 	_collapse_accum = 0.0
+	_collapse_warned = false
 	floor_clock.emit(floor_elapsed, stairs_open)
 
 # Drives the stairs-open + collapse clock. Only ticks during an active run on a floor.
@@ -187,6 +190,13 @@ func _process(delta: float) -> void:
 	# On the final floor the only way out is THROUGH the Champion — no timer-skip, no stairs down.
 	if not stairs_open and not is_final_floor() and floor_elapsed >= STAIRS_OPEN_TIME:
 		open_stairs()   # timer path (skip-boss)
+	# Telegraph the collapse — one banner ~30s out. Matters most on the FINAL floor, where there are no
+	# stairs to flee through: it's the only warning the climax is also a DPS check against the building.
+	if not _collapse_warned and floor_elapsed >= COLLAPSE_TIME - COLLAPSE_WARN_LEAD:
+		_collapse_warned = true
+		SignalBus.toast.emit(
+			"⚠ THE ARENA IS COLLAPSING — FINISH IT" if is_final_floor() else "⚠ THE FLOOR IS COLLAPSING — GET OUT",
+			Vector2.ZERO)
 	if floor_elapsed >= COLLAPSE_TIME:
 		_tick_collapse(delta)
 	floor_clock.emit(floor_elapsed, stairs_open)

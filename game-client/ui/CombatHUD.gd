@@ -156,7 +156,10 @@ func _refresh_weapon() -> void:
 # Persistent reminder of loot boxes waiting to be opened at the next Safe Room.
 # Stairs-open countdown, then the collapse countdown once stairs are open.
 func _on_clock(elapsed: float, stairs_open: bool) -> void:
-	if not stairs_open:
+	# The final floor has NO stairs — it's a straight race against the collapse, so show that countdown
+	# from the start instead of a "STAIRS IN" timer that would just stick at 0:00.
+	var final := GameManager.is_final_floor()
+	if not stairs_open and not final:
 		var rem: float = maxf(0.0, GameManager.STAIRS_OPEN_TIME - elapsed)
 		clock_label.text = "STAIRS IN %s" % _mmss(rem)
 		clock_label.modulate = Color(0.7, 0.85, 1, 1)
@@ -166,8 +169,8 @@ func _on_clock(elapsed: float, stairs_open: bool) -> void:
 			clock_label.text = "FLOOR COLLAPSING!"
 			clock_label.modulate = Color(1, 0.3, 0.3)
 		else:
-			clock_label.text = "COLLAPSE IN %s" % _mmss(rem)
-			clock_label.modulate = Color(1, 0.5, 0.4) if rem < 30.0 else Color(0.95, 0.8, 0.4)
+			clock_label.text = "%s %s" % ["FINISH IN" if final else "COLLAPSE IN", _mmss(rem)]
+			clock_label.modulate = Color(1, 0.5, 0.4) if rem < GameManager.COLLAPSE_WARN_LEAD else Color(0.95, 0.8, 0.4)
 
 func _mmss(s: float) -> String:
 	var t := int(ceil(s))
