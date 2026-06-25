@@ -55,6 +55,15 @@ const POISON_DURATION := 5.0
 const POISON_INTERVAL := 1.0
 const POISON_PCT_PER_TICK := 0.04    # ~20% of max HP over the full 5s if left untreated
 var _poison_ticks: int = 0
+
+# --- Race/class passive triggers (the ones that hook combat events) ---
+const BIO_REGEN_DELAY := 10.0        # Trollkin — Biological Patch: seconds untouched before it kicks in
+const BIO_REGEN_PER_SEC := 10.0      # …then heals ~1 heart/sec until you're hit again
+var _untouched_s: float = 0.0        # time since the player last took damage
+const HISS_STUN_CHANCE := 0.25       # Cat — Audience Darling: chance, on being hit, to hiss-stun…
+const HISS_STUN_RADIUS := 160.0      # …every mob this close…
+const HISS_STUN_SECONDS := 1.0       # …for this long.
+const DATA_CORRUPT_CHILL := 0.3      # GlitchWitch — Data Corruption: slow fraction your nova abilities apply
 var _poison_accum: float = 0.0
 
 func _ready() -> void:
@@ -75,6 +84,7 @@ func _ready() -> void:
 	_pause_menu = PauseMenu.new()
 	add_child(_pause_menu)
 	health_comp.health_depleted.connect(_on_death)
+	SignalBus.player_damaged.connect(_on_player_hit)   # drives the on-hit passive triggers
 	# DCC: reaching Floor 3 classless -> the System makes you pick a class now (mandatory modal).
 	if GameManager.needs_class_selection():
 		_class_panel = ClassSelectPanel.new()
@@ -141,6 +151,7 @@ func elemental_resist(kind: String) -> float:
 
 func _physics_process(delta: float) -> void:
 	_tick_poison(delta)
+	_tick_bio_regen(delta)
 	if _is_dashing:
 		move_comp.apply_dash_friction(delta)
 		return
@@ -306,6 +317,8 @@ func _ability_nova(damage: float, radius: float, stun_seconds: float = 0.0) -> v
 		if e.get_node_or_null("HealthComponent") == null:
 			continue
 		Combat.deal(e, damage)
+		if GameManager.has_passive("data_corruption"):
+			StatusEffect.apply(e, StatusEffect.CHILL, DATA_CORRUPT_CHILL, CombatEffects.CHILL_SECONDS)   # GlitchWitch
 		if stun_seconds > 0.0:
 			var ai := e.get_node_or_null("AIComponent")
 			if ai and ai.has_method("stun"):
@@ -446,6 +459,32 @@ func _tick_poison(delta: float) -> void:
 		_poison_accum -= POISON_INTERVAL
 		_poison_ticks -= 1
 		health_comp.apply_dot(health_comp.max_hearts * POISON_PCT_PER_TICK)
+
+# Fired whenever the player loses HP (SignalBus.player_damaged): the on-hit passive triggers.
+func _on_player_hit(_hearts: int) -> void:
+	_untouched_s = 0.0   # Biological Patch: any damage resets the out-of-combat regen timer
+	if GameManager.has_passive("martyrs_hype"):
+		GameManager.award_martyr_hype()
+	if GameManager.has_passive("audience_darling") and randf() < HISS_STUN_CHANCE:
+		_hiss_stun()
+
+# Trollkin — Biological Patch: after a stretch untouched, regen ~1 heart/sec until the next hit.
+func _tick_bio_regen(delta: float) -> void:
+	if not GameManager.has_passive("biological_patch"):
+		return
+	_untouched_s += delta
+	if _untouched_s >= BIO_REGEN_DELAY and _alive:
+		health_comp.heal(BIO_REGEN_PER_SEC * delta)
+
+# Cat — Audience Darling: a defensive hiss that briefly stuns nearby mobs when you take a hit.
+func _hiss_stun() -> void:
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not (e is Node2D) or e.global_position.distance_to(global_position) > HISS_STUN_RADIUS:
+			continue
+		var ai := e.get_node_or_null("AIComponent")
+		if ai and ai.has_method("stun"):
+			ai.stun(HISS_STUN_SECONDS)
+	SignalBus.toast.emit("HISS!", global_position)
 
 func _spawn_projectile(damage: float, base_spread: float, scale_mult: float = 1.0, color: Color = Color.TRANSPARENT, effects: Dictionary = {}) -> void:
 	var bolt := BOLT_SCENE.instantiate()

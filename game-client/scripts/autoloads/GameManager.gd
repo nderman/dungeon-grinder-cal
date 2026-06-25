@@ -90,6 +90,17 @@ func move_speed_mult() -> float:
 	return 0.8 if has_passive("ponderous_might") else 1.0    # Ogre — the speed price of Ponderous Might
 func dash_dist_mult() -> float:
 	return 1.35 if has_passive("low_g_training") else 1.0    # GravityGlitcher — Low-G Training
+func hype_mult() -> float:
+	return 1.5 if has_passive("audience_darling") else 1.0   # Cat — Audience Darling (faster Hype gen)
+
+# BioPaladin — Martyr's Hype: taking a hit on live TV pops Ratings + Hype (the crowd loves a bleeder).
+const MARTYR_RATINGS := 40
+const MARTYR_HYPE := 8.0
+func award_martyr_hype() -> void:
+	run_ratings += int(round(MARTYR_RATINGS * _cha_mult()))
+	hype_meter += MARTYR_HYPE * hype_mult()
+	rating_changed.emit(run_ratings)
+	_check_hype_thresholds()
 var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
@@ -686,7 +697,7 @@ func _on_ratings_spike(type: String) -> void:
 		return  # Non-payout spikes (e.g. TELEGRAPH_START, CANCELLED) are handled elsewhere.
 	var payout: Dictionary = SPIKE_TABLE[type]
 	run_ratings += int(round(payout["ratings"] * _cha_mult()))   # CHA boosts the audience payout
-	hype_meter += float(payout["hype"])
+	hype_meter += float(payout["hype"]) * hype_mult()            # Audience Darling speeds Hype gen
 	rating_changed.emit(run_ratings)
 	_check_hype_thresholds()
 
