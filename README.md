@@ -6,6 +6,8 @@
 ### ▶ [Play it in your browser](https://nderman.github.io/dungeon-grinder-cal/)
 *Desktop only for now — **keyboard + mouse** (WASD move · arrows/mouse aim · left-mouse fire · Q + right-mouse cast · Space dash · E interact · I inventory · K abilities · 1–4 hotbar · **Esc/P pause + controls**). Progress saves to your browser. Touch controls are on the roadmap.*
 
+📖 **New to it? Read the [Player Guide](docs/guide/)** — stats, races/classes, abilities, combat, enemies, loot, potions, floors, and meta-progression, kept in sync with the code.
+
 A mobile, top-down **twin-stick roguelite shooter** built in **Godot 4 (GDScript)** — Hotline-Miami
 lethality meets a snarky reality-TV "meat grinder," with permadeath, deep loot, and persistent
 meta-progression. A solo side project and an exercise in clean, scalable game architecture.

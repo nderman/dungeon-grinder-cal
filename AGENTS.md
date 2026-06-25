@@ -21,13 +21,17 @@ persistent meta-progression. Hosted by snarky AI **Dungeon Director "Cal."**
    flat comment like "increments health"; write "patch up the contestant's leaky bits."
 5. **Mobile-first.** Twin-stick touch input; keep draw calls and per-frame work lean.
 
-## Canonical constants (do not drift)
-- Stats (baseline **10** each): **STR, DEX, INT, CON, CHA**.
-- Health: hearts; **`hearts = floor(CON / 5)`**; mobs deal 1♥, bosses 2+♥; half-hearts allowed.
-- DR (probabilistic): **`DR% = CON*1.5 + gear`, cap 75%**; success ignores 1♥ ("Clink!").
-- Mana: **`max = INT*5`**; **`regen = base*(1 + INT*0.02)`**.
-- Spells (universal): **`dmg = base*(1 + INT*0.05)`**, **`cost = base*(1 - INT*0.01)`**.
-- Death: **10% of Ratings → Syndication Points**; Milestone Token at floors **3/6/9**.
+## Canonical constants (current — verified against code 2026-06-25)
+These drifted from the original design via balance passes; the values below are what the code actually
+does. Player-facing detail (with examples) lives in [`docs/guide/`](docs/guide/) — keep both in sync.
+- Stats (baseline **4** each, DCC scale): **STR, DEX, INT, CON, CHA**. CHA is currently audience-flavour only (no live formula).
+- Health: **`HP = CON × 10`**; a DR proc shrugs 1♥ ("Clink!"). HP regen **`CON × 0.2 /s + gear`, total cap 3.0/s**.
+- DR (probabilistic): **`DR% = CON × 3.6 + gear`, cap 75%**. Dodge (full negate, rolled first): **`DEX × 1.2 + gear`, cap 35%**.
+- Mana: **`max = INT × 12`**; **`regen = 1.8 × (1 + INT × 0.05)`**. (Spell mana-cost is flat — no INT discount in code yet.)
+- Weapon damage: melee **`×(1 + STR×0.107)`**, gun **`×(1 + DEX×0.08)`**, magic **`×(1 + INT×0.04)`**; Rare+ weapons add a rarity power mult (~×1.2 Rare → ×1.6 Legendary).
+- Ability power: **`base × (1 + stat×0.1) × (1 + (level−1)×0.06)`**; **8 casts/level, cap 15**.
+- Enemy scaling: HP & damage **`×(1 + 0.35 × (floor−1))`**, plus elites/Nightmare/NG+ on top.
+- Death: **10% of Ratings → Syndication** (20% on a Champion win); Milestone Token at floors **3/6/9**.
 
 ## Repo layout (monorepo)
 ```
@@ -110,6 +114,13 @@ Headless regression suite in `game-client/tests/` — **`./tests/run_tests.sh`**
 failure; run it as the `/shipit` test step). One process loads autoloads once and runs every
 `test_*.gd` (each `extends TestCase`). Add a test: write `tests/test_foo.gd`, preload it into
 `TestRunner.gd`'s `TESTS`. Must be scene-driven — `godot -s` doesn't load autoloads. See `tests/README.md`.
+
+## Player guide (keep it in sync)
+A player-facing field manual lives in [`docs/guide/`](docs/guide/) — chapters for stats, races/classes,
+abilities, combat, enemies, loot, potions, floors/stairs, and meta-progression, written from the real
+code values. **It's maintained like the test suite: when you change a player-visible mechanic (a stat
+formula, ability, enemy/loot/floor number, a new system), update the matching `docs/guide/` chapter in
+the SAME change.** It's plain Markdown (renders on GitHub; drops into mdBook/GitBook if we ever publish it).
 
 ## Conventions
 - File/class names PascalCase; component scripts end in `Component`.
