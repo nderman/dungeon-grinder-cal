@@ -99,10 +99,7 @@ func hype_mult() -> float:
 const MARTYR_RATINGS := 40
 const MARTYR_HYPE := 8.0
 func award_martyr_hype() -> void:
-	run_ratings += int(round(MARTYR_RATINGS * _cha_mult()))
-	hype_meter += MARTYR_HYPE * hype_mult()
-	rating_changed.emit(run_ratings)
-	_check_hype_thresholds()
+	_award_ratings_and_hype(MARTYR_RATINGS, MARTYR_HYPE)
 var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the achievement system
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
@@ -698,8 +695,13 @@ func _on_ratings_spike(type: String) -> void:
 	if not SPIKE_TABLE.has(type):
 		return  # Non-payout spikes (e.g. TELEGRAPH_START, CANCELLED) are handled elsewhere.
 	var payout: Dictionary = SPIKE_TABLE[type]
-	run_ratings += int(round(payout["ratings"] * _cha_mult()))   # CHA boosts the audience payout
-	hype_meter += float(payout["hype"]) * hype_mult()            # Audience Darling speeds Hype gen
+	_award_ratings_and_hype(float(payout["ratings"]), float(payout["hype"]))
+
+# Pay out Ratings + Hype and fire the HUD/threshold side-effects. CHA boosts Ratings; Audience Darling
+# speeds Hype. Shared by audience spikes AND Martyr's Hype so the payout rules can never drift apart.
+func _award_ratings_and_hype(ratings_amt: float, hype_amt: float) -> void:
+	run_ratings += int(round(ratings_amt * _cha_mult()))
+	hype_meter += hype_amt * hype_mult()
 	rating_changed.emit(run_ratings)
 	_check_hype_thresholds()
 

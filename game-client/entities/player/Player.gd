@@ -481,8 +481,10 @@ func _tick_bio_regen(delta: float) -> void:
 # Cat — Audience Darling: a defensive hiss that briefly stuns nearby mobs when you take a hit.
 func _hiss_stun() -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if not (e is Node2D) or e.global_position.distance_to(global_position) > HISS_STUN_RADIUS:
+		if not (e is CharacterBody2D):
 			continue
+		if e.global_position.distance_to(global_position) - _enemy_radius(e) > HISS_STUN_RADIUS:
+			continue   # edge-aware, same as _ability_nova — big bosses on the boundary still count
 		var ai := e.get_node_or_null("AIComponent")
 		if ai and ai.has_method("stun"):
 			ai.stun(HISS_STUN_SECONDS)
