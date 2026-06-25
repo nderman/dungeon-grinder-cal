@@ -58,7 +58,7 @@ func set_max_hearts(heart_count: float) -> void:
 func take_damage(amount: float) -> void:
 	if amount <= 0.0 or current_hearts <= 0.0 or is_invulnerable():
 		return
-	_deal(amount)
+	_deal(amount, false)   # a discrete hit
 	if is_player and current_hearts > 0.0 and iframe_seconds > 0.0:
 		_grant_iframes()
 
@@ -67,14 +67,15 @@ func take_damage(amount: float) -> void:
 func apply_dot(amount: float) -> void:
 	if amount <= 0.0 or current_hearts <= 0.0:
 		return
-	_deal(amount)
+	_deal(amount, true)   # damage-over-time tick
 
-# Shared HP mutation: clamp, signal the HUD, fire death. Callers decide DR/i-frame policy.
-func _deal(amount: float) -> void:
+# Shared HP mutation: clamp, signal the HUD, fire death. Callers decide DR/i-frame policy and pass
+# is_dot so listeners can tell a discrete hit from a poison/burn/collapse tick.
+func _deal(amount: float, is_dot: bool = false) -> void:
 	current_hearts = clampf(current_hearts - amount, 0.0, max_hearts)
 	health_changed.emit(current_hearts, max_hearts)
 	if is_player:
-		SignalBus.player_damaged.emit(int(ceil(current_hearts)))
+		SignalBus.player_damaged.emit(int(ceil(current_hearts)), is_dot)
 	if current_hearts <= 0.0:
 		_on_cancelled()
 

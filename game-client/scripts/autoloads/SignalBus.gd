@@ -6,7 +6,7 @@ extends Node
 
 # --- COMBAT & DAMAGE ---
 signal dr_triggered(location: Vector2)              # DR roll succeeded — the "Clink!"
-signal player_damaged(hearts_remaining: int)        # Player actually lost a segment
+signal player_damaged(hearts_remaining: int, is_dot: bool)   # fires on EVERY HP loss; is_dot=true for DoT ticks (poison/burn/collapse) vs a discrete hit
 signal enemy_cancelled(location: Vector2, ratings_earned: int)
 signal ratings_spike(type: String)                  # SPEED_DEMON / NEAR_DEATH / CANCELLED / TELEGRAPH_START ...
 

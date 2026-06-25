@@ -461,8 +461,10 @@ func _tick_poison(delta: float) -> void:
 		health_comp.apply_dot(health_comp.max_hearts * POISON_PCT_PER_TICK)
 
 # Fired whenever the player loses HP (SignalBus.player_damaged): the on-hit passive triggers.
-func _on_player_hit(_hearts: int) -> void:
-	_untouched_s = 0.0   # Biological Patch: any damage resets the out-of-combat regen timer
+func _on_player_hit(_hearts: int, is_dot: bool) -> void:
+	_untouched_s = 0.0   # Biological Patch: ANY damage (incl. DoT) resets the out-of-combat regen timer
+	if is_dot:
+		return   # poison/burn/collapse ticks don't pay Martyr's Hype or roll hiss-stun (no DoT farming)
 	if GameManager.has_passive("martyrs_hype"):
 		GameManager.award_martyr_hype()
 	if GameManager.has_passive("audience_darling") and randf() < HISS_STUN_CHANCE:

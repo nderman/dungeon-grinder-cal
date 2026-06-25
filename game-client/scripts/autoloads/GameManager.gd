@@ -78,6 +78,8 @@ func ng_plus_reward_mult() -> float:
 # Each race/class grants one passive (RaceData/ClassData `passive_id`). Systems query has_passive(),
 # or one of the typed multiplier helpers below so the effect lives in one findable, testable place.
 func has_passive(id: String) -> bool:
+	if id == "":
+		return false   # a race/class with no passive must never match the empty id
 	return RaceData.get_passive_id(current_race) == id or ClassData.get_passive_id(current_class) == id
 
 func melee_damage_mult() -> float:
@@ -210,7 +212,7 @@ func _tick_collapse(delta: float) -> void:
 		return
 	var hc := p.get_node_or_null("HealthComponent")
 	if hc:
-		hc.take_damage(COLLAPSE_DMG)
+		hc.apply_dot(COLLAPSE_DMG)   # environmental DoT: ignores armour AND i-frames (you can't dash out of a collapsing floor)
 
 # Descend to the next floor — keeps run state (XP/level/items), regenerates a deeper floor.
 func descend() -> void:

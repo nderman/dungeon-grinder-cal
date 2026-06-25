@@ -52,6 +52,7 @@ func run() -> void:
 	GameManager.current_race = "Trollkin"
 	GameManager.current_class = "GlitchWitch"
 	check(not GameManager.has_passive("iron_fist"), "unrelated build has no Iron Fist")
+	check(not GameManager.has_passive(""), "the empty passive id never matches (a passive-less race/class)")
 	check(GameManager.has_passive("data_corruption"), "GlitchWitch grants Data Corruption")
 	approx(GameManager.melee_damage_mult(), 1.0, "default melee mult is 1.0")
 	approx(GameManager.dash_dist_mult(), 1.0, "default dash mult is 1.0")

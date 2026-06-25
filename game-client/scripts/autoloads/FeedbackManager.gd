@@ -14,7 +14,7 @@ func _on_dr(location: Vector2) -> void:
 	_floating_text("CLINK!", location, Color(0.8, 0.9, 1.0))
 	_shake(3.0)
 
-func _on_player_damaged(_hearts: int) -> void:
+func _on_player_damaged(_hearts: int, _is_dot: bool) -> void:
 	_shake(8.0)
 
 func _on_enemy_cancelled(location: Vector2, ratings: int) -> void:
