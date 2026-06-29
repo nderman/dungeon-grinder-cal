@@ -8,6 +8,16 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **TOWN VENDORS shipped (2026-06-25).** DCC-style: shops live in **Settlements** (safe, populated hubs),
+  NOT in every Safe Room. On town floors (2/4/6/8) the Phase-Door leads to a Settlement (Room + loot/stat
+  terminals + a Vendor NonCombatantNPC + flavour NPCs) instead of the bare Safe Room — reuses the
+  safe_room_entry/exit plumbing, no new teleporter. Economy backend (GameManager `shop_stock`/
+  `roll_shop_stock`/`shop_price`/`buy_shop_item` + `LootData.price`) is portable; `shop_price_mult()`
+  unblocked Scavenger's Extreme Coupons (10/11 passives). Gold (from corpses) finally has a sink.
+  **Open-world floors remain the separate, bigger arc** — when they land, towns become embedded zones
+  instead of a sub-dimension, and the vendor/economy port straight over. Possible follow-ups: a reroll
+  (spend gold to restock), a "buyback", more NPC roles (quest-giver), town-floor tuning.
+
 - **LOOT RAMP — telemetry check (2026-06-25, flagged from playtest).** A real run reached Floor 9 on only
   **Rare** gear and the Champion fight ran long (drove the Floor-9 collapse extension to 8 min). Question:
   is the loot-box economy lifting players toward Epic/Legendary by the finale, or arriving under-geared the

@@ -46,6 +46,7 @@ var _inventory_panel: InventoryPanel  # toggled with the inventory key
 var _abilities_panel: AbilitiesPanel  # toggled with the abilities key
 var _class_panel: ClassSelectPanel    # floor-3 class pick (DCC); created only when owed
 var _loot_reveal_panel: LootRevealPanel   # the Safe-Room box-opening reveal
+var _shop_panel: ShopPanel                # the town-vendor storefront (opened by a Shopkeeper NPC)
 var _pause_menu: PauseMenu                # Esc/P pause overlay + controls help (self-manages input)
 var _ability_cd_until: Dictionary = {}   # ability id -> wall-clock (s) it's castable again
 
@@ -81,6 +82,8 @@ func _ready() -> void:
 	add_child(_abilities_panel)
 	_loot_reveal_panel = LootRevealPanel.new()
 	add_child(_loot_reveal_panel)
+	_shop_panel = ShopPanel.new()
+	add_child(_shop_panel)
 	_pause_menu = PauseMenu.new()
 	add_child(_pause_menu)
 	health_comp.health_depleted.connect(_on_death)
@@ -95,6 +98,10 @@ func _ready() -> void:
 func show_loot_reveal(results: Array) -> void:
 	if not results.is_empty():
 		_loot_reveal_panel.reveal(results)
+
+# Open the town vendor (driven by a Shopkeeper NonCombatantNPC). Stock was rolled on town entry.
+func show_shop() -> void:
+	_shop_panel.open_shop()
 
 # Death ("Cancelled"): freeze the contestant at once so you can't keep playing during the
 # brief Green-Room cut. GameManager.end_run (fired by HealthComponent) handles the hand-off.

@@ -16,6 +16,7 @@ extends Node2D
 @export var corpse_scene: PackedScene            # lootable drop spawned where a mob dies
 @export var player_scene: PackedScene
 @export var safe_room_scene: PackedScene
+@export var settlement_scene: PackedScene        # town variant of the safe room (vendor + NPCs); used on TOWN_FLOORS
 @export var phase_door_scene: PackedScene
 @export var boss_scene: PackedScene              # the DEFAULT boss (Golem) — also the roster fallback
 @export var boss_pool: Array[PackedScene] = []   # extra boss ARCHETYPES (Hexgun, Showrunner, …) — a
@@ -805,12 +806,21 @@ func _wall_anchor(rect: Rect2) -> Dictionary:
 		"East": return {"pos": Vector2(hx - depth, along), "rot": PI * 0.5}
 		_: return {"pos": Vector2(-hx + depth, along), "rot": PI * 0.5}   # West
 
+# Town floors get a Settlement (vendor + non-combatant NPCs) instead of the bare Safe Room — same
+# Phase-Door entry + exit portal, just populated. DCC-style: commerce happens in towns, not every
+# bolt-hole. Floors 1 (tutorial) and 9 (Champion) stay combat-only.
+const TOWN_FLOORS := [2, 4, 6, 8]
+
 func _place_safe_room() -> void:
-	if safe_room_scene == null:
+	var town: bool = GameManager.current_floor in TOWN_FLOORS and settlement_scene != null
+	var scene: PackedScene = settlement_scene if town else safe_room_scene
+	if scene == null:
 		return
-	var sr := safe_room_scene.instantiate()
+	var sr := scene.instantiate()
 	add_child(sr)
 	sr.global_position = Vector2(WORLD.x * 0.5, -1400.0)   # parked off the layout
+	if town:
+		GameManager.roll_shop_stock()   # stock this town's vendor on entry (build-aware, depth-scaled)
 
 func _spawn_player() -> void:
 	if player_scene == null or rooms.is_empty():

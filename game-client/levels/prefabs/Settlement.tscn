@@ -1,0 +1,38 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://levels/prefabs/Room.tscn" id="1_room"]
+[ext_resource type="PackedScene" path="res://entities/Teleporter.tscn" id="2_tp"]
+[ext_resource type="PackedScene" path="res://entities/LootBoxTerminal.tscn" id="3_lbt"]
+[ext_resource type="PackedScene" path="res://entities/LevelTerminal.tscn" id="4_lvl"]
+[ext_resource type="PackedScene" path="res://entities/NonCombatantNPC.tscn" id="5_npc"]
+
+[node name="Settlement" type="Node2D"]
+
+[node name="Room" parent="." instance=ExtResource("1_room")]
+room_type = "Safe"
+seal = true
+
+[node name="Entry" type="Marker2D" parent="." groups=["safe_room_entry"]]
+position = Vector2(-260, 0)
+
+[node name="ExitPortal" parent="." instance=ExtResource("2_tp")]
+position = Vector2(260, 0)
+mode = 1
+
+[node name="LootBoxTerminal" parent="." instance=ExtResource("3_lbt")]
+position = Vector2(0, -170)
+
+[node name="LevelTerminal" parent="." instance=ExtResource("4_lvl")]
+position = Vector2(0, 170)
+
+[node name="Shopkeeper" parent="." instance=ExtResource("5_npc")]
+position = Vector2(-130, -150)
+role = "shop"
+display_name = "Vendor"
+lines = PackedStringArray("Coin first, questions later.")
+
+[node name="Barker" parent="." instance=ExtResource("5_npc")]
+position = Vector2(140, -150)
+role = "talk"
+display_name = "Townsfolk"
+lines = PackedStringArray("Heard the next boss eats contestants like you.", "Stock up while you can.", "Safe rooms ain't safe forever.")

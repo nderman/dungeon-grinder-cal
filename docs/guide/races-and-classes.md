@@ -8,9 +8,9 @@ starters; spend [Milestone Tokens](meta-progression.md) in the Green Room to unl
 > Iron Fist (+20% melee), Efficient Code (−15% mana), Low-G Training (longer dash), Ponderous Might
 > (×2 knockback, −20% speed), Viewer's Choice (stronger loot tailoring), Audience Darling (faster Hype +
 > hiss-stun nearby mobs when hit), Biological Patch (regen ~1 heart/sec after 10 s untouched), Martyr's
-> Hype (Ratings + Hype when you take a hit), Data Corruption (your AoE abilities chill enemies).
-> **Coming:** Phasing Flight (dash through walls — deferred, needs careful collision handling). **Blocked:**
-> Scavenger's Extreme Coupons (waits on a shop system).
+> Hype (Ratings + Hype when you take a hit), Data Corruption (your AoE abilities chill enemies),
+> Extreme Coupons (Scavenger — −20% at town vendors). **Coming:** Phasing Flight (dash through walls —
+> deferred, needs careful collision handling).
 
 ## Races
 

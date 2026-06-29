@@ -26,6 +26,15 @@ Scattered on each floor are **Phase-Doors** — step on one and press **`E`** to
 - **Open your Loot Boxes** (the reveal — see [Loot](loot.md#opening-boxes-the-reveal)).
 - **Spend banked level-up points** on stats at the terminal.
 
+## Towns & vendors
+
+On **town floors (2, 4, 6, 8)**, your Phase-Door drops you into a **Settlement** instead of a bare Safe
+Room — a safe, populated hub. Same loot-box + stat terminals, plus **non-combatant NPCs**: a **Vendor**
+you walk up to (`E`) to spend **Gold** on gear and potions, and townsfolk with the odd warning. Stock is
+rolled fresh per town (build-aware — it leans toward your top stat) and scales with depth, so deeper
+towns sell better kit. Gold comes from corpses; this is what it's *for*. A **Scavenger** pays 20% less
+(Extreme Coupons). Floors 1 and 9 have no town — the tutorial and the Champion are all business.
+
 ## Milestone Tokens
 
 Reaching the milestone floors banks a **[Milestone Token](meta-progression.md)** —
