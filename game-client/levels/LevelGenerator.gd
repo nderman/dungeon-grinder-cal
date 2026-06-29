@@ -807,8 +807,11 @@ func _wall_anchor(rect: Rect2) -> Dictionary:
 		_: return {"pos": Vector2(-hx + depth, along), "rot": PI * 0.5}   # West
 
 # Town floors get a Settlement (vendor + non-combatant NPCs) instead of the bare Safe Room — same
-# Phase-Door entry + exit portal, just populated. DCC-style: commerce happens in towns, not every
-# bolt-hole. Floors 1 (tutorial) and 9 (Champion) stay combat-only.
+# Phase-Door entry + exit portal, just populated. Floors 1 (tutorial) and 9 (Champion) stay combat-only.
+# STOPGAP HIERARCHY: this Settlement is an instanced box reached by the Phase-Door — i.e. a safe-room-
+# shaped shopfront. In DCC a settlement is a PUBLIC region ON the floor that CONTAINS safe-room portals,
+# not the reverse. The correct structure (a sealed safe district on a sprawling floor) lands with the
+# open-world-floors arc; the vendor/economy then port over unchanged. See docs/TODO.md.
 const TOWN_FLOORS := [2, 4, 6, 8]
 
 func _place_safe_room() -> void:

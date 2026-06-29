@@ -14,9 +14,23 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   safe_room_entry/exit plumbing, no new teleporter. Economy backend (GameManager `shop_stock`/
   `roll_shop_stock`/`shop_price`/`buy_shop_item` + `LootData.price`) is portable; `shop_price_mult()`
   unblocked Scavenger's Extreme Coupons (10/11 passives). Gold (from corpses) finally has a sink.
-  **Open-world floors remain the separate, bigger arc** — when they land, towns become embedded zones
-  instead of a sub-dimension, and the vendor/economy port straight over. Possible follow-ups: a reroll
-  (spend gold to restock), a "buyback", more NPC roles (quest-giver), town-floor tuning.
+  **⚠ HIERARCHY IS A STOPGAP (inverted vs DCC).** Per the wiki (First Floor): a floor is a huge sprawling
+  maze; **Safe Rooms are tiny PRIVATE instanced boxes** reached via portals scattered "every few miles"
+  (rest/stash, not commercial); **Settlements are PUBLIC regions ON the floor** (later floors) with
+  vendors/NPCs/services. So the real model is **Floor ⊃ Settlement (public district) ⊃/alongside Safe-Room
+  portals** — a settlement CONTAINS safe-room access, not the reverse. Our current "Settlement" is an
+  off-grid instanced box reached by the Phase-Door = functionally *a safe room with a vendor* (the very
+  thing we wanted to avoid). It's a fine PROTOTYPE shopfront, but the correct structure needs open-world
+  floors. Possible follow-ups (post-structure): reroll (spend gold to restock), buyback, more NPC roles
+  (quest-giver), town-floor tuning.
+
+- **OPEN-WORLD FLOORS — the big arc, with the CORRECT settlement model (2026-06-25).** When we rebuild
+  floor gen for sprawling/non-linear floors: a **Settlement** = a **sealed safe DISTRICT** placed as a
+  region on the floor map (no enemies; vendor + NPCs + services + a Safe-Room portal inside it), that you
+  *walk into* while exploring — NOT a teleport-to sub-dimension. Safe-Room portals also scatter out in the
+  wild (private boxes). Migration: the vendor NPC / pricing / stock / ShopPanel / Scavenger discount all
+  port straight over — only the PLACEMENT changes (a floor region vs the current off-grid box). Also fold
+  in the earlier idea: deep floors where the stairs only open in the boss room of a hard boss.
 
 - **LOOT RAMP — telemetry check (2026-06-25, flagged from playtest).** A real run reached Floor 9 on only
   **Rare** gear and the Champion fight ran long (drove the Floor-9 collapse extension to 8 min). Question:
