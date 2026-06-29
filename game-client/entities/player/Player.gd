@@ -232,14 +232,27 @@ func _perform_dash() -> void:
 	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if dir == Vector2.ZERO:
 		dir = aim_dir
+	# AeroWraith — Phasing Flight: drop movement collision for the dash window so you slip through walls
+	# (and bodies), then eject safely on the far side so you can never strand inside geometry.
+	var phasing := GameManager.has_passive("phasing_flight")
+	var dash_start := global_position
+	var saved_mask := collision_mask
+	if phasing:
+		collision_mask = 0
 	move_comp.execute_dash(dir, GameManager.dash_dist_mult())   # Low-G Training extends the dash
 	await get_tree().create_timer(dash_duration).timeout
 	_is_dashing = false
+	if not is_inside_tree():
+		return   # floor change / death landed mid-dash
+	if phasing:
+		collision_mask = saved_mask
+		_eject_from_wall(dir, dash_start)
 	# DEX extends the i-frame window past the dash movement (GDD: DEX -> dash i-frames).
 	var extra := int(current_stats["DEX"]) * DASH_IFRAME_PER_DEX
 	if extra > 0.0:
 		await get_tree().create_timer(extra).timeout
-	health_comp.set_invulnerable(false)
+	if is_inside_tree():
+		health_comp.set_invulnerable(false)
 	await get_tree().create_timer(dash_cooldown).timeout
 	_can_dash = true
 
@@ -335,6 +348,36 @@ func _ability_nova(damage: float, radius: float, stun_seconds: float = 0.0) -> v
 # wall, so you can't blink out of the map.
 func _ability_blink(reach: float) -> void:
 	move_and_collide(aim_dir * reach)
+
+# Phasing Flight safety net: if a phase-dash ended INSIDE a wall, step out the far side along the dash
+# heading; if there's no exit within reach, snap back to where the dash began rather than strand the
+# contestant in solid geometry. Worst case is always a valid, pre-dash position.
+# KNOWN LIMITATION: this only catches ending *inside* a wall. Phasing clean THROUGH the outer boundary
+# into open void isn't caught (you're not in a wall out there) — watch for it in playtest; if it happens,
+# add an on-navmesh check here (deferred to avoid a flaky nav query breaking the dash). See docs/TODO.md.
+func _eject_from_wall(dir: Vector2, fallback: Vector2) -> void:
+	if not _in_wall():
+		return
+	var step := (dir.normalized() if dir.length() > 0.01 else Vector2.RIGHT) * 12.0
+	for _i in range(48):   # ~576px of forward search out the far side
+		global_position += step
+		if not _in_wall():
+			return
+	global_position = fallback
+
+# Is the body overlapping environment (walls/cover)? Queries Room.LOS_LAYER, which is environment-ONLY,
+# so standing on an enemy or an Area2D never reads as "stuck in a wall".
+func _in_wall() -> bool:
+	var cs := get_node_or_null("CollisionShape2D")
+	if cs == null or cs.shape == null:
+		return false
+	var q := PhysicsShapeQueryParameters2D.new()
+	q.shape = cs.shape
+	q.transform = cs.global_transform
+	q.collision_mask = Room.LOS_LAYER
+	q.exclude = [get_rid()]
+	q.collide_with_areas = false
+	return not get_world_2d().direct_space_state.intersect_shape(q, 1).is_empty()
 
 # On-hit EFFECTS from all equipped gear (LootData effect-affixes — burn/leech/crit/chill/chain).
 # Recomputed once per attack: cheap (a few dict reads) and means swapping gear takes effect at once

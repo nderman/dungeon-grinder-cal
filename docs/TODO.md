@@ -8,6 +8,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **PHASING FLIGHT shipped → all 11 passives live (2026-06-25).** AeroWraith's wall-dash: `_perform_dash`
+  sets `collision_mask = 0` for the dash window (phase through walls + bodies), restores it after, then
+  `_eject_from_wall` steps out the far side if it ended inside geometry (revert to dash-start if no exit).
+  Stuck-check `_in_wall` queries `Room.LOS_LAYER` (environment-only, so enemies/areas don't count).
+  test_phasing guards that query (wall yes / open no / enemy-layer no). **Known limitation:** phasing clean
+  THROUGH the outer boundary into open void isn't caught (not "in a wall" out there) — watch in playtest;
+  fix = an on-navmesh check in `_eject_from_wall` (deferred to avoid a flaky nav query breaking the dash).
+
 - **TOWN VENDORS shipped (2026-06-25).** DCC-style: shops live in **Settlements** (safe, populated hubs),
   NOT in every Safe Room. On town floors (2/4/6/8) the Phase-Door leads to a Settlement (Room + loot/stat
   terminals + a Vendor NonCombatantNPC + flavour NPCs) instead of the bare Safe Room — reuses the
