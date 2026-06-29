@@ -25,9 +25,11 @@ func _ready() -> void:
 	_note.modulate = Color(1, 1, 1, 0.55)
 	box.add_child(_note)
 	add_hint(box, "Click to buy  ·  E / SPACE to leave")
-	# Refresh on any shelf/wallet change. Gold only moves via buying here (which emits shop_changed),
-	# so one listener covers both — no double rebuild per purchase.
+	# Refresh on either the shelf (shop_changed) OR the wallet (gold_changed) changing — both decide what's
+	# affordable. _refresh early-outs while hidden and rebuilding ~6 rows is trivial, so the extra rebuild
+	# per purchase costs nothing; the upside is the display can never desync from Gold.
 	GameManager.shop_changed.connect(_refresh)
+	GameManager.gold_changed.connect(func(_g): _refresh())
 
 func open_shop() -> void:
 	if not visible:
