@@ -35,7 +35,10 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   floors. Possible follow-ups (post-structure): reroll (spend gold to restock), buyback, more NPC roles
   (quest-giver), town-floor tuning.
 
-- **OPEN-WORLD FLOORS — the big arc, with the CORRECT settlement model (2026-06-25).** When we rebuild
+- **OPEN-WORLD FLOORS — the big arc, with the CORRECT settlement model (2026-06-25).** ▶ **Full phased
+  plan + architecture map: [`docs/OPEN_WORLD_FLOORS.md`](OPEN_WORLD_FLOORS.md).** TL;DR: chase the *feel*
+  (sprawling, town-dotted, boss-gated, themed) by evolving the bounded generator; true streaming is a
+  deferred Phase 4. Start with Phase 0 (settlement as an on-floor district). When we rebuild
   floor gen for sprawling/non-linear floors: a **Settlement** = a town DISTRICT placed as a region on the
   floor map (a cluster of vendor + NPC + service buildings, one of which is an **inn/tavern = the in-town
   Safe Room**), that you *walk into* while exploring — NOT a teleport-to sub-dimension. **Standalone bare
