@@ -51,6 +51,10 @@ const MAGIC_DMG_PER_INT := 0.04
 const WEAPON_DMG_PER_POINT := {"STR": MELEE_DMG_PER_STR, "DEX": RANGED_DMG_PER_DEX, "INT": MAGIC_DMG_PER_INT}
 const MELEE_KNOCK_PER_STR := 5.0    # +5px knockback per STR (was 8 — hits were punting mobs too far)
 const SPONSOR_WEIGHT := 6           # drop-pool weight a token-sponsored item gets in _pick_base (MetaManager sink)
+# Town-vendor pricing (Gold). Tuned against corpse income (~3-5 gold/kill, ~100/floor) so a town stop
+# buys ~1-3 things: a basic gear ~18g, a Rare jumps with rarity, a health potion ~12g.
+const SHOP_BASE_PRICE := 18         # Gold for a Common (rarity 0), Bronze-floor (min_tier 0) piece of gear
+const SHOP_CONSUMABLE_PRICE := 12   # Gold for a tier-0 consumable; scales with tier
 # Item-granted ABILITIES (the "Tripper" idea): Rare+ weapons/trinkets can roll a `grant` affix that
 # hands you an active hotbar ability WHILE EQUIPPED — no mana, its own cooldown, lost on unequip (the
 # cooldown keeps ticking across a same-floor swap so you can't hot-swap to dodge it; see
@@ -372,6 +376,17 @@ func instance_bonus(inst: Dictionary) -> Dictionary:
 		if af.has("stat"):   # effect-affixes carry no stat — skip them here (see combat_effects)
 			out[af["stat"]] = int(out.get(af["stat"], 0)) + int(af["amount"])
 	return out
+
+# Town-vendor price (Gold) for a rolled instance. Gear scales by the base's min_tier AND rolled rarity
+# (a Rare costs much more than a Common of the same base); consumables scale by their tier. The
+# Scavenger's discount is applied on top by GameManager.shop_price (kept out of here so this stays pure).
+func price(inst: Dictionary) -> int:
+	var base := String(inst.get("base", ""))
+	if is_consumable(base):
+		return SHOP_CONSUMABLE_PRICE * (1 + int(inst.get("tier", 0)))
+	var min_tier := int(ITEMS.get(base, {}).get("min_tier", 0))
+	var rarity := int(inst.get("rarity", 0))
+	return int(round(SHOP_BASE_PRICE * (1 + min_tier) * (1.0 + rarity * 0.6)))
 
 # Effect-affixes prefix the base name with their adjective ("Savage War Hammer", "Burning Ring").
 # The FIRST effect wins the prefix (an item with two effects still reads as one flavourful name).

@@ -97,6 +97,8 @@ func dash_dist_mult() -> float:
 	return 1.35 if has_passive("low_g_training") else 1.0    # GravityGlitcher — Low-G Training
 func hype_mult() -> float:
 	return 1.5 if has_passive("audience_darling") else 1.0   # Cat — Audience Darling (faster Hype gen)
+func shop_price_mult() -> float:
+	return 0.8 if has_passive("extreme_coupons") else 1.0     # Scavenger — Extreme Coupons (-20% vendor prices)
 
 # BioPaladin — Martyr's Hype: taking a hit on live TV pops Ratings + Hype (the crowd loves a bleeder).
 const MARTYR_RATINGS := 40
@@ -107,7 +109,8 @@ var earned_loot_boxes: Array = []     # [{tier:int, type:String}] queued by the 
 var last_safe_room_entrance_pos: Vector2 = Vector2.ZERO   # where a Phase-Door spat you in
 var run_inventory: Array = []                             # items pulled from Loot Boxes this run
 var run_kills: int = 0                                    # mobs cancelled this run
-var gold: int = 0                                         # run currency from corpses; spent at shops (future)
+var gold: int = 0                                         # run currency from corpses; spent at town vendors
+var shop_stock: Array = []                                # the current town vendor's rolled wares (instances); rolled on town entry
 var _kill_times: Array[float] = []                        # recent kill timestamps (speed-demon detector)
 var _blow_times: Array[float] = []                        # tight-window kill timestamps (multi-kill detector)
 
@@ -169,6 +172,7 @@ signal loot_boxes_changed(count: int)   # pending boxes waiting to open at a Saf
 signal floor_clock(elapsed: float, stairs_open: bool)   # HUD countdown
 signal stairs_opened()                  # stairs are now usable (timer or boss kill)
 signal gold_changed(total: int)         # corpse loot picked up
+signal shop_changed()                   # town vendor stock rolled or an item bought (ShopPanel refresh)
 signal hotbar_changed()                 # a slot's contents/count changed (HUD + inventory)
 
 # Enemy stat multiplier for the current depth (deeper floors hit harder / have more HP).
@@ -252,6 +256,56 @@ func add_gold(amount: int) -> void:
 		return
 	gold += amount
 	gold_changed.emit(gold)
+
+# --- Town vendor (shop) ------------------------------------------------------------------------
+# The economy backend, independent of where the shopfront lives (a town NPC). Stock is rolled on town
+# entry, build-aware (the Director weights toward your top stat); pricing scales with tier/rarity and
+# the Scavenger's discount; buying spends Gold and routes the item into your gear/hotbar like any loot.
+const SHOP_GEAR_COUNT := 4       # gear pieces a vendor stocks
+const SHOP_SUPPLY_COUNT := 2     # consumables (potions/tomes) a vendor stocks
+
+# Vendor quality scales with depth — roughly one tier per two floors, capped at Celestial.
+func shop_tier() -> int:
+	return clampi(current_floor / 2, 0, LootData.TIER_NAMES.size() - 1)
+
+# Gold price for a stocked instance, with the Scavenger's Extreme Coupons applied.
+func shop_price(inst: Dictionary) -> int:
+	return maxi(1, int(round(LootData.price(inst) * shop_price_mult())))
+
+# Roll a fresh vendor inventory for the current floor (build-aware via effective stats). Called once
+# when you enter the town; re-rolling would let you reroll-scum, so towns don't restock on re-entry.
+func roll_shop_stock() -> void:
+	shop_stock.clear()
+	var t := shop_tier()
+	var stats := get_effective_stats()
+	for i in range(SHOP_GEAR_COUNT):
+		var g := LootData.roll(t, stats, "gear")
+		if not g.is_empty():
+			shop_stock.append(g)
+	for i in range(SHOP_SUPPLY_COUNT):
+		var s := LootData.roll(t, stats, "supply")
+		if not s.is_empty():
+			shop_stock.append(s)
+	shop_changed.emit()
+
+# Buy stock item `index`: must exist and be affordable. Spends Gold, grants the item (gear auto-equips
+# /bags, consumables stack on the hotbar), and removes it from the shelf. Returns false (no-op) otherwise.
+func buy_shop_item(index: int) -> bool:
+	if index < 0 or index >= shop_stock.size():
+		return false
+	var inst: Dictionary = shop_stock[index]
+	var cost := shop_price(inst)
+	if gold < cost:
+		return false
+	gold -= cost
+	gold_changed.emit(gold)
+	if inst.get("kind") == "consumable":
+		add_consumable(String(inst["base"]), int(inst.get("tier", 0)))
+	else:
+		add_loot_instance(inst)
+	shop_stock.remove_at(index)
+	shop_changed.emit()
+	return true
 
 # Effective stats = base run-stats (race/class + skill points) + equipped gear bonuses.
 func get_effective_stats() -> Dictionary:
@@ -676,6 +730,7 @@ func start_new_run() -> void:
 	run_kills = 0
 	run_active_seconds = 0.0
 	gold = 0
+	shop_stock.clear()
 	_kill_times.clear()
 	_blow_times.clear()
 	earned_loot_boxes.clear()
