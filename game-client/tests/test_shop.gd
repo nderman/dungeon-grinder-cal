@@ -26,6 +26,13 @@ func run() -> void:
 	check(LootData.price(r0) > 0, "gear has a positive price")
 	check(LootData.price(r2) > LootData.price(r0), "a rarer roll of the same base costs more")
 
+	# A tome is an investment (> a potion); a granted-ability affix adds a premium over a plain piece.
+	var tome := {"kind": "consumable", "base": "tome_blink", "tier": 0}
+	check(LootData.price(tome) > LootData.price(hp0), "a tome costs more than a potion")
+	var grantw := {"kind": "gear", "base": b, "slot": "Weapon", "rarity": 2, "affixes": [{"grant": "blink"}]}
+	var plainw := {"kind": "gear", "base": b, "slot": "Weapon", "rarity": 2, "affixes": []}
+	check(LootData.price(grantw) > LootData.price(plainw), "a granted-ability affix adds a price premium")
+
 	# --- Scavenger discount (Extreme Coupons) --------------------------------------------------
 	GameManager.current_race = "Human"
 	GameManager.current_class = "Scavenger"
@@ -55,6 +62,25 @@ func run() -> void:
 	check(not GameManager.buy_shop_item(0), "can't buy when broke")
 	eq(GameManager.shop_stock.size(), 1, "a failed buy leaves the shelf untouched")
 	check(not GameManager.buy_shop_item(7), "an out-of-range index is a no-op")
+
+	# Dead purchase: a tome for an ability you already hold at MAX_LEVEL is refused before charging.
+	var aid := String(LootData.consumable_effect("tome_blink", 0).get("ability", ""))
+	var had := aid in GameManager.known_abilities
+	var prev_uses: Variant = GameManager.ability_uses.get(aid, null)
+	if not had:
+		GameManager.known_abilities.append(aid)
+	GameManager.ability_uses[aid] = 100000   # force MAX_LEVEL
+	GameManager.shop_stock = [{"kind": "consumable", "base": "tome_blink", "tier": 0}]
+	GameManager.gold = 1000
+	check(GameManager.shop_item_is_dead(GameManager.shop_stock[0]), "a maxed-ability tome reads as a dead purchase")
+	check(not GameManager.buy_shop_item(0), "the vendor refuses a dead purchase")
+	eq(GameManager.gold, 1000, "a refused purchase charges no Gold")
+	if not had:
+		GameManager.known_abilities.erase(aid)
+	if prev_uses == null:
+		GameManager.ability_uses.erase(aid)
+	else:
+		GameManager.ability_uses[aid] = prev_uses
 
 	GameManager.gold = s_gold
 	GameManager.shop_stock = s_stock

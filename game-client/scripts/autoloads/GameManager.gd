@@ -288,22 +288,36 @@ func roll_shop_stock() -> void:
 			shop_stock.append(s)
 	shop_changed.emit()
 
-# Buy stock item `index`: must exist and be affordable. Spends Gold, grants the item (gear auto-equips
-# /bags, consumables stack on the hotbar), and removes it from the shelf. Returns false (no-op) otherwise.
+# A purchase that would do NOTHING — a learn-tome for an ability you already hold at MAX_LEVEL. The
+# vendor refuses it (and the ShopPanel greys it) so you can't pay Gold for a no-op rank-up.
+func shop_item_is_dead(inst: Dictionary) -> bool:
+	if inst.get("kind") != "consumable":
+		return false
+	var e := LootData.consumable_effect(String(inst.get("base", "")), int(inst.get("tier", 0)))
+	if String(e.get("effect", "")) != "learn":
+		return false
+	var aid := String(e.get("ability", ""))
+	return aid in known_abilities and ability_level(aid) >= AbilityLibrary.MAX_LEVEL
+
+# Buy stock item `index`: must exist, be useful, and be affordable. Spends Gold, grants the item (gear
+# auto-equips/bags, consumables stack on the hotbar), removes it from the shelf. Returns false (no-op)
+# otherwise — including a dead purchase, which is refused BEFORE any Gold is charged.
 func buy_shop_item(index: int) -> bool:
 	if index < 0 or index >= shop_stock.size():
 		return false
 	var inst: Dictionary = shop_stock[index]
+	if shop_item_is_dead(inst):
+		return false
 	var cost := shop_price(inst)
 	if gold < cost:
 		return false
 	gold -= cost
-	gold_changed.emit(gold)
 	if inst.get("kind") == "consumable":
 		add_consumable(String(inst["base"]), int(inst.get("tier", 0)))
 	else:
 		add_loot_instance(inst)
 	shop_stock.remove_at(index)
+	gold_changed.emit(gold)   # emit AFTER all mutation so listeners see the final state (one refresh)
 	shop_changed.emit()
 	return true
 

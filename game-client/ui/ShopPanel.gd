@@ -25,9 +25,9 @@ func _ready() -> void:
 	_note.modulate = Color(1, 1, 1, 0.55)
 	box.add_child(_note)
 	add_hint(box, "Click to buy  ·  E / SPACE to leave")
-	# Refresh whenever the shelf or the wallet changes while open.
+	# Refresh on any shelf/wallet change. Gold only moves via buying here (which emits shop_changed),
+	# so one listener covers both — no double rebuild per purchase.
 	GameManager.shop_changed.connect(_refresh)
-	GameManager.gold_changed.connect(func(_g): _refresh())
 
 func open_shop() -> void:
 	if not visible:
@@ -56,11 +56,12 @@ func _refresh() -> void:
 func _make_row(index: int) -> Button:
 	var inst: Dictionary = GameManager.shop_stock[index]
 	var price := GameManager.shop_price(inst)
+	var dead: bool = GameManager.shop_item_is_dead(inst)   # a tome you've already maxed
 	var btn := Button.new()
-	btn.text = "%s   —   %dg" % [_item_label(inst), price]
+	btn.text = "%s   —   %s" % [_item_label(inst), "OWNED" if dead else "%dg" % price]
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	btn.disabled = GameManager.gold < price
-	if inst.get("kind") != "consumable":
+	btn.disabled = dead or GameManager.gold < price
+	if not dead and inst.get("kind") != "consumable":
 		btn.add_theme_color_override("font_color", LootData.rarity_color(int(inst.get("rarity", 0))))
 	btn.pressed.connect(_buy.bind(index))
 	return btn
@@ -71,11 +72,14 @@ func _item_label(inst: Dictionary) -> String:
 	return LootData.instance_name(inst)
 
 func _buy(index: int) -> void:
-	if GameManager.buy_shop_item(index):
+	if index < 0 or index >= GameManager.shop_stock.size():
+		return
+	if GameManager.buy_shop_item(index):   # emits shop_changed -> _refresh()
 		SignalBus.toast.emit("Bought!", _player_pos())
-	else:
+	elif GameManager.gold < GameManager.shop_price(GameManager.shop_stock[index]):
 		SignalBus.toast.emit("Not enough gold", _player_pos())
-	# buy_shop_item emits shop_changed -> _refresh()
+	else:
+		SignalBus.toast.emit("No use for that", _player_pos())   # dead purchase (already maxed)
 
 func _player_pos() -> Vector2:
 	var p := get_tree().get_first_node_in_group("player")

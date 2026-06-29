@@ -54,7 +54,9 @@ const SPONSOR_WEIGHT := 6           # drop-pool weight a token-sponsored item ge
 # Town-vendor pricing (Gold). Tuned against corpse income (~3-5 gold/kill, ~100/floor) so a town stop
 # buys ~1-3 things: a basic gear ~18g, a Rare jumps with rarity, a health potion ~12g.
 const SHOP_BASE_PRICE := 18         # Gold for a Common (rarity 0), Bronze-floor (min_tier 0) piece of gear
-const SHOP_CONSUMABLE_PRICE := 12   # Gold for a tier-0 consumable; scales with tier
+const SHOP_CONSUMABLE_PRICE := 12   # Gold for a tier-0 consumable (potion/antidote); scales with tier
+const SHOP_TOME_PRICE := 70         # a tome teaches a whole per-run ability — priced as a real investment, not a potion
+const SHOP_GRANT_PREMIUM := 1.6     # a weapon/trinket that GRANTS an ability is worth this much more
 # Item-granted ABILITIES (the "Tripper" idea): Rare+ weapons/trinkets can roll a `grant` affix that
 # hands you an active hotbar ability WHILE EQUIPPED — no mana, its own cooldown, lost on unequip (the
 # cooldown keeps ticking across a same-floor swap so you can't hot-swap to dodge it; see
@@ -382,11 +384,20 @@ func instance_bonus(inst: Dictionary) -> Dictionary:
 # Scavenger's discount is applied on top by GameManager.shop_price (kept out of here so this stays pure).
 func price(inst: Dictionary) -> int:
 	var base := String(inst.get("base", ""))
+	var tier := int(inst.get("tier", 0))
 	if is_consumable(base):
-		return SHOP_CONSUMABLE_PRICE * (1 + int(inst.get("tier", 0)))
+		# A tome (learn-effect) is build-defining — price it well above a potion.
+		if String(consumable_effect(base, tier).get("effect", "")) == "learn":
+			return SHOP_TOME_PRICE * (1 + tier)
+		return SHOP_CONSUMABLE_PRICE * (1 + tier)
 	var min_tier := int(ITEMS.get(base, {}).get("min_tier", 0))
 	var rarity := int(inst.get("rarity", 0))
-	return int(round(SHOP_BASE_PRICE * (1 + min_tier) * (1.0 + rarity * 0.6)))
+	var p := SHOP_BASE_PRICE * (1 + min_tier) * (1.0 + rarity * 0.6)
+	for af in inst.get("affixes", []):   # a granted-ability affix is worth a premium over a plain piece
+		if af.has("grant"):
+			p *= SHOP_GRANT_PREMIUM
+			break
+	return int(round(p))
 
 # Effect-affixes prefix the base name with their adjective ("Savage War Hammer", "Burning Ring").
 # The FIRST effect wins the prefix (an item with two effects still reads as one flavourful name).
