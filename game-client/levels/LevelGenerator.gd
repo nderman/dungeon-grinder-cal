@@ -714,6 +714,7 @@ func _lock_boss_arena(r: Dictionary, boss: Node, sealable: bool = true) -> void:
 			for span in _edge_spans(rect, side, true):   # true = open spans (corridor mouths)
 				var bar := _add_wall(rect, side, span, WALL * 2.5, Color(0.9, 0.2, 0.3, 0.85), 0.0)
 				if bar:
+					bar.collision_layer |= Room.SEAL_LAYER   # phase-proof: Phasing Flight still collides with the seal
 					barriers.append(bar)
 		r["barriers"] = barriers
 	# The fight's on — wake AND make vulnerable the boss + every dormant add in the arena.

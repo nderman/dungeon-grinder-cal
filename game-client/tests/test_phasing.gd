@@ -11,6 +11,10 @@ func run() -> void:
 	check(GameManager.has_passive("phasing_flight"), "AeroWraith grants Phasing Flight")
 	GameManager.current_race = saved
 
+	# The phase collides with SEAL_LAYER only (so it stops at a boss seal but slips through normal walls).
+	# That ONLY works if the seal bit is disjoint from the physics (1) + LOS layers — guard the invariant.
+	check(Room.SEAL_LAYER & (1 | Room.LOS_LAYER) == 0, "SEAL_LAYER is its own bit (phase mask won't catch normal walls)")
+
 	var space := get_tree().root.get_world_2d().direct_space_state
 	# Real walls sit on layer 1 | LOS_LAYER; an enemy-style body sits on physics layer 1 only.
 	var wall := _body(1 | Room.LOS_LAYER, Vector2(9000, 9000))

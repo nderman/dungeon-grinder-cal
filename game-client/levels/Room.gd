@@ -10,6 +10,8 @@ class_name Room
 const WALL := 24.0
 const COVER_COLOR := Color(0.30, 0.33, 0.42)
 const LOS_LAYER := 2   # collision bit walls/cover also sit on, so LoS rays hit ONLY environment
+const SEAL_LAYER := 4  # boss-arena seal barriers ALSO sit here; Phasing Flight keeps colliding with this
+                       # bit (only) during a phase, so an AeroWraith can't dash out of a locked boss room
                        # (not the player or other mobs, which stay on layer 1)
 const SIDES := {
 	"North": Vector2(0, -1), "South": Vector2(0, 1),

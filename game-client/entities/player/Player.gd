@@ -232,13 +232,14 @@ func _perform_dash() -> void:
 	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if dir == Vector2.ZERO:
 		dir = aim_dir
-	# AeroWraith — Phasing Flight: drop movement collision for the dash window so you slip through walls
-	# (and bodies), then eject safely on the far side so you can never strand inside geometry.
+	# AeroWraith — Phasing Flight: for the dash window, collide ONLY with the SEAL layer so you slip through
+	# walls/cover/bodies but are still stopped by a boss arena's seal (no phasing out of a locked fight);
+	# then eject safely on the far side so you can never strand inside geometry.
 	var phasing := GameManager.has_passive("phasing_flight")
 	var dash_start := global_position
 	var saved_mask := collision_mask
 	if phasing:
-		collision_mask = 0
+		collision_mask = Room.SEAL_LAYER
 	move_comp.execute_dash(dir, GameManager.dash_dist_mult())   # Low-G Training extends the dash
 	await get_tree().create_timer(dash_duration).timeout
 	_is_dashing = false
