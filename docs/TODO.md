@@ -25,12 +25,34 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   (quest-giver), town-floor tuning.
 
 - **OPEN-WORLD FLOORS — the big arc, with the CORRECT settlement model (2026-06-25).** When we rebuild
-  floor gen for sprawling/non-linear floors: a **Settlement** = a **sealed safe DISTRICT** placed as a
-  region on the floor map (no enemies; vendor + NPCs + services + a Safe-Room portal inside it), that you
-  *walk into* while exploring — NOT a teleport-to sub-dimension. Safe-Room portals also scatter out in the
-  wild (private boxes). Migration: the vendor NPC / pricing / stock / ShopPanel / Scavenger discount all
-  port straight over — only the PLACEMENT changes (a floor region vs the current off-grid box). Also fold
-  in the earlier idea: deep floors where the stairs only open in the boss room of a hard boss.
+  floor gen for sprawling/non-linear floors: a **Settlement** = a town DISTRICT placed as a region on the
+  floor map (a cluster of vendor + NPC + service buildings, one of which is an **inn/tavern = the in-town
+  Safe Room**), that you *walk into* while exploring — NOT a teleport-to sub-dimension. **Standalone bare
+  Safe-Room portals also scatter out in the wild** (private boxes between towns, no shop). Migration: the
+  vendor NPC / pricing / stock / ShopPanel / Scavenger discount port over unchanged — only PLACEMENT changes
+  (a floor region vs the current off-grid box).
+  **A settlement is NOT inherently safe (corrected 2026-06-25):** monsters can follow you in. Guards
+  usually fight the monsters you drag in, but a town owner has "little to no control over the guards." The
+  ONLY truly safe space is the instanced **Safe Room** itself — don't model the settlement as enemy-proof;
+  it's a populated town where combat can spill in. **But DON'T over-complicate the first pass** (NDerman):
+  v1 can be a simple low-/no-spawn town region with vendor + NPC buildings and an in-town Safe Room — skip
+  the deep sim. Deferred / maybe-later (NOT v1): guard-vs-monster combat AI (guards fighting what you drag
+  in), turning a settlement hostile to you, claiming + renaming a town by killing its mayor, settlement
+  size tiers (tiny→XL).
+
+  **Model confirmed from the books (floors 1-6 wiki, 2026-06-25):** floors are huge and each has its OWN
+  structural gimmick (F1 maze-grid + no town; F3 ~300k km² ruins dotted with hundreds of guarded villages;
+  F4 a rail network with hub stations + a Trainyard; F5 1,172 dome-bubbles split into 4 elemental quadrants
+  gated behind a per-quadrant castle boss; F6 Iceland-sized river-jungle with multiple named towns).
+  Settlements are physical, distributed, often multiple-per-floor; they hold class/race-specific vendors,
+  guildhalls, taverns, services, economy/quest counters. Safe rooms are CONTAINED in settlements (inns/
+  taverns/auto-generated at stations) AND scattered standalone in the wild. Two takeaways for us:
+  (a) **F5's "conquer the quadrant castle to proceed" == our earlier boss-gated-stairs idea, and it's
+  canon** — open-world floors can gate progression behind a region boss; (b) **per-floor structural themes**
+  (rail / elemental domes / river-jungle) → make each open-world floor feel distinct instead of one generic
+  generator. Build order when we start: (1) one sprawling/open floor-gen + a sealed settlement district with
+  the existing vendor, (2) wild standalone safe-room portals, (3) region/boss-gated progression, (4) per-
+  floor themes. Stay spoiler-safe: only floors ≤6 referenced (reader is on book 5).
 
 - **LOOT RAMP — telemetry check (2026-06-25, flagged from playtest).** A real run reached Floor 9 on only
   **Rare** gear and the Champion fight ran long (drove the Floor-9 collapse extension to 8 min). Question:
