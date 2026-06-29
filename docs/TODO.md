@@ -12,9 +12,12 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   sets `collision_mask = 0` for the dash window (phase through walls + bodies), restores it after, then
   `_eject_from_wall` steps out the far side if it ended inside geometry (revert to dash-start if no exit).
   Stuck-check `_in_wall` queries `Room.LOS_LAYER` (environment-only, so enemies/areas don't count).
-  test_phasing guards that query (wall yes / open no / enemy-layer no). **Known limitation:** phasing clean
-  THROUGH the outer boundary into open void isn't caught (not "in a wall" out there) — watch in playtest;
-  fix = an on-navmesh check in `_eject_from_wall` (deferred to avoid a flaky nav query breaking the dash).
+  test_phasing guards that query (wall yes / open no / enemy-layer no). **Out-of-bounds handled:** the
+  eject gate is `_in_wall() or _off_navmesh()` — `_off_navmesh` (distance to nearest navmesh point > 64px)
+  catches phasing clean through the outer boundary into the void and reverts to the dash start. FAIL-SAFE:
+  if no navmesh is baked it returns false (never falsely reverts). Watch in playtest that the 64px
+  threshold doesn't false-revert legit phases near walls; if the dash ever feels like it "snaps back,"
+  loosen the threshold.
 
 - **TOWN VENDORS shipped (2026-06-25).** DCC-style: shops live in **Settlements** (safe, populated hubs),
   NOT in every Safe Room. On town floors (2/4/6/8) the Phase-Door leads to a Settlement (Room + loot/stat
