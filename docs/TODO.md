@@ -8,6 +8,28 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **NEW PLAYER EXPERIENCE (NPE) — prioritise ABOVE open-world floors (2026-06-25).** Playtester feedback
+  (Ionut Ilie): "quite hard to play on laptop — maybe keyboard-only w/ auto-aim on closest enemy"; "a bit
+  too difficult from the start, lost on first room a few times"; "some guide for initial attempt would be
+  good"; "too complex from the start — loot, weapons, abilities feel overwhelming"; "graphics might solve
+  some of it eventually". A player bouncing off room 1 is a funnel problem — fix it before adding content.
+  Four workstreams:
+  1. **Gentler early game** ("slow down initially"): easier Floor 1 (fewer/weaker/slower mobs, longer
+     telegraphs, fewer ranged), a warm-up feel. Currently floor-1 rooms roll 2-4 mobs — too much for a
+     fresh player w/ a basic weapon. Consider a real tutorial-ish first room.
+  2. **As-you-go contextual tutorial** (NDerman's idea): event-driven first-time hints, shown once each,
+     tracked in persistence. E.g. first loot box → "📦 Loot! Find a Phase-Door → Safe Room to open it";
+     first level-up → "⭐ Level up — spend points at the Safe-Room terminal" + a one-line-per-stat blurb
+     (STR melee · DEX speed/dodge/accuracy · INT mana/spells · CON health/DR · CHA audience); first
+     ability, first potion(-sickness), first stairs, etc. Progressive disclosure = introduce each system
+     the moment it first appears instead of dumping everything at once.
+  3. **Keyboard-only + auto-aim** (laptop accessibility): when there's no mouse/right-stick aim input,
+     auto-aim at the NEAREST enemy so WASD-only is viable. Frame as an assist that only kicks in without
+     explicit aim (non-controversial; mouse players unaffected).
+  4. **Progressive complexity**: lean on #2 + maybe delay/soften some systems early.
+  Art pass (gray-box → sprites) is separate and would also help readability, but NPE fixes shouldn't wait
+  on it.
+
 - **PHASING FLIGHT shipped → all 11 passives live (2026-06-25).** AeroWraith's wall-dash: `_perform_dash`
   sets `collision_mask = 0` for the dash window (phase through walls + bodies), restores it after, then
   `_eject_from_wall` steps out the far side if it ended inside geometry (revert to dash-start if no exit).
