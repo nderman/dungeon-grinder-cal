@@ -24,6 +24,14 @@ var _is_dashing: bool = false
 var _alive: bool = true   # cleared on death so in-flight coroutines (melee sweep) bail
 var aim_dir: Vector2 = Vector2.RIGHT
 
+# Aim assist (laptop / keyboard-only): with no explicit aim (arrows/stick) AND no recent mouse movement,
+# lock aim to the nearest enemy so you can play WASD + a fire key without a mouse. A real mouse move
+# reclaims aim instantly; explicit arrow-aim always wins. Mouse tracked in SCREEN space so it only counts
+# actual movement, not the player sliding under a following camera.
+const AUTOAIM_MOUSE_IDLE_MS := 1500
+var _last_mouse_ms: int = 0
+var _last_screen_mouse: Vector2 = Vector2.ZERO
+
 # Combat is driven by the EQUIPPED WEAPON (GameManager.equipped["Weapon"] -> LootData.weapon_stats).
 # Its `type` (melee/ranged) decides the primary attack; damage/cooldown/range/arc/spread come from
 # the weapon. No weapon -> FISTS. STR scales melee, INT scales ranged, DEX tightens spread + i-frames.
@@ -69,6 +77,7 @@ var _poison_accum: float = 0.0
 
 func _ready() -> void:
 	add_to_group("player")
+	_last_screen_mouse = get_viewport().get_mouse_position()   # baseline; aim assist is on until a real mouse move
 	_initialize_contestant()
 	# Safe-Room skill-point spends mutate the shared run-stats dict; re-derive vitals.
 	SignalBus.stat_injected.connect(_on_stat_injected)
@@ -163,14 +172,23 @@ func _physics_process(delta: float) -> void:
 		move_comp.apply_dash_friction(delta)
 		return
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	# Aim with the right stick / arrows if used, otherwise track the mouse (desktop).
+	# Note real mouse movement (screen-space) so aim assist knows whether a mouse is in use.
+	var sm := get_viewport().get_mouse_position()
+	if sm != _last_screen_mouse:
+		_last_screen_mouse = sm
+		_last_mouse_ms = Time.get_ticks_msec()
+	# Aim priority: explicit arrows/stick > a recently-used mouse > aim-assist to the nearest enemy.
 	var aim := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 	if aim.length() > 0.1:
 		aim_dir = aim.normalized()
-	else:
+	elif Time.get_ticks_msec() - _last_mouse_ms < AUTOAIM_MOUSE_IDLE_MS:
 		var to_mouse := get_global_mouse_position() - global_position
 		if to_mouse.length() > 1.0:
 			aim_dir = to_mouse.normalized()
+	else:
+		var assist := _nearest_enemy_dir()   # laptop / keyboard-only: lock the closest enemy
+		if assist != Vector2.ZERO:
+			aim_dir = assist
 	weapon_anchor.rotation = aim_dir.angle()
 	# Don't fire while a modal (Stat-Injection / inventory) is open — a click on its buttons
 	# shouldn't also trigger the weapon (fire is polled, not consumed by the GUI).
@@ -224,6 +242,32 @@ func _primary_attack() -> void:
 			_fire(w)
 	elif _can_melee:
 		_melee_attack(w)
+
+# Aim-assist target: unit vector to the nearest LIVE enemy (skips invulnerable/dormant bosses), or ZERO.
+func _nearest_enemy_dir() -> Vector2:
+	var pts := PackedVector2Array()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not (e is Node2D):
+			continue
+		var hc := e.get_node_or_null("HealthComponent")
+		if hc and hc.has_method("is_invulnerable") and hc.is_invulnerable():
+			continue   # dormant boss / i-framed — don't waste assist on something you can't hurt yet
+		pts.append((e as Node2D).global_position)
+	return _pick_nearest_dir(global_position, pts)
+
+# Pure helper (testable): unit direction from `from` to the nearest of `points`, or ZERO if none.
+static func _pick_nearest_dir(from: Vector2, points: PackedVector2Array) -> Vector2:
+	var best := Vector2.INF
+	var best_d := INF
+	for p in points:
+		var d := from.distance_squared_to(p)
+		if d < best_d:
+			best_d = d
+			best = p
+	if best == Vector2.INF:
+		return Vector2.ZERO
+	var dir := best - from
+	return dir.normalized() if dir.length() > 0.001 else Vector2.ZERO
 
 func _perform_dash() -> void:
 	_is_dashing = true

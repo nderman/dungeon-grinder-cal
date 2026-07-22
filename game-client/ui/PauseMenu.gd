@@ -8,8 +8,8 @@ class_name PauseMenu
 
 const CONTROLS := [
 	["Move", "W A S D"],
-	["Aim", "Mouse  /  Arrow keys"],
-	["Fire weapon", "Left Mouse"],
+	["Aim", "Mouse  /  Arrow keys  (auto-aims nearest if idle)"],
+	["Fire weapon", "Left Mouse  /  J"],
 	["Cast ability", "Q  (primary)"],
 	["Cast ability", "Right Mouse  (secondary)"],
 	["Dash", "Space"],

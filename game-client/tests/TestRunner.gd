@@ -32,6 +32,7 @@ const TESTS := [
 	preload("res://tests/test_shop.gd"),
 	preload("res://tests/test_settlement.gd"),
 	preload("res://tests/test_phasing.gd"),
+	preload("res://tests/test_npe.gd"),
 ]
 
 func _ready() -> void:

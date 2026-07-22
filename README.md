@@ -4,7 +4,7 @@
 [![deploy-web](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/deploy-web.yml/badge.svg)](https://github.com/nderman/dungeon-grinder-cal/actions/workflows/deploy-web.yml)
 
 ### ▶ [Play it in your browser](https://nderman.github.io/dungeon-grinder-cal/)
-*Desktop only for now — **keyboard + mouse** (WASD move · arrows/mouse aim · left-mouse fire · Q + right-mouse cast · Space dash · E interact · I inventory · K abilities · 1–4 hotbar · **Esc/P pause + controls**). Progress saves to your browser. Touch controls are on the roadmap.*
+*Desktop — **keyboard + mouse** (WASD move · arrows/mouse aim · left-mouse **or `J`** fire · Q + right-mouse cast · Space dash · E interact · I inventory · K abilities · 1–4 hotbar · **Esc/P pause + controls**). **Laptop-friendly: no mouse? aim auto-locks the nearest enemy** — WASD + `J` is enough. Progress saves to your browser. Touch controls are on the roadmap.*
 
 📖 **New to it? Read the [Player Guide](docs/guide/)** — stats, races/classes, abilities, combat, enemies, loot, potions, floors, and meta-progression, kept in sync with the code.
 

@@ -451,8 +451,10 @@ func _populate() -> void:
 	for r in rooms:
 		match r["type"]:
 			"Combat":
-				var extra := int((GameManager.current_floor - 1) / 2)   # a few more mobs deeper (elites add the bite)
-				for _i in range(randi_range(2, 4) + extra):
+				# Floor 1 rooms stay sparse (1-2 mobs) so the first fights aren't a pile-on; deeper floors
+				# fill out (2-4 + a few more per depth; elites add the bite).
+				var count := randi_range(1, 2) if GameManager.current_floor == 1 else randi_range(2, 4) + int((GameManager.current_floor - 1) / 2)
+				for _i in range(count):
 					_spawn_enemy(r["node"])
 			"Boss":
 				# The final floor's boss is the Champion (FINAL_BOSS) — beating it WINS the run.
@@ -480,11 +482,13 @@ func _pick_enemy_scene() -> PackedScene:
 	var pool: Array = []   # [[scene, weight], …]
 	if enemy_scene:
 		pool.append([enemy_scene, 50])
-	if ranged_enemy_scene:
+	# Floor 1 is basic-melee ONLY (Glitch Goblins): a fresh player learns the core loop before ranged /
+	# no-tell swarmers / big swingers show up on floor 2+.
+	if ranged_enemy_scene and GameManager.current_floor >= 2:
 		pool.append([ranged_enemy_scene, 20])
-	if screamer_scene:
+	if screamer_scene and GameManager.current_floor >= 2:
 		pool.append([screamer_scene, 22])
-	if brute_scene:
+	if brute_scene and GameManager.current_floor >= 2:
 		pool.append([brute_scene, 14])
 	if cleric_scene and GameManager.current_floor >= 2:
 		pool.append([cleric_scene, 8])
@@ -515,6 +519,13 @@ func _spawn_corpse(loc: Vector2, ratings: int) -> void:
 	var potion := "health_potion" if randf() < 0.06 else ""
 	corpse.setup(g, potion)
 
+# Gentle onboarding: ease a fresh player in — 1.0 at floor 1, 0.5 at floor 2, 0 from floor 3. Scales down
+# enemy damage/speed and stretches telegraphs so the first rooms teach instead of ambush. (Floor 1 also
+# restricts the pool to basic melee + spawns fewer mobs — see _pick_enemy_scene / _populate.)
+const GENTLE_UNTIL_FLOOR := 3
+static func early_gentle_factor(floor: int) -> float:
+	return clampf(float(GENTLE_UNTIL_FLOOR - floor) / 2.0, 0.0, 1.0)
+
 func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var scene := _pick_enemy_scene()
 	if scene == null:
@@ -529,6 +540,12 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 	var ai := e.get_node_or_null("AIComponent")
 	if ai:
 		ai.damage_hearts *= m * GameManager.nightmare_dmg_mult() * GameManager.ng_plus_dmg_mult()   # Nightmare + NG+ bite
+		var gentle := early_gentle_factor(GameManager.current_floor)
+		if gentle > 0.0:   # onboarding: early floors hit softer + slower, with longer tells
+			ai.damage_hearts *= 1.0 - 0.4 * gentle
+			ai.move_speed *= 1.0 - 0.15 * gentle
+			ai.telegraph_duration *= 1.0 + 0.6 * gentle
+			ai.attack_cooldown *= 1.0 + 0.3 * gentle
 		if dormant:
 			ai.start_active = false       # boss-room adds stay put until the arena locks…
 			if hc:

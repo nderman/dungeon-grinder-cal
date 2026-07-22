@@ -37,8 +37,8 @@ stronger. Then do it again, harder.
 | Action | Input |
 |---|---|
 | Move | `W A S D` |
-| Aim | Mouse / Arrow keys |
-| Fire weapon | Left Mouse |
+| Aim | Mouse / Arrow keys — *auto-aims the nearest enemy when you're not using the mouse (laptop-friendly)* |
+| Fire weapon | Left Mouse / `J` |
 | Cast ability | `Q` (primary) · Right Mouse (secondary) |
 | Use hotbar slot | `1` `2` `3` `4` |
 | Dash | `Space` |
