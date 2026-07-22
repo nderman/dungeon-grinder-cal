@@ -523,6 +523,10 @@ func _spawn_corpse(loc: Vector2, ratings: int) -> void:
 # enemy damage/speed and stretches telegraphs so the first rooms teach instead of ambush. (Floor 1 also
 # restricts the pool to basic melee + spawns fewer mobs — see _pick_enemy_scene / _populate.)
 const GENTLE_UNTIL_FLOOR := 3
+const GENTLE_DMG_CUT := 0.4          # ×gentle: enemy damage down to -40% (floor 1)
+const GENTLE_SPEED_CUT := 0.15       # …chase speed to -15%
+const GENTLE_TELL_STRETCH := 0.6     # …telegraphs to +60% (more time to react)
+const GENTLE_COOLDOWN_STRETCH := 0.3 # …attacks to +30% further apart
 static func early_gentle_factor(floor: int) -> float:
 	return clampf(float(GENTLE_UNTIL_FLOOR - floor) / 2.0, 0.0, 1.0)
 
@@ -542,10 +546,10 @@ func _spawn_enemy(room: Room, dormant: bool = false) -> void:
 		ai.damage_hearts *= m * GameManager.nightmare_dmg_mult() * GameManager.ng_plus_dmg_mult()   # Nightmare + NG+ bite
 		var gentle := early_gentle_factor(GameManager.current_floor)
 		if gentle > 0.0:   # onboarding: early floors hit softer + slower, with longer tells
-			ai.damage_hearts *= 1.0 - 0.4 * gentle
-			ai.move_speed *= 1.0 - 0.15 * gentle
-			ai.telegraph_duration *= 1.0 + 0.6 * gentle
-			ai.attack_cooldown *= 1.0 + 0.3 * gentle
+			ai.damage_hearts *= 1.0 - GENTLE_DMG_CUT * gentle
+			ai.move_speed *= 1.0 - GENTLE_SPEED_CUT * gentle
+			ai.telegraph_duration *= 1.0 + GENTLE_TELL_STRETCH * gentle
+			ai.attack_cooldown *= 1.0 + GENTLE_COOLDOWN_STRETCH * gentle
 		if dormant:
 			ai.start_active = false       # boss-room adds stay put until the arena locks…
 			if hc:

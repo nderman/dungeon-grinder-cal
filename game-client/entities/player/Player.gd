@@ -31,6 +31,7 @@ var aim_dir: Vector2 = Vector2.RIGHT
 const AUTOAIM_MOUSE_IDLE_MS := 1500
 var _last_mouse_ms: int = 0
 var _last_screen_mouse: Vector2 = Vector2.ZERO
+var _mouse_seen: bool = false   # baseline the mouse on the FIRST live frame, so a stale spawn value isn't misread as a move (which would gate assist for 1.5s right when a keyboard player needs it)
 
 # Combat is driven by the EQUIPPED WEAPON (GameManager.equipped["Weapon"] -> LootData.weapon_stats).
 # Its `type` (melee/ranged) decides the primary attack; damage/cooldown/range/arc/spread come from
@@ -77,7 +78,6 @@ var _poison_accum: float = 0.0
 
 func _ready() -> void:
 	add_to_group("player")
-	_last_screen_mouse = get_viewport().get_mouse_position()   # baseline; aim assist is on until a real mouse move
 	_initialize_contestant()
 	# Safe-Room skill-point spends mutate the shared run-stats dict; re-derive vitals.
 	SignalBus.stat_injected.connect(_on_stat_injected)
@@ -174,7 +174,10 @@ func _physics_process(delta: float) -> void:
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	# Note real mouse movement (screen-space) so aim assist knows whether a mouse is in use.
 	var sm := get_viewport().get_mouse_position()
-	if sm != _last_screen_mouse:
+	if not _mouse_seen:
+		_mouse_seen = true
+		_last_screen_mouse = sm   # first live frame = baseline, NOT a move (assist stays on until a real move)
+	elif sm != _last_screen_mouse:
 		_last_screen_mouse = sm
 		_last_mouse_ms = Time.get_ticks_msec()
 	# Aim priority: explicit arrows/stick > a recently-used mouse > aim-assist to the nearest enemy.
