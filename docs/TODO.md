@@ -8,6 +8,16 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **NPE #2 CONTEXTUAL TUTORIAL shipped (2026-06-25).** New `TutorialManager` autoload fires a one-time
+  hint the first time a player hits each core system — loot box (→ Safe Room), level-up (→ terminal +
+  per-stat blurb), first ability (→ Q / K panel), stairs open, Safe-Room entry, potion sickness. Rides
+  SignalBus.toast; each shows ONCE EVER via `MetaManager.tutorial_seen` (persisted, so veterans aren't
+  nagged). Added `SignalBus.potion_sickness`. Glyphs kept to the bundled font's coverage (★ → ⚠ · — no
+  SMP emoji = no web tofu). test_tutorial covers the once-only + unknown-key logic. **Follow-ups:** hints
+  ride transient toasts — if playtest shows they're missed, upgrade to a dedicated longer-lived/dismissable
+  hint banner; a "reset tutorial" / replay option; maybe gate a couple more (first enemy, first weapon).
+  Remaining NPE workstreams: progressive complexity (#4) + the art pass (separate).
+
 - **NEW PLAYER EXPERIENCE (NPE) — prioritise ABOVE open-world floors (2026-06-25).** Playtester feedback
   (Ionut Ilie): "quite hard to play on laptop — maybe keyboard-only w/ auto-aim on closest enemy"; "a bit
   too difficult from the start, lost on first room a few times"; "some guide for initial attempt would be

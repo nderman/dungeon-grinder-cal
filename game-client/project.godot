@@ -33,6 +33,7 @@ AchievementManager="*res://scripts/autoloads/AchievementManager.gd"
 PostHog="*res://addons/posthog/posthog.gd"
 EnvConfig="*res://scripts/autoloads/EnvConfig.gd"
 Telemetry="*res://scripts/autoloads/Telemetry.gd"
+TutorialManager="*res://scripts/autoloads/TutorialManager.gd"
 
 [display]
 

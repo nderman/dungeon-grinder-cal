@@ -10,6 +10,9 @@ the stats do, how the loot works, what's trying to kill you, and how to claw you
 
 ▶ **[Play in the browser](https://nderman.github.io/dungeon-grinder-cal/)** (desktop, keyboard + mouse).
 
+New here? The game also drops **one-time hints** as you first hit each system (loot, level-ups, abilities,
+the Safe Room…), so you can learn as you go — this guide is the deeper reference.
+
 ## Contents
 
 1. [Stats](stats.md) — the five attributes and everything they drive (HP, DR, dodge, mana, damage…)

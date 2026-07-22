@@ -554,6 +554,7 @@ func _apply_poison() -> void:
 	_poison_ticks = int(POISON_DURATION / POISON_INTERVAL)
 	_poison_accum = 0.0
 	SignalBus.toast.emit("Potion Sickness — Poisoned!", global_position)
+	SignalBus.potion_sickness.emit()   # first time, TutorialManager explains how to avoid it
 
 func _clear_poison() -> void:
 	_poison_ticks = 0

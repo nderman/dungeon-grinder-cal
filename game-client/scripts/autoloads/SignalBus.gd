@@ -8,6 +8,7 @@ extends Node
 signal dr_triggered(location: Vector2)              # DR roll succeeded — the "Clink!"
 signal player_damaged(hearts_remaining: int, is_dot: bool)   # fires on EVERY HP loss; is_dot=true for DoT ticks (poison/burn/collapse) vs a discrete hit
 signal enemy_cancelled(location: Vector2, ratings_earned: int)
+signal potion_sickness()                             # drank a potion during its cooldown → Poisoned (tutorial hook)
 signal ratings_spike(type: String)                  # SPEED_DEMON / NEAR_DEATH / CANCELLED / TELEGRAPH_START ...
 
 # --- MOVEMENT & HAZARDS ---

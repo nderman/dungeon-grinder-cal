@@ -12,6 +12,15 @@ const BASE_STATS := {"STR": 4, "DEX": 4, "INT": 4, "CON": 4, "CHA": 4}   # DCC: 
 # --- PERSISTENT (cross-run) ---
 var syndication_points: int = 0
 var milestone_tokens: int = 0
+var tutorial_seen: Dictionary = {}   # onboarding hint keys already shown (once-ever), persisted
+
+# --- Onboarding tutorial (once-ever contextual hints; TutorialManager fires them) ---
+func has_seen_hint(key: String) -> bool:
+	return bool(tutorial_seen.get(key, false))
+
+func mark_hint_seen(key: String) -> void:
+	tutorial_seen[key] = true   # persisted on the next save_persistence() (run end / Green Room)
+
 var seasons_won: int = 0     # Champion runs completed (beat the final floor) — prestige, persisted
 var nightmare_enabled: bool = false   # NIGHTMARE difficulty toggle (unlocked after a first win), persisted
 var analytics_enabled: bool = true    # anonymous telemetry opt-out (default on; toggle in the Green Room), persisted
@@ -162,6 +171,7 @@ func save_persistence() -> void:
 	cfg.set_value("Progression", "ng_plus_unlocked", ng_plus_unlocked)
 	cfg.set_value("Progression", "ng_plus_active", ng_plus_active)
 	cfg.set_value("Progression", "achievements", unlocked_achievements)
+	cfg.set_value("Tutorial", "seen", tutorial_seen)
 	cfg.save(SAVE_PATH)
 
 func load_persistence() -> void:
@@ -181,3 +191,4 @@ func load_persistence() -> void:
 	ng_plus_unlocked = cfg.get_value("Progression", "ng_plus_unlocked", 0)
 	ng_plus_active = cfg.get_value("Progression", "ng_plus_active", 0)
 	unlocked_achievements.assign(cfg.get_value("Progression", "achievements", []))
+	tutorial_seen = cfg.get_value("Tutorial", "seen", {})
