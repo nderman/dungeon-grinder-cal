@@ -29,6 +29,7 @@ var aim_dir: Vector2 = Vector2.RIGHT
 # reclaims aim instantly; explicit arrow-aim always wins. Mouse tracked in SCREEN space so it only counts
 # actual movement, not the player sliding under a following camera.
 const AUTOAIM_MOUSE_IDLE_MS := 1500
+const MOUSE_MOVE_EPSILON := 8.0   # a move must exceed this (px) to count as mouse use — ignores trackpad/mouse jitter that would otherwise keep resetting the idle timer and never let aim-assist engage
 var _last_mouse_ms: int = 0
 var _last_screen_mouse: Vector2 = Vector2.ZERO
 var _mouse_seen: bool = false   # baseline the mouse on the FIRST live frame, so a stale spawn value isn't misread as a move (which would gate assist for 1.5s right when a keyboard player needs it)
@@ -177,21 +178,22 @@ func _physics_process(delta: float) -> void:
 	if not _mouse_seen:
 		_mouse_seen = true
 		_last_screen_mouse = sm   # first live frame = baseline, NOT a move (assist stays on until a real move)
-	elif sm != _last_screen_mouse:
+	elif sm.distance_to(_last_screen_mouse) > MOUSE_MOVE_EPSILON:
 		_last_screen_mouse = sm
 		_last_mouse_ms = Time.get_ticks_msec()
 	# Aim priority: explicit arrows/stick > a recently-used mouse > aim-assist to the nearest enemy.
 	var aim := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
+	var mouse_idle := Time.get_ticks_msec() - _last_mouse_ms >= AUTOAIM_MOUSE_IDLE_MS
 	if aim.length() > 0.1:
-		aim_dir = aim.normalized()
-	elif Time.get_ticks_msec() - _last_mouse_ms < AUTOAIM_MOUSE_IDLE_MS:
+		aim_dir = aim.normalized()                       # explicit arrows/stick always win
+	elif Input.is_physical_key_pressed(KEY_J) or mouse_idle:
+		var assist := _nearest_enemy_dir()               # keyboard fire (J) OR an idle mouse → lock nearest enemy
+		if assist != Vector2.ZERO:
+			aim_dir = assist
+	else:
 		var to_mouse := get_global_mouse_position() - global_position
 		if to_mouse.length() > 1.0:
 			aim_dir = to_mouse.normalized()
-	else:
-		var assist := _nearest_enemy_dir()   # laptop / keyboard-only: lock the closest enemy
-		if assist != Vector2.ZERO:
-			aim_dir = assist
 	weapon_anchor.rotation = aim_dir.angle()
 	# Don't fire while a modal (Stat-Injection / inventory) is open — a click on its buttons
 	# shouldn't also trigger the weapon (fire is polled, not consumed by the GUI).
