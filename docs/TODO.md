@@ -8,6 +8,17 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **VISUAL TELEGRAPHS shipped (2026-07-24, both playtesters wanted them).** New `TelegraphFx` (Node2D
+  custom-draw) shows a red ground-danger shape during an enemy's wind-up: CONE (locked swing), LANE
+  (lunge/charge), LINE (ranged), + a CIRCLE API for AoE. Alpha ramps ALPHA_MIN→MAX as the strike nears;
+  z above floor+body but translucent so the mob still reads. AIComponent creates one per mob in _ready and
+  drives it from `_start_telegraph` (reads `ranged` / `_use_swing_this_attack` / `_swing_aim` / `swing_arc`
+  / `attack_range`). Covers all AIComponent attacks incl. the Golem (swing/lunge) + Hexgun/Showrunner base
+  ranged. **Follow-ups:** wire boss SPECIALS to their own telegraphs (Hexgun radial volleys → expanding
+  circle/ring; Showrunner summons → spawn markers; player Ground Slam/Singularity → show_circle); clear the
+  telegraph on stun; per-shape size tuning. Also: playtester idea — "something to do while waiting to heal"
+  (idle tips) + heal-on-kill as an alt to the wait-to-heal risk/reward (KEEPING the mechanic for now).
+
 - **NPE #2 CONTEXTUAL TUTORIAL shipped (2026-06-25).** New `TutorialManager` autoload fires a one-time
   hint the first time a player hits each core system — loot box (→ Safe Room), level-up (→ terminal +
   per-stat blurb), first ability (→ Q / K panel), stairs open, Safe-Room entry, potion sickness. Rides

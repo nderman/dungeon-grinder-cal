@@ -39,6 +39,7 @@ const STUCK_BEELINE_TIME := 2.5   # navmesh-only bosses beeline after this long 
 var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
 var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph start (sidestep it)
+var _tele_fx: TelegraphFx   # ground-danger shape shown during the wind-up (cone/lane/line)
 var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
 var _use_swing_this_attack: bool = false  # chosen at each telegraph: swing this hit, or slam (lunge)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
@@ -65,6 +66,9 @@ func _ready() -> void:
 	_agent.path_desired_distance = 16.0
 	_agent.target_desired_distance = 24.0
 	add_child(_agent)   # child of the AIComponent (same global pos as the mob; safe during _ready)
+	if parent:
+		_tele_fx = TelegraphFx.new()
+		parent.add_child(_tele_fx)   # drawn at the mob's origin (ground-danger indicator)
 	# Aggro-on-damage: a hit drags the mob onto you even from beyond detection_range —
 	# no more free sniping from across the floor.
 	var hc := get_parent().get_node_or_null("HealthComponent")
@@ -240,7 +244,8 @@ func _start_telegraph() -> void:
 	if not is_inside_tree(): return   # scene tearing down (player died) — _flash_tell/get_tree would fault
 	if parent:
 		parent.velocity = Vector2.ZERO
-		_flash_tell(tele)   # very visible "about to hit you" cue on the mob itself
+		_flash_tell(tele)   # colour pulse on the mob itself
+		_show_telegraph(tele)   # + a ground-danger SHAPE so the incoming attack reads (cone/lane/line)
 	await get_tree().create_timer(tele).timeout
 	if not is_inside_tree(): return
 	if parent: parent.modulate = Color.WHITE
@@ -252,6 +257,25 @@ func _flash_tell(duration: float) -> void:
 	var tw := create_tween()
 	tw.tween_property(parent, "modulate", Color(1, 0.2, 0.2), duration * 0.5)
 	tw.tween_property(parent, "modulate", Color(1, 0.5, 0.5), duration * 0.5)
+
+# Ground-danger shape for THIS wind-up: a LINE for a ranged shot, a locked CONE for a swing, a LANE
+# for a lunge/slam. Reads the attack the mob already committed to (ranged / _use_swing_this_attack).
+func _show_telegraph(duration: float) -> void:
+	if _tele_fx == null:
+		return
+	if ranged:
+		_tele_fx.show_line(_aim_dir(), attack_range, duration)
+	elif _use_swing_this_attack:
+		_tele_fx.show_cone(_swing_aim, deg_to_rad(swing_arc), maxf(attack_range, 90.0), duration)
+	else:   # lunge / slam — a charge lane toward the target
+		_tele_fx.show_lane(_aim_dir(), maxf(attack_range, 90.0) * 1.4, 64.0, duration)
+
+func _aim_dir() -> Vector2:
+	if is_instance_valid(target):
+		var d := target.global_position - global_position
+		if d.length() > 0.001:
+			return d.normalized()
+	return _swing_aim
 
 func _execute_attack() -> void:
 	if not is_inside_tree(): return   # scene teardown guard (player death) — avoid a null get_tree()
