@@ -64,6 +64,13 @@ const SHOP_GRANT_PREMIUM := 1.6     # a weapon/trinket that GRANTS an ability is
 const GRANTABLE_ABILITIES := ["scrap_bomb", "ground_slam", "blink", "holy_shield"]   # skills only (no mana cost)
 const GRANT_AFFIX_CHANCE := 0.2     # chance a Rare+ weapon/trinket also grants an ability
 
+# How MANY skill levels a "+N <ability>" affix is worth. Scales on BOTH axes so the affix keeps growing
+# with loot quality instead of being a flat +1 forever: rarity (Rare→Legendary) and box tier
+# (Bronze→Celestial). A Rare Bronze roll is +1; a Legendary Celestial is +5 (≈ +30% ability power).
+# The first level is spent teaching the ability if you don't know it (see GameManager.ability_bonus_levels).
+func grant_levels(tier: int, rarity: int) -> int:
+	return clampi(1 + (rarity - EFFECT_MIN_RARITY) + int(tier / 2), 1, 5)
+
 # Which stat a weapon's damage scales with — its first tag that's VALID for the weapon TYPE: melee
 # scales off a physical stat (STR/DEX), ranged off DEX or INT (magic). This keeps a melee weapon that
 # happens to be tagged INT (e.g. the God-Emperor's Toaster) from scaling off the weak magic rate.
@@ -256,7 +263,7 @@ func roll(tier: int, stats: Dictionary, box_type: String = "gear") -> Dictionary
 			affixes.append({"stat": STAT_KEYS.pick_random(), "amount": randi_range(1, 2 + tier)})
 	# Rare+ weapons & trinkets can also GRANT an active ability while equipped (item-based, see consts).
 	if rarity >= EFFECT_MIN_RARITY and (slot == "Weapon" or slot in TRINKET_SLOTS) and randf() < GRANT_AFFIX_CHANCE:
-		affixes.append({"grant": GRANTABLE_ABILITIES.pick_random()})
+		affixes.append({"grant": GRANTABLE_ABILITIES.pick_random(), "levels": grant_levels(tier, rarity)})
 	var gear := {"kind": "gear", "base": base, "slot": slot, "rarity": rarity, "affixes": affixes}
 	# Rare+ WEAPONS also roll a base-damage multiplier so rarity makes a weapon hit HARDER, not just
 	# carry procs — an Epic Broadsword should out-damage a Common one. (Weapon-only; read by
@@ -470,6 +477,6 @@ func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 		if af.has("effect"):
 			parts.append(effect_label(af))
 		elif af.has("grant"):
-			# Classic "+1 to skill": teaches it if you lack it, otherwise makes the one you have stronger.
-			parts.append("+1 %s" % AbilityLibrary.ability_name(String(af["grant"])))
+			# Classic "+N to skill": teaches it if you lack it, otherwise makes the one you have stronger.
+			parts.append("+%d %s" % [int(af.get("levels", 1)), AbilityLibrary.ability_name(String(af["grant"]))])
 	return " · ".join(parts)

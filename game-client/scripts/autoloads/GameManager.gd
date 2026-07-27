@@ -401,14 +401,14 @@ func _recompute_bonuses() -> void:
 # swap, so you can't hot-swap a granting item to dodge its cooldown WITHIN a floor (the Player is rebuilt
 # on a floor change, which does reset it). Learned abilities are untouched.
 func _refresh_granted_abilities() -> void:
-	# COUNT the grants rather than de-duping them: each one is worth a level, so two items granting the
-	# same ability stack instead of the second being wasted.
+	# SUM the grants rather than de-duping them: each affix is worth `levels` (bigger on rarer/higher-tier
+	# gear), so two items granting the same ability stack instead of the second being wasted.
 	var counts: Dictionary = {}
 	for slot in equipped:
 		for af in equipped[slot].get("affixes", []):
 			var gid := String(af.get("grant", ""))
 			if gid != "" and AbilityLibrary.has_ability(gid):
-				counts[gid] = int(counts.get(gid, 0)) + 1
+				counts[gid] = int(counts.get(gid, 0)) + maxi(1, int(af.get("levels", 1)))
 	granted_levels = counts
 	var fresh: Array[String] = []
 	for gid in counts:

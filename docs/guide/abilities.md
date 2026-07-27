@@ -26,11 +26,20 @@ Power scales with the ability's stat and its level: `base × (1 + stat × 0.10) 
 
 - **Class starter** — granted and bound to `Q` when you pick your class on Floor 3.
 - **Tomes** (consumables) — Tome: Blink / Ground Slam (Silver+), Null-G Singularity (Platinum+). Picked-up tomes learn instantly.
-- **Item-granted (`+1 <ability>`)** — Rare+ **weapons & trinkets** have a 20% chance to roll a `+1` skill
+- **Item-granted (`+N <ability>`)** — Rare+ **weapons & trinkets** have a 20% chance to roll a skill
   affix (from a pool: Scrap Bomb, Ground Slam, Blink, Holy Shield). It's never dead loot:
-  - **Don't know it?** The item **teaches** it (level 1) while equipped.
-  - **Already know it?** It's **+1 level** — straight extra power.
-  - **Two items granting the same skill stack** (+1 each).
+  - **Don't know it?** The item **teaches** it while equipped (the first level pays for that).
+  - **Already know it?** It's **+N levels** — straight extra power.
+  - **Multiple grants stack**, including across two items.
+
+  **N scales with the loot** — rarity *and* box tier, so late gear rolls real numbers:
+
+  | Roll | Bonus |
+  |---|---|
+  | Silver · Rare | **+1** |
+  | Gold/Platinum · Rare→Epic | **+2 – +3** |
+  | Platinum/Legendary · Legendary | **+4** |
+  | Legendary/Celestial · Legendary | **+5** |
 
   It auto-slots on the hotbar so it's instantly usable, and it's **bindable to `Q` / Right-Mouse like any
   learned ability** (the Abilities panel shows the gear bonus, e.g. `Lv 4 (+1 gear)`). **Unequip and you

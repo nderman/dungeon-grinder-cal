@@ -64,6 +64,21 @@ func run() -> void:
 	var r1 := {"kind": "gear", "base": "lucky_charm", "slot": "Trinket", "rarity": 3, "affixes": [{"grant": "ground_slam"}]}
 	GameManager.equip(r1)
 	eq(GameManager.ability_level("ground_slam"), 2, "a second grant of the same ability is +1 level, not wasted")
+	# Magnitude scales with BOTH rarity and box tier, so the affix keeps growing with loot quality.
+	eq(LootData.grant_levels(0, LootData.EFFECT_MIN_RARITY), 1, "a Rare Bronze grant is +1")
+	check(LootData.grant_levels(5, 4) > LootData.grant_levels(0, 2), "a Legendary Celestial grant beats a Rare Bronze one")
+	eq(LootData.grant_levels(5, 4), 5, "the very best gear rolls +5")
+	check(LootData.grant_levels(9, 9) <= 5, "the bonus is capped, however absurd the inputs")
+
+	# A multi-level grant applies all of its levels (first one still teaches an unknown ability).
+	GameManager.unequip("Trinket")
+	GameManager.unequip("Weapon")
+	var big := {"kind": "gear", "base": "broadsword", "slot": "Weapon", "rarity": 4,
+		"affixes": [{"grant": "holy_shield", "levels": 3}]}
+	GameManager.equip(big)
+	eq(GameManager.ability_level("holy_shield"), 3, "a +3 grant teaches an unknown ability AND levels it (1 taught + 2)")
+	GameManager.unequip("Weapon")
+
 	# (c) You ALREADY know it: every grant is a straight +1 (this was the dead-loot case).
 	GameManager.unequip("Trinket")
 	GameManager.unequip("Weapon")
