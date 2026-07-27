@@ -25,4 +25,10 @@ func run() -> void:
 	fx.show_cone(Vector2.ZERO, 1.0, 50.0, 0.2)   # degenerate direction
 	check(fx._dir.is_normalized(), "a zero direction is sanitised to a unit vector")
 
+	# Auto-clears once the wind-up window elapses (the leak-prevention path).
+	fx.show_line(Vector2.RIGHT, 100.0, 0.2)
+	check(fx.visible, "shown during the wind-up")
+	fx._process(0.5)   # advance past _dur
+	check(not fx.visible, "auto-clears when the wind-up window elapses")
+
 	fx.queue_free()

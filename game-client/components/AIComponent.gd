@@ -251,8 +251,8 @@ func _start_telegraph() -> void:
 	if parent: parent.modulate = Color.WHITE
 	_change_state(State.ATTACK)
 
-# Pulse the whole mob red for the telegraph window. (A dedicated visual component
-# could own this later; inline is fine for the bootstrap.)
+# The mob's own body colour-pulse for the wind-up — complements TelegraphFx (which owns the ground-danger
+# SHAPE). Two cues: the mob flashes red AND a shape appears where it'll hit.
 func _flash_tell(duration: float) -> void:
 	var tw := create_tween()
 	tw.tween_property(parent, "modulate", Color(1, 0.2, 0.2), duration * 0.5)
@@ -260,15 +260,20 @@ func _flash_tell(duration: float) -> void:
 
 # Ground-danger shape for THIS wind-up: a LINE for a ranged shot, a locked CONE for a swing, a LANE
 # for a lunge/slam. Reads the attack the mob already committed to (ranged / _use_swing_this_attack).
+# The sizes are an APPROXIMATE danger proxy (readable warning), not the exact hit volume.
+const MIN_TELEGRAPH_REACH := 90.0   # floor on cone/lane reach so a short melee range still shows a visible shape
+const LANE_LEN_MULT := 1.4          # a lunge lane reaches a bit past the range (the charge closes in)
+const LANE_WIDTH := 64.0
 func _show_telegraph(duration: float) -> void:
 	if _tele_fx == null:
 		return
+	var reach := maxf(attack_range, MIN_TELEGRAPH_REACH)
 	if ranged:
 		_tele_fx.show_line(_aim_dir(), attack_range, duration)
 	elif _use_swing_this_attack:
-		_tele_fx.show_cone(_swing_aim, deg_to_rad(swing_arc), maxf(attack_range, 90.0), duration)
+		_tele_fx.show_cone(_swing_aim, deg_to_rad(swing_arc), reach, duration)
 	else:   # lunge / slam — a charge lane toward the target
-		_tele_fx.show_lane(_aim_dir(), maxf(attack_range, 90.0) * 1.4, 64.0, duration)
+		_tele_fx.show_lane(_aim_dir(), reach * LANE_LEN_MULT, LANE_WIDTH, duration)
 
 func _aim_dir() -> Vector2:
 	if is_instance_valid(target):

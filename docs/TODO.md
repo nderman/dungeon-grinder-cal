@@ -8,6 +8,17 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **REFACTOR: shared art-free FX base class (flagged by the telegraph /shipit reuse pass).** Four Node2D
+  custom-draw FX now repeat the same skeleton — a 0→1 progress driver + `queue_redraw` + alpha-tinted
+  `_draw`: `MeleeSwing.gd`, `AbilityFx.gd`, `ElementMark.gd`, `TelegraphFx.gd`. Duplication: the tween-vs-
+  `_process` progress lifecycle, the cone-wedge polygon builder (TelegraphFx + MeleeSwing), the circle
+  glow+ring (TelegraphFx + ElementMark + AbilityFx nova), and `AIComponent._aim_dir` vs the inline
+  to-target dir at 3 sites. A small base (progress + `draw_wedge()`/`draw_circle_tell()` + `_alpha_tint`)
+  would consolidate. **Deliberately deferred** — it's a refactor touching 3 working, tested components, not
+  part of shipping the telegraph feature (complexity-tax: don't refactor working code mid-feature). Its
+  own task when we want it. NOTE: TelegraphFx uses a PERSISTENT per-mob node (re-triggered each wind-up),
+  which differs from the create-and-free model of MeleeSwing/AbilityFx — the base must accommodate both.
+
 - **VISUAL TELEGRAPHS shipped (2026-07-24, both playtesters wanted them).** New `TelegraphFx` (Node2D
   custom-draw) shows a red ground-danger shape during an enemy's wind-up: CONE (locked swing), LANE
   (lunge/charge), LINE (ranged), + a CIRCLE API for AoE. Alpha ramps ALPHA_MIN→MAX as the strike nears;
