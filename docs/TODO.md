@@ -8,6 +8,17 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **DESIGN DECISION (2026-07-27): the CON one-shot cliff is INTENDED. Do not "fix" it.** `HP = CON × 10`
+  is the ONLY source of HP growth — dump your points elsewhere and your HP is frozen for the whole run
+  while enemy damage scales ×(1 + 0.35·(floor−1)), i.e. 3.1× by floor 7. Telemetry (27 Jul, a real run:
+  37 points into DEX → 44, zero CON, level 14, ~40 HP) confirmed that at floor 7 **every** enemy one-shots
+  such a build from full HP — goblin 62 dmg (155% of HP), Brute 93 (232%), elite Brute 125 (313%); 35%
+  dodge + ~14% DR only change WHICH hit kills you. NDerman's call: this is DCC-canon and deliberate — "you
+  need to up CON or you're at serious risk," and the run in question was a knowing gamble, not a trap.
+  So: **no baseline HP-per-level, no anti-one-shot damage cap.** Considered and REJECTED, don't re-propose.
+  (The separate, still-open question is the *frictionless* first ~5 floors — the loot-throttle cooldowns
+  in 6725b43 are the measured first cut at that, and are not yet re-measured.)
+
 - **ART PASS 1 — code-drawn silhouettes + environment (2026-07-27).** No image assets: `Silhouette.gd`
   (custom-draw) replaces every entity's flat gray Polygon2D box with a distinct neon-vector body — glow
   halo, filled shape, inner core, outline, contact shadow, per-archetype accents. 11 archetypes (player /

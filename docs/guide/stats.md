@@ -29,6 +29,11 @@ Each point is a *meaningful* fraction at these magnitudes, so where you spend ma
 
 ### CON — survival
 - **Max HP** = `CON × 10` (40 at base, 230 at CON 23).
+
+> ⚠️ **CON is the *only* thing that raises your HP.** Levelling alone gives you none. Dump every point
+> into damage and you'll still have your starting HP on Floor 7 — where enemies hit **3.1× harder** and
+> will one-shot you from full health. That's the deal, not a bug: skip CON and you're gambling that
+> nothing ever touches you. It eventually will.
 - **Damage Resistance** = `CON × 3.6 %` (+ gear armor), **capped 75%**. On a DR proc, one heart is shrugged ("Clink!").
 - **HP regen** = `CON × 0.2` /s (+ gear), **total capped at 3.0 /s** — you can't out-regen the dungeon by stacking CON alone.
 
