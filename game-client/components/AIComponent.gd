@@ -41,6 +41,12 @@ var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway
 var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph start (sidestep it)
 var _tele_fx: TelegraphFx   # ground-danger shape shown during the wind-up (cone/lane/line)
 var _visual: Silhouette     # the body art, turned to face the target (cached — this runs every frame)
+# Fraction of a wind-up spent TRACKING before the aim commits. The rest is locked: shape frozen, body
+# frozen, strike guaranteed to use that direction. Tracking keeps attacks landing on a moving player;
+# locking is what makes the telegraph a promise instead of a decoration.
+const TELEGRAPH_TRACK_FRAC := 0.5
+var _attack_aim: Vector2 = Vector2.RIGHT   # direction THIS attack will use once locked
+var _aim_locked: bool = false
 var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
 var _use_swing_this_attack: bool = false  # chosen at each telegraph: swing this hit, or slam (lunge)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
@@ -189,11 +195,21 @@ func _physics_process(delta: float) -> void:
 # silhouettes read — a sniper's muzzle should point at you, not always screen-right. A LOCKED swing keeps
 # its telegraphed arc: the body holds `_swing_aim` so the cone you're dodging matches where it's looking.
 func _face_target(delta: float) -> void:
-	if _visual == null or not is_instance_valid(parent):
+	if not is_instance_valid(parent):
 		return
-	if current_state in [State.TELEGRAPH, State.ATTACK] and _use_swing_this_attack:
-		_visual.face(_swing_aim)
-	elif is_instance_valid(target):
+	# Winding up or striking: drive BOTH the body and the danger shape off _attack_aim, which keeps
+	# re-aiming until the lock and then holds. So the shape tracks you, freezes, and the hit lands there.
+	if current_state in [State.TELEGRAPH, State.ATTACK]:
+		if not _aim_locked:
+			_attack_aim = _aim_dir()
+			if _tele_fx:
+				_tele_fx.point_at(_attack_aim)
+		if _visual:
+			_visual.face(_attack_aim)
+		return
+	if _visual == null:
+		return
+	if is_instance_valid(target):
 		_visual.face_smooth(target.global_position - parent.global_position, delta)
 	elif parent.velocity.length() > 5.0:
 		_visual.face_smooth(parent.velocity, delta)
@@ -254,19 +270,25 @@ func _start_telegraph() -> void:
 	# the slam tracks you, the swing locks an arc, so they want different dodges); a pure swinger
 	# always swings, a pure slammer never does.
 	_use_swing_this_attack = (randf() < swing_chance) if (swing and lunge) else swing
-	# Lock the swing direction NOW (at the wind-up) so a sidestep during the telegraph dodges it.
-	if _use_swing_this_attack and is_instance_valid(target):
-		var to_t := target.global_position - global_position
-		if to_t.length() > 0.0:
-			_swing_aim = to_t.normalized()
 	# Swings get a tighter wind-up than slams (their locked arc is otherwise a free dodge).
 	var tele := telegraph_duration * (swing_telegraph_mult if _use_swing_this_attack else 1.0)
 	if not is_inside_tree(): return   # scene tearing down (player died) — _flash_tell/get_tree would fault
+	_aim_locked = false
+	_attack_aim = _aim_dir()
 	if parent:
 		parent.velocity = Vector2.ZERO
 		_flash_tell(tele)   # colour pulse on the mob itself
 		_show_telegraph(tele)   # + a ground-danger SHAPE so the incoming attack reads (cone/lane/line)
-	await get_tree().create_timer(tele).timeout
+	# TRACK-THEN-LOCK. Phase 1: the mob keeps re-aiming at you and the danger shape FOLLOWS (see
+	# _face_target), so a purely stationary tell can't be side-stepped for free. Phase 2: the aim
+	# COMMITS — shape and body freeze, and the strike uses exactly that direction. The freeze is the
+	# dodge cue, and it makes the telegraph honest: previously lunges and shots re-aimed at the moment
+	# of impact, so the shape you reacted to was never where the hit actually landed.
+	await get_tree().create_timer(tele * TELEGRAPH_TRACK_FRAC).timeout
+	if not is_inside_tree(): return
+	_aim_locked = true
+	_swing_aim = _attack_aim   # _do_swing sweeps around this
+	await get_tree().create_timer(tele * (1.0 - TELEGRAPH_TRACK_FRAC)).timeout
 	if not is_inside_tree(): return
 	if parent: parent.modulate = Color.WHITE
 	_change_state(State.ATTACK)
@@ -288,12 +310,13 @@ func _show_telegraph(duration: float) -> void:
 	if _tele_fx == null:
 		return
 	var reach := maxf(attack_range, MIN_TELEGRAPH_REACH)
+	_tele_fx.point_at(_attack_aim)   # aimed by rotation; _face_target keeps re-pointing until the lock
 	if ranged:
-		_tele_fx.show_line(_aim_dir(), attack_range, duration)
+		_tele_fx.show_line(attack_range, duration)
 	elif _use_swing_this_attack:
-		_tele_fx.show_cone(_swing_aim, deg_to_rad(swing_arc), reach, duration)
+		_tele_fx.show_cone(deg_to_rad(swing_arc), reach, duration)
 	else:   # lunge / slam — a charge lane toward the target
-		_tele_fx.show_lane(_aim_dir(), reach * LANE_LEN_MULT, LANE_WIDTH, duration)
+		_tele_fx.show_lane(reach * LANE_LEN_MULT, LANE_WIDTH, duration)
 
 func _aim_dir() -> Vector2:
 	if is_instance_valid(target):
@@ -315,9 +338,9 @@ func _execute_attack() -> void:
 	elif _use_swing_this_attack and is_instance_valid(parent) and is_instance_valid(target):
 		await _do_swing()
 	elif lunge and is_instance_valid(parent) and is_instance_valid(target):
-		# Commit a forward lunge toward the target — this is what makes the hit land
-		# (a stationary telegraph whiffs against a moving player). Dash to dodge it.
-		var dir := (target.global_position - parent.global_position).normalized()
+		# Lunge along the LOCKED aim, not a fresh reading of where you are now — re-homing at the moment
+		# of impact made the danger lane a lie. Tracking already happened during the wind-up's first half.
+		var dir := _attack_aim
 		var elapsed := 0.0
 		while elapsed < 0.2:
 			# The mob/target can die mid-lunge, or the scene can tear down on player death — bail
@@ -385,6 +408,7 @@ func _fire_projectile() -> void:
 	var proj := projectile_scene.instantiate()
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = parent.global_position
-	var dir: Vector2 = (target.global_position - parent.global_position).normalized()
+	# Fire along the LOCKED aim so the shot goes exactly where the telegraph line pointed. Re-aiming here
+	# made the line decorative — you could sidestep it and still be hit.
 	if proj.has_method("setup"):
-		proj.setup(dir, damage_hearts, &"player")
+		proj.setup(_attack_aim, damage_hearts, &"player")

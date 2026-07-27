@@ -4,8 +4,13 @@ HP is in **hearts**; damage is the pre-DR hit you take. Deeper floors scale enem
 `×(1 + 0.35 × (floor−1))` — so a floor-9 mob hits ~2.8× as hard as its floor-1 cousin, before Nightmare/NG+.
 
 > **Read the wind-up.** Every attack telegraphs with a red **ground shape** that intensifies as it lands:
-> a **cone** = a locked swing (sidestep out of the wedge), a **lane** = a lunge/charge (get off the line),
-> a **line** = a ranged shot. The mob also flashes red. If you can see the shape, you can dodge it.
+> a **cone** = a swing (sidestep out of the wedge), a **lane** = a lunge/charge (get off the line), a
+> **line** = a ranged shot. The mob also flashes red.
+>
+> **The shape tracks you, then freezes — the freeze is your cue.** For the first half of a wind-up the
+> enemy is still aiming, so the shape follows you and running away just drags it along. Halfway through
+> it **commits**: the shape stops dead, and the attack is now guaranteed to land exactly there. Move
+> *after* it freezes and it cannot follow you. What you see is always where the hit goes.
 
 ## The roster
 

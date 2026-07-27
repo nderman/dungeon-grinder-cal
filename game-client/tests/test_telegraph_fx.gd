@@ -9,12 +9,12 @@ func run() -> void:
 	add_child(fx)   # runs _ready → hidden, z above the mob
 	check(not fx.visible, "starts hidden")
 
-	fx.show_cone(Vector2.RIGHT, deg_to_rad(90.0), 100.0, 0.3)
+	fx.show_cone(deg_to_rad(90.0), 100.0, 0.3)
 	check(fx.visible, "a wind-up shows the shape")
 	eq(fx._kind, "cone", "swing → cone")
-	fx.show_lane(Vector2.LEFT, 120.0, 60.0, 0.3)
+	fx.show_lane(120.0, 60.0, 0.3)
 	eq(fx._kind, "lane", "lunge → lane")
-	fx.show_line(Vector2.UP, 200.0, 0.3)
+	fx.show_line(200.0, 0.3)
 	eq(fx._kind, "line", "ranged → line")
 	fx.show_circle(150.0, 0.3)
 	eq(fx._kind, "circle", "AoE → circle")
@@ -22,11 +22,15 @@ func run() -> void:
 	fx.clear()
 	check(not fx.visible, "clear() hides it")
 
-	fx.show_cone(Vector2.ZERO, 1.0, 50.0, 0.2)   # degenerate direction
-	check(fx._dir.is_normalized(), "a zero direction is sanitised to a unit vector")
+	# Aiming is NODE ROTATION (so tracking a moving target costs no redraw), and a degenerate
+	# direction must leave the last good aim alone rather than snapping to zero.
+	fx.point_at(Vector2.UP)
+	approx(fx.rotation, Vector2.UP.angle(), "point_at aims via rotation")
+	fx.point_at(Vector2.ZERO)
+	approx(fx.rotation, Vector2.UP.angle(), "a zero direction leaves the aim untouched")
 
 	# Auto-clears once the wind-up window elapses (the leak-prevention path).
-	fx.show_line(Vector2.RIGHT, 100.0, 0.2)
+	fx.show_line(100.0, 0.2)
 	check(fx.visible, "shown during the wind-up")
 	fx._process(0.5)   # advance past _dur
 	check(not fx.visible, "auto-clears when the wind-up window elapses")
