@@ -32,3 +32,17 @@ func run() -> void:
 	check(not fx.visible, "auto-clears when the wind-up window elapses")
 
 	fx.queue_free()
+
+	# REGRESSION: the telegraph was invisible in-game for days because AIComponent built its TelegraphFx
+	# and called parent.add_child() while the MOB was still setting up — Godot rejects that ("parent node
+	# is busy setting up children"), so the node existed but never entered the tree and never drew. The
+	# component held a valid reference the whole time, which is why nothing looked broken. Assert it's
+	# actually IN THE TREE, not merely constructed.
+	var mob := (load("res://entities/enemies/GlitchGoblin.tscn") as PackedScene).instantiate()
+	add_child(mob)   # runs AIComponent._ready
+	var ai := mob.get_node_or_null("AIComponent")
+	check(ai != null, "the mob has an AIComponent")
+	if ai:
+		check(ai._tele_fx != null, "AIComponent builds a TelegraphFx")
+		check(ai._tele_fx.is_inside_tree(), "the TelegraphFx is actually IN THE TREE (or it can never draw)")
+	mob.queue_free()

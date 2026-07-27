@@ -31,6 +31,9 @@ var aim_dir: Vector2 = Vector2.RIGHT
 # actual movement, not the player sliding under a following camera.
 const AUTOAIM_MOUSE_IDLE_MS := 1500
 const MOUSE_MOVE_EPSILON := 8.0   # a move must exceed this (px) to count as mouse use — ignores trackpad/mouse jitter that would otherwise keep resetting the idle timer and never let aim-assist engage
+# Only assist onto threats that are actually near you. Unbounded, the body (which now ROTATES) turns
+# into a compass permanently pointing at the nearest mob anywhere on the floor — even across walls.
+const AUTOAIM_MAX_RANGE := 620.0
 var _last_mouse_ms: int = 0
 var _last_screen_mouse: Vector2 = Vector2.ZERO
 var _mouse_seen: bool = false   # baseline the mouse on the FIRST live frame, so a stale spawn value isn't misread as a move (which would gate assist for 1.5s right when a keyboard player needs it)
@@ -191,6 +194,8 @@ func _physics_process(delta: float) -> void:
 		var assist := _nearest_enemy_dir()               # keyboard fire (J) OR an idle mouse → lock nearest enemy
 		if assist != Vector2.ZERO:
 			aim_dir = assist
+		elif move.length() > 0.1:
+			aim_dir = move.normalized()                  # nothing in range — face where you're walking
 	else:
 		var to_mouse := get_global_mouse_position() - global_position
 		if to_mouse.length() > 1.0:
@@ -251,7 +256,8 @@ func _primary_attack() -> void:
 	elif _can_melee:
 		_melee_attack(w)
 
-# Aim-assist target: unit vector to the nearest LIVE enemy (skips invulnerable/dormant bosses), or ZERO.
+# Aim-assist target: unit vector to the nearest LIVE enemy WITHIN range (skips invulnerable/dormant
+# bosses), or ZERO when nothing qualifies.
 func _nearest_enemy_dir() -> Vector2:
 	var pts := PackedVector2Array()
 	for e in get_tree().get_nodes_in_group("enemies"):
@@ -260,7 +266,9 @@ func _nearest_enemy_dir() -> Vector2:
 		var hc := e.get_node_or_null("HealthComponent")
 		if hc and hc.has_method("is_invulnerable") and hc.is_invulnerable():
 			continue   # dormant boss / i-framed — don't waste assist on something you can't hurt yet
-		pts.append((e as Node2D).global_position)
+		var p: Vector2 = (e as Node2D).global_position
+		if global_position.distance_to(p) <= AUTOAIM_MAX_RANGE:
+			pts.append(p)
 	return _pick_nearest_dir(global_position, pts)
 
 # Pure helper (testable): unit direction from `from` to the nearest of `points`, or ZERO if none.

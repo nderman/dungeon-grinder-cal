@@ -69,7 +69,11 @@ func _ready() -> void:
 	add_child(_agent)   # child of the AIComponent (same global pos as the mob; safe during _ready)
 	if parent:
 		_tele_fx = TelegraphFx.new()
-		parent.add_child(_tele_fx)   # drawn at the mob's origin (ground-danger indicator)
+		# OUR child, not the parent's: adding to the mob while IT is still setting up silently fails
+		# ("parent node is busy setting up children") and the telegraph never enters the tree — which is
+		# exactly why no danger shapes were rendering. AIComponent sits at the mob's origin, so the shape
+		# lands in the same place either way. Same reason _agent is parented here.
+		add_child(_tele_fx)
 		_visual = parent.get_node_or_null("Visual") as Silhouette
 	# Aggro-on-damage: a hit drags the mob onto you even from beyond detection_range —
 	# no more free sniping from across the floor.
