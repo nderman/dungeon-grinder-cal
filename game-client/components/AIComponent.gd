@@ -38,7 +38,6 @@ var current_state: State = State.IDLE
 const STUCK_BEELINE_TIME := 2.5   # navmesh-only bosses beeline after this long with no path progress
 var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
-var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph start (sidestep it)
 var _tele_fx: TelegraphFx   # ground-danger shape shown during the wind-up (cone/lane/line)
 var _visual: Silhouette     # the body art, turned to face the target (cached — this runs every frame)
 # Fraction of a wind-up spent TRACKING before the aim commits. The rest is locked: shape frozen, body
@@ -193,7 +192,7 @@ func _physics_process(delta: float) -> void:
 
 # Turn the body toward whoever it's hunting (or its heading when it has no target), so the directional
 # silhouettes read — a sniper's muzzle should point at you, not always screen-right. A LOCKED swing keeps
-# its telegraphed arc: the body holds `_swing_aim` so the cone you're dodging matches where it's looking.
+# its telegraphed arc: the body holds `_attack_aim` so the cone you're dodging matches where it's looking.
 func _face_target(delta: float) -> void:
 	if not is_instance_valid(parent):
 		return
@@ -204,8 +203,10 @@ func _face_target(delta: float) -> void:
 			_attack_aim = _aim_dir()
 			if _tele_fx:
 				_tele_fx.point_at(_attack_aim)
-		if _visual:
-			_visual.face(_attack_aim)
+			if _visual:
+				_visual.face_smooth(_attack_aim, delta)   # ease while tracking — snapping reads as a turret
+		elif _visual:
+			_visual.face(_attack_aim)                     # locked: pin the body to the committed aim
 		return
 	if _visual == null:
 		return
@@ -267,14 +268,16 @@ func _change_state(new_state: State) -> void:
 func _start_telegraph() -> void:
 	SignalBus.ratings_spike.emit("TELEGRAPH_START")
 	# Decide THIS attack: a mob that can BOTH swing and slam rolls one per wind-up (unpredictable —
-	# the slam tracks you, the swing locks an arc, so they want different dodges); a pure swinger
-	# always swings, a pure slammer never does.
+	# a swing sweeps a locked arc you sidestep, a slam charges a lane you get off; both track then
+	# commit); a pure swinger always swings, a pure slammer never does.
 	_use_swing_this_attack = (randf() < swing_chance) if (swing and lunge) else swing
-	# Swings get a tighter wind-up than slams (their locked arc is otherwise a free dodge).
+	# Swings get a tighter wind-up than slams — their arc is wide, so a long tell is a free sidestep.
 	var tele := telegraph_duration * (swing_telegraph_mult if _use_swing_this_attack else 1.0)
-	if not is_inside_tree(): return   # scene tearing down (player died) — _flash_tell/get_tree would fault
+	# Reset BEFORE the teardown guard: these are pure field writes and can't fault, and bailing with
+	# _aim_locked latched true would freeze a stale aim forever (nothing else clears it).
 	_aim_locked = false
 	_attack_aim = _aim_dir()
+	if not is_inside_tree(): return   # scene tearing down (player died) — _flash_tell/get_tree would fault
 	if parent:
 		parent.velocity = Vector2.ZERO
 		_flash_tell(tele)   # colour pulse on the mob itself
@@ -284,12 +287,23 @@ func _start_telegraph() -> void:
 	# COMMITS — shape and body freeze, and the strike uses exactly that direction. The freeze is the
 	# dodge cue, and it makes the telegraph honest: previously lunges and shots re-aimed at the moment
 	# of impact, so the shape you reacted to was never where the hit actually landed.
-	await get_tree().create_timer(tele * TELEGRAPH_TRACK_FRAC).timeout
+	# `false` = don't run while the tree is paused: these timers would otherwise keep counting behind the
+	# pause menu and a mob could lock, strike and even fire a projectile at a paused player.
+	await get_tree().create_timer(tele * TELEGRAPH_TRACK_FRAC, false).timeout
 	if not is_inside_tree(): return
+	# A stun during the wind-up ABORTS it. Without this the mob stops tracking (its _physics_process is
+	# gated) while still unlocked — the shape goes still and reads as committed, then re-aims onto you
+	# when the stun ends. That's the freeze cue lying, which is the one thing this mechanic must not do.
+	# It also stopped a "frozen" mob from lunging: the lunge drives move_and_slide directly, past the gate.
+	if is_stunned():
+		_change_state(State.CHASE)
+		return
 	_aim_locked = true
-	_swing_aim = _attack_aim   # _do_swing sweeps around this
-	await get_tree().create_timer(tele * (1.0 - TELEGRAPH_TRACK_FRAC)).timeout
+	await get_tree().create_timer(tele * (1.0 - TELEGRAPH_TRACK_FRAC), false).timeout
 	if not is_inside_tree(): return
+	if is_stunned():
+		_change_state(State.CHASE)
+		return
 	if parent: parent.modulate = Color.WHITE
 	_change_state(State.ATTACK)
 
@@ -323,7 +337,7 @@ func _aim_dir() -> Vector2:
 		var d := target.global_position - global_position
 		if d.length() > 0.001:
 			return d.normalized()
-	return _swing_aim
+	return _attack_aim   # no target: HOLD the last good aim (returning a stale one snapped the shape mid-wind-up)
 
 func _execute_attack() -> void:
 	if not is_inside_tree(): return   # scene teardown guard (player death) — avoid a null get_tree()
@@ -369,7 +383,7 @@ func _do_swing() -> void:
 	if _swing_fx == null:
 		_swing_fx = MeleeSwing.new()
 		add_child(_swing_fx)
-	_swing_fx.play(_swing_aim, reach, swing_arc, Color(1.0, 0.4, 0.3))   # red = enemy slash
+	_swing_fx.play(_attack_aim, reach, swing_arc, Color(1.0, 0.4, 0.3))   # red = enemy slash
 	var cos_half := cos(deg_to_rad(swing_arc * 0.5))
 	var hit := false
 	var elapsed := 0.0
@@ -379,7 +393,7 @@ func _do_swing() -> void:
 		if not hit:
 			var to_t := target.global_position - global_position
 			var dist := to_t.length()
-			if dist > 0.0 and dist <= reach and _swing_aim.dot(to_t / dist) >= cos_half:
+			if dist > 0.0 and dist <= reach and _attack_aim.dot(to_t / dist) >= cos_half:
 				_hit_target()
 				hit = true   # one hit per swing
 		elapsed += get_physics_process_delta_time()

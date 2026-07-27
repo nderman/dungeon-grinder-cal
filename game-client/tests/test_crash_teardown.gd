@@ -12,7 +12,7 @@ func run() -> void:
 	var ai = brute.get_node("AIComponent")
 	var dummy := TestStubs.player(self, Vector2(40, 0))
 	ai.target = dummy
-	ai._swing_aim = Vector2.RIGHT
+	ai._attack_aim = Vector2.RIGHT
 	ai._do_swing()        # starts the coroutine; suspends at the first await get_tree().physics_frame
 	remove_child(brute)   # DETACH mid-swing — simulates the Floor freeing on death
 	# Resume the detached coroutine across a few physics frames; the guard must catch it (no crash).

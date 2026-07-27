@@ -29,6 +29,17 @@ func run() -> void:
 	fx.point_at(Vector2.ZERO)
 	approx(fx.rotation, Vector2.UP.angle(), "a zero direction leaves the aim untouched")
 
+	# The intensity ramp rides self_modulate (NOT a per-frame redraw — rebuilding the polygon every
+	# frame just for alpha churns a GPU buffer, which is the bad pattern on the web build), and it must
+	# STEP UP at the lock so the commit is legible even to a player the shape never rotated toward.
+	fx.show_line(100.0, 1.0)
+	fx._process(0.1)                      # 10% in — still tracking
+	var early := fx.self_modulate.a
+	fx._process(float(TelegraphFx.LOCK_AT))   # cross the lock
+	# epsilon: Color stores 32-bit floats, so 0.7 reads back as 0.69999998 and a bare >= would fail.
+	check(fx.self_modulate.a >= TelegraphFx.ALPHA_LOCKED - 0.001, "the shape steps brighter at the commit")
+	check(fx.self_modulate.a > early, "…and that's a visible step up from the tracking phase")
+
 	# Auto-clears once the wind-up window elapses (the leak-prevention path).
 	fx.show_line(100.0, 0.2)
 	check(fx.visible, "shown during the wind-up")
@@ -50,3 +61,30 @@ func run() -> void:
 		check(ai._tele_fx != null, "AIComponent builds a TelegraphFx")
 		check(ai._tele_fx.is_inside_tree(), "the TelegraphFx is actually IN THE TREE (or it can never draw)")
 	mob.queue_free()
+
+	# TRACK-THEN-LOCK contract: while unlocked the aim follows the target; once LOCKED it must not move
+	# again. If a locked aim could still drift, the frozen danger shape would be lying about where the
+	# hit lands — which is the whole bug this mechanic exists to fix.
+	var mob2 := (load("res://entities/enemies/GlitchGoblin.tscn") as PackedScene).instantiate()
+	add_child(mob2)
+	mob2.global_position = Vector2.ZERO
+	# MUST be a CharacterBody2D — AIComponent.target is typed, so assigning a bare Node2D fails at
+	# RUNTIME and aborts run(), which TestCase would report as a green zero-failure pass.
+	var dummy := TestStubs.player(self, Vector2(100, 0))
+	var ai2 := mob2.get_node_or_null("AIComponent")
+	check(ai2 != null, "goblin exposes an AIComponent for the lock test")
+	if ai2:
+		ai2.target = dummy
+		ai2.current_state = ai2.State.TELEGRAPH
+		ai2._aim_locked = false
+		ai2._attack_aim = Vector2.UP   # a wrong start value, so a passing check can't be a coincidence
+		ai2._face_target(0.016)
+		check(ai2._attack_aim.is_equal_approx(Vector2.RIGHT), "unlocked: aim tracks the target")
+		dummy.global_position = Vector2(0, 100)
+		ai2._face_target(0.016)
+		check(ai2._attack_aim.is_equal_approx(Vector2.DOWN), "unlocked: aim keeps following as the target moves")
+		ai2._aim_locked = true
+		dummy.global_position = Vector2(-100, 0)
+		ai2._face_target(0.016)
+		check(ai2._attack_aim.is_equal_approx(Vector2.DOWN), "LOCKED: aim does NOT follow — the frozen shape stays honest")
+	mob2.queue_free()

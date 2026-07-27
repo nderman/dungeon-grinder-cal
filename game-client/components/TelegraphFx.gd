@@ -10,8 +10,11 @@ class_name TelegraphFx
 extends Node2D
 
 const DANGER := Color(1.0, 0.25, 0.2)
-const ALPHA_MIN := 0.20   # at wind-up start
-const ALPHA_MAX := 0.55   # at the strike
+const ALPHA_MIN := 0.20    # at wind-up start
+const ALPHA_MAX := 0.55    # at the strike
+const ALPHA_LOCKED := 0.7  # snapped to at the commit — a visible "this is where it lands" step
+# Must match AIComponent.TELEGRAPH_TRACK_FRAC: the point in the wind-up where the aim stops tracking.
+const LOCK_AT := 0.5
 
 var _kind: String = ""     # "cone" | "lane" | "line" | "circle"
 var _arc: float = 0.0      # radians (cone)
@@ -54,8 +57,10 @@ func _begin(kind: String, duration: float) -> void:
 	_kind = kind
 	_dur = maxf(duration, 0.05)
 	_t = 0.0
+	rotation = 0.0        # never inherit a previous wind-up's aim; callers point_at() immediately
 	visible = true
 	set_process(true)
+	_apply_ramp()
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -63,11 +68,25 @@ func _process(delta: float) -> void:
 	if _t >= _dur:
 		clear()
 		return
-	queue_redraw()   # only to advance the alpha ramp; the SHAPE is static, aiming is node rotation
+	_apply_ramp()   # NOT queue_redraw: the geometry is static (aiming is rotation), so redrawing purely
+	                # to change alpha would rebuild + re-triangulate the polygon and churn a GPU buffer
+	                # EVERY frame — a genuinely bad pattern on the WebGL build. self_modulate is one
+	                # property set, and multiplies through identically.
+
+# Intensity ramp + the COMMIT cue. The shape brightens as the strike nears, and steps sharply at the
+# lock so the freeze is legible even to a player who never moved (against whom the shape never rotated,
+# so "it stopped tracking" would otherwise be invisible — and the guide promises that cue).
+func _apply_ramp() -> void:
+	var p := clampf(_t / _dur, 0.0, 1.0)
+	var a := lerpf(ALPHA_MIN, ALPHA_MAX, p)
+	if p >= LOCK_AT:
+		a = maxf(a, ALPHA_LOCKED)
+	self_modulate = Color(1, 1, 1, a)
 
 func _draw() -> void:
-	var p := clampf(_t / _dur, 0.0, 1.0)
-	var col := Color(DANGER.r, DANGER.g, DANGER.b, lerpf(ALPHA_MIN, ALPHA_MAX, p))
+	# Drawn at FULL alpha and dimmed by self_modulate — so the intensity ramp never touches this
+	# command list. Runs once per wind-up, not once per frame.
+	var col := DANGER
 	match _kind:
 		"cone":
 			var pts := PackedVector2Array([Vector2.ZERO])

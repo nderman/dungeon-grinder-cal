@@ -8,6 +8,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **PERF: `StatusEffect.gd` redraws every frame just for a sin() flicker (2026-07-27, same pattern as the
+  telegraph fix).** `queue_redraw()` per frame doesn't just recolour — it clears the canvas item, re-runs
+  `_draw`, re-triangulates the polygon and **creates/destroys a GPU vertex buffer**, which on the WebGL
+  build means glGen/glBufferData/glDelete churn across the wasm→JS boundary every frame. TelegraphFx was
+  fixed by driving intensity through `self_modulate` (one property set) and drawing at full alpha.
+  StatusEffect's marker is only 3 verts so it's cheaper per redraw, BUT burn/chill last SECONDS and can be
+  live on many mobs at once, so total concurrency is plausibly higher than telegraphs. Same 4-line fix.
+
 - **TUNING DIAL: `Player.AUTOAIM_MAX_RANGE` = 620px (2026-07-27).** Added because with body ROTATION
   live, an unbounded assist made the player a compass pointing at the nearest mob anywhere on the floor.
   620 ≈ the screen half-diagonal (viewport 1152×648), so it's generous: a mob directly above/below you at
