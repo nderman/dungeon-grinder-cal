@@ -40,10 +40,14 @@ var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
 var _tele_fx: TelegraphFx   # ground-danger shape shown during the wind-up (cone/lane/line)
 var _visual: Silhouette     # the body art, turned to face the target (cached — this runs every frame)
-# Fraction of a wind-up spent TRACKING before the aim commits. The rest is locked: shape frozen, body
-# frozen, strike guaranteed to use that direction. Tracking keeps attacks landing on a moving player;
-# locking is what makes the telegraph a promise instead of a decoration.
-const TELEGRAPH_TRACK_FRAC := 0.5
+# Fraction of a wind-up spent TRACKING before the aim commits. The REST is the locked window — shape
+# frozen, body frozen, strike guaranteed to use that direction — which is also the player's dodge window.
+# So this dial is "how much warning do you get after it commits":
+#   MELEE (0.5): a real beat to sidestep the cone/lane once it locks.
+#   RANGED (~0.85): tracks you almost the whole wind-up then fires nearly on the lock. A long ranged
+#   tell with a big locked window was a free dodge — you could stroll out of the line.
+# Clamped below so the post-lock timer is never zero-length.
+@export_range(0.1, 0.95) var telegraph_track_frac: float = 0.5
 var _attack_aim: Vector2 = Vector2.RIGHT   # direction THIS attack will use once locked
 var _aim_locked: bool = false
 var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
@@ -273,6 +277,7 @@ func _start_telegraph() -> void:
 	_use_swing_this_attack = (randf() < swing_chance) if (swing and lunge) else swing
 	# Swings get a tighter wind-up than slams — their arc is wide, so a long tell is a free sidestep.
 	var tele := telegraph_duration * (swing_telegraph_mult if _use_swing_this_attack else 1.0)
+	var frac := clampf(telegraph_track_frac, 0.1, 0.95)   # never a zero-length phase either side
 	# Reset BEFORE the teardown guard: these are pure field writes and can't fault, and bailing with
 	# _aim_locked latched true would freeze a stale aim forever (nothing else clears it).
 	_aim_locked = false
@@ -281,7 +286,7 @@ func _start_telegraph() -> void:
 	if parent:
 		parent.velocity = Vector2.ZERO
 		_flash_tell(tele)   # colour pulse on the mob itself
-		_show_telegraph(tele)   # + a ground-danger SHAPE so the incoming attack reads (cone/lane/line)
+		_show_telegraph(tele, frac)   # + a ground-danger SHAPE so the incoming attack reads (cone/lane/line)
 	# TRACK-THEN-LOCK. Phase 1: the mob keeps re-aiming at you and the danger shape FOLLOWS (see
 	# _face_target), so a purely stationary tell can't be side-stepped for free. Phase 2: the aim
 	# COMMITS — shape and body freeze, and the strike uses exactly that direction. The freeze is the
@@ -289,7 +294,7 @@ func _start_telegraph() -> void:
 	# of impact, so the shape you reacted to was never where the hit actually landed.
 	# `false` = don't run while the tree is paused: these timers would otherwise keep counting behind the
 	# pause menu and a mob could lock, strike and even fire a projectile at a paused player.
-	await get_tree().create_timer(tele * TELEGRAPH_TRACK_FRAC, false).timeout
+	await get_tree().create_timer(tele * frac, false).timeout
 	if not is_inside_tree(): return
 	# A stun during the wind-up ABORTS it. Without this the mob stops tracking (its _physics_process is
 	# gated) while still unlocked — the shape goes still and reads as committed, then re-aims onto you
@@ -299,7 +304,7 @@ func _start_telegraph() -> void:
 		_change_state(State.CHASE)
 		return
 	_aim_locked = true
-	await get_tree().create_timer(tele * (1.0 - TELEGRAPH_TRACK_FRAC), false).timeout
+	await get_tree().create_timer(tele * (1.0 - frac), false).timeout
 	if not is_inside_tree(): return
 	if is_stunned():
 		_change_state(State.CHASE)
@@ -320,10 +325,11 @@ func _flash_tell(duration: float) -> void:
 const MIN_TELEGRAPH_REACH := 90.0   # floor on cone/lane reach so a short melee range still shows a visible shape
 const LANE_LEN_MULT := 1.4          # a lunge lane reaches a bit past the range (the charge closes in)
 const LANE_WIDTH := 64.0
-func _show_telegraph(duration: float) -> void:
+func _show_telegraph(duration: float, lock_frac: float) -> void:
 	if _tele_fx == null:
 		return
 	var reach := maxf(attack_range, MIN_TELEGRAPH_REACH)
+	_tele_fx.lock_at = lock_frac     # so the brightness STEP lands exactly when the aim commits
 	_tele_fx.point_at(_attack_aim)   # aimed by rotation; _face_target keeps re-pointing until the lock
 	if ranged:
 		_tele_fx.show_line(attack_range, duration)

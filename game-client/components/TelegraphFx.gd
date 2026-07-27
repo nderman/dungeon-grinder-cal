@@ -13,8 +13,9 @@ const DANGER := Color(1.0, 0.25, 0.2)
 const ALPHA_MIN := 0.20    # at wind-up start
 const ALPHA_MAX := 0.55    # at the strike
 const ALPHA_LOCKED := 0.7  # snapped to at the commit — a visible "this is where it lands" step
-# Must match AIComponent.TELEGRAPH_TRACK_FRAC: the point in the wind-up where the aim stops tracking.
-const LOCK_AT := 0.5
+# Where in the wind-up the aim commits, as a fraction. Set per-attack by AIComponent (melee locks at
+# ~0.5 for a real dodge beat; ranged locks late so the shot follows you until it fires).
+var lock_at: float = 0.5
 
 var _kind: String = ""     # "cone" | "lane" | "line" | "circle"
 var _arc: float = 0.0      # radians (cone)
@@ -79,7 +80,7 @@ func _process(delta: float) -> void:
 func _apply_ramp() -> void:
 	var p := clampf(_t / _dur, 0.0, 1.0)
 	var a := lerpf(ALPHA_MIN, ALPHA_MAX, p)
-	if p >= LOCK_AT:
+	if p >= lock_at:
 		a = maxf(a, ALPHA_LOCKED)
 	self_modulate = Color(1, 1, 1, a)
 

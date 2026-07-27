@@ -45,6 +45,7 @@ damage_hearts = 20.0
 move_speed = 150.0
 ranged = true
 projectile_scene = ExtResource("5_bolt")
+telegraph_track_frac = 0.85
 
 [node name="HealthBar" type="Node2D" parent="."]
 script = ExtResource("4_hb")

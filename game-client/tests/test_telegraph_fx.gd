@@ -35,7 +35,7 @@ func run() -> void:
 	fx.show_line(100.0, 1.0)
 	fx._process(0.1)                      # 10% in — still tracking
 	var early := fx.self_modulate.a
-	fx._process(float(TelegraphFx.LOCK_AT))   # cross the lock
+	fx._process(0.5)   # cross the lock
 	# epsilon: Color stores 32-bit floats, so 0.7 reads back as 0.69999998 and a bare >= would fail.
 	check(fx.self_modulate.a >= TelegraphFx.ALPHA_LOCKED - 0.001, "the shape steps brighter at the commit")
 	check(fx.self_modulate.a > early, "…and that's a visible step up from the tracking phase")
