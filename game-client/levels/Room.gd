@@ -40,16 +40,29 @@ func _ready() -> void:
 	enemies_root.name = "Enemies"
 	add_child(enemies_root)
 
+const WALL_CAP := 5.0     # lit top edge height (px) — the "north light" highlight
+const WALL_SKIRT := 4.0   # shaded bottom edge height (px)
+
 func _build_floor() -> void:
 	var h := size * 0.5
-	add_child(make_floor(PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)]), _floor_color()))
+	add_child(make_floor(rect_points(-h, h), _floor_color()))
 
 # Shared builders (static so the LevelGenerator reuses them for corridor floors + walls).
+
+# The four corners of an axis-aligned rect from two opposite points.
+static func rect_points(a: Vector2, b: Vector2) -> PackedVector2Array:
+	return PackedVector2Array([a, Vector2(b.x, a.y), b, Vector2(a.x, b.y)])
+
+# The one place a flat coloured quad gets built.
+static func make_poly(corners: PackedVector2Array, color: Color, z: int = 0) -> Polygon2D:
+	var p := Polygon2D.new()
+	p.polygon = corners
+	p.color = color
+	p.z_index = z
+	return p
+
 static func make_floor(corners: PackedVector2Array, color: Color) -> Polygon2D:
-	var f := Polygon2D.new()
-	f.polygon = corners
-	f.color = color
-	f.z_index = -10
+	var f := make_poly(corners, color, -10)
 	# Faint grid inside the slab — sells the simulated-dungeon look and gives movement something to
 	# slide past (a flat untextured floor makes a top-down game feel like it's drifting).
 	var bounds := Rect2(corners[0], Vector2.ZERO)
@@ -57,7 +70,8 @@ static func make_floor(corners: PackedVector2Array, color: Color) -> Polygon2D:
 		bounds = bounds.expand(c)
 	var grid := FloorGrid.new()
 	grid.rect = bounds
-	grid.line_color = color.lightened(0.16)
+	# Faintness comes from ALPHA, not from hue proximity — so it stays subtle on every floor palette.
+	grid.line_color = Color(1, 1, 1, 0.05)
 	f.add_child(grid)
 	return f
 
@@ -72,21 +86,12 @@ static func make_rect_body(pos: Vector2, block_size: Vector2, color: Color) -> S
 	body.add_child(cs)
 	var hw := block_size.x * 0.5
 	var hh := block_size.y * 0.5
-	var vis := Polygon2D.new()
-	vis.polygon = PackedVector2Array([Vector2(-hw, -hh), Vector2(hw, -hh), Vector2(hw, hh), Vector2(-hw, hh)])
-	vis.color = color
-	body.add_child(vis)
+	body.add_child(make_poly(rect_points(Vector2(-hw, -hh), Vector2(hw, hh)), color))
 	# Fake a light source from the north: a bright cap on the top edge and a dark skirt on the bottom.
 	# Two flat quads, but they give the block a sense of HEIGHT — the cheapest depth cue in 2D, and the
 	# closest thing a flat top-down scene gets to the shading a 3D renderer would hand you for free.
-	var cap := Polygon2D.new()
-	cap.polygon = PackedVector2Array([Vector2(-hw, -hh), Vector2(hw, -hh), Vector2(hw, -hh + 5.0), Vector2(-hw, -hh + 5.0)])
-	cap.color = color.lightened(0.34)
-	body.add_child(cap)
-	var skirt := Polygon2D.new()
-	skirt.polygon = PackedVector2Array([Vector2(-hw, hh - 4.0), Vector2(hw, hh - 4.0), Vector2(hw, hh), Vector2(-hw, hh)])
-	skirt.color = color.darkened(0.45)
-	body.add_child(skirt)
+	body.add_child(make_poly(rect_points(Vector2(-hw, -hh), Vector2(hw, -hh + WALL_CAP)), color.lightened(0.34)))
+	body.add_child(make_poly(rect_points(Vector2(-hw, hh - WALL_SKIRT), Vector2(hw, hh)), color.darkened(0.45)))
 	return body
 
 func _floor_color() -> Color:

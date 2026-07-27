@@ -18,8 +18,10 @@ meta-progression. A solo side project and an exercise in clean, scalable game ar
 > if the project ever goes commercial they can be reskinned to original IP (see
 > [`docs/RESKIN.md`](docs/RESKIN.md)). Released under a **non-commercial** licence (below); not for sale.
 
-> 🚧 **Work in progress / prototype.** Mechanics-first: everything renders as gray-box `Polygon2D`
-> placeholders while the systems get built out. The interesting part is the architecture, not the art.
+> 🚧 **Work in progress.** Mechanics-first, and the visuals are **drawn entirely in code** — no image
+> assets anywhere in the repo. Each entity is a custom-drawn neon silhouette (glow, outline, contact
+> shadow, per-archetype shape) so the roster reads apart at a glance. It's a deliberate fit for the
+> fiction (a computer-simulated dungeon) and it version-controls as text.
 
 ---
 
@@ -85,12 +87,15 @@ cd game-client
 
 ## Status & roadmap
 
-In: component combat, loot/affixes, tiered loot boxes, the boss roster, enemy elemental statuses
-(+ resist gear) and floor hazard themes, the achievement→loot economy, a bounded **endgame**
-(Floor 9 Champion → "Season Champion" win screen), a post-win **Nightmare mode**, and **anonymous
-telemetry + a live A/B experiment**. Next up: an **art pass** (gray-box → pixel sprites), a proper
-**loot-box reveal screen**, **weapon damage affixes** (rarity should lift base DPS, not just add
-effects), and **meta token sinks** so prestige keeps mattering once the roster is fully unlocked.
+In: component combat, loot/affixes + **weapon damage affixes**, tiered loot boxes and the **loot-box
+reveal screen**, the boss roster, enemy elemental statuses (+ resist gear) and floor hazard themes,
+the achievement→loot economy, **all 11 race/class passives**, **town settlements with Gold vendors**,
+**visual attack telegraphs**, a bounded **endgame** (Floor 9 Champion → "Season Champion" win screen),
+post-win **Nightmare + New Game+ token sinks**, an **onboarding pass** (gentler first floor, keyboard
+aim-assist, as-you-go tutorial hints), **anonymous telemetry + a live A/B experiment**, and a
+code-drawn **art pass**. Next up: **2D lighting** (torch-lit rooms — the biggest remaining visual
+lever), hit/death **particles**, and **open-world floors** (planned in
+[`docs/OPEN_WORLD_FLOORS.md`](docs/OPEN_WORLD_FLOORS.md)).
 Running notes live in [`docs/TODO.md`](docs/TODO.md).
 
 ## Licence

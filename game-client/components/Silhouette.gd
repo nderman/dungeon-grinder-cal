@@ -13,13 +13,23 @@
 class_name Silhouette
 extends Node2D
 
-@export var shape: String = "blob"   # player | goblin | screamer | brute | sniper | cleric | healer | boss | npc | blob
-@export var tint: Color = Color(0.6, 0.7, 0.8)
+# THE shape vocabulary — one list, so `_points`, `_draw_accents` and the tests can't drift apart
+# (they already had on the first cut: two archetypes missing from the doc, one listed that didn't exist).
+const SHAPES := ["player", "goblin", "screamer", "brute", "sniper", "cleric", "healer",
+	"boss", "turret", "showrunner", "npc", "blob"]
+
+@export var shape: String = "blob"   # one of SHAPES; anything unknown falls back to the blob
+@export var tint: Color = Color(0.6, 0.7, 0.8)   # alpha IS honoured (scales the whole body)
 @export var radius: float = 16.0
 @export var glow: bool = true
 
 # Halo layers: [scale, alpha] — biggest/faintest first, so they stack into a soft falloff.
-const GLOW_LAYERS := [[1.55, 0.05], [1.34, 0.08], [1.16, 0.13]]
+const GLOW_LAYERS: Array[Vector2] = [Vector2(1.55, 0.05), Vector2(1.34, 0.08), Vector2(1.16, 0.13)]
+# Contact shadow: offset "down-right" from the fake north light, squashed into an ellipse.
+const SHADOW_OFFSET := Vector2(0.12, 0.3)   # × radius
+const SHADOW_SQUASH := 0.42                 # y-scale — a floor ellipse, not a ball
+const SHADOW_RADIUS := 0.95                 # × radius
+const SHADOW_ALPHA := 0.34
 
 func _ready() -> void:
 	queue_redraw()
@@ -31,27 +41,34 @@ func set_tint(c: Color) -> void:
 
 func _draw() -> void:
 	var body := _points(shape, radius)
-	if body.is_empty():
-		return
 	# Contact shadow first (underneath everything): a squashed dark ellipse offset "down". Flat top-down
 	# art floats without one — this is the 2D stand-in for the grounding a 3D renderer gives you.
-	draw_set_transform(Vector2(radius * 0.12, radius * 0.3), 0.0, Vector2(1.0, 0.42))
-	draw_circle(Vector2.ZERO, radius * 0.95, Color(0, 0, 0, 0.34))
+	draw_set_transform(SHADOW_OFFSET * radius, 0.0, Vector2(1.0, SHADOW_SQUASH))
+	draw_circle(Vector2.ZERO, radius * SHADOW_RADIUS, Color(0, 0, 0, SHADOW_ALPHA * tint.a))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if glow:
 		for layer in GLOW_LAYERS:
-			draw_colored_polygon(_scaled(body, float(layer[0])), Color(tint.r, tint.g, tint.b, float(layer[1])))
-	draw_colored_polygon(body, Color(tint.r, tint.g, tint.b, 0.92))            # filled body
+			draw_colored_polygon(_scaled(body, layer.x), _shade(0.0, layer.y))
+	draw_colored_polygon(body, _shade(0.0, 0.92))                              # filled body
 	# Inner core kept small — at 0.55 it swallowed the little mobs and they all read as pale discs.
-	draw_colored_polygon(_scaled(body, 0.44), tint.lightened(0.35))
+	draw_colored_polygon(_scaled(body, 0.44), _shade(0.35))
 	var edge := PackedVector2Array(body)
 	edge.append(body[0])                                                       # close the loop
-	draw_polyline(edge, tint.lightened(0.7), 2.0, true)                        # crisp neon outline
+	draw_polyline(edge, _shade(0.7), 2.0, true)                                # crisp neon outline
 	_draw_accents(radius)
+
+# Tint lightened by `amount`, carrying the tint's own alpha (so an entity can be drawn semi-transparent).
+# `alpha_override` >= 0 sets the alpha outright, still scaled by the tint's alpha.
+func _shade(amount: float, alpha_override: float = -1.0) -> Color:
+	var c := tint.lightened(amount) if amount > 0.0 else tint
+	return Color(c.r, c.g, c.b, (alpha_override if alpha_override >= 0.0 else 1.0) * tint.a)
 
 # --- Shapes -------------------------------------------------------------------------------------
 # Unit-ish polygons (roughly -1..1), scaled by `radius`. Each archetype is a different SILHOUETTE —
 # bulk, spikes and proportions do the reading, since everything is the same flat colour family.
+# NOTE: nothing sets `rotation` on the Visual yet, so the directional shapes (kite, muzzle) always point
+# screen-RIGHT. Wiring facing is a logged follow-up — it's free at render time but the contact shadow
+# has to stop rotating with the body first, or the fake light source spins with the mob.
 func _points(kind: String, r: float) -> PackedVector2Array:
 	var p: PackedVector2Array
 	match kind:
@@ -85,7 +102,13 @@ func _points(kind: String, r: float) -> PackedVector2Array:
 				Vector2(-0.4, 1.1), Vector2(-0.62, 0.2), Vector2(-0.45, -1.1)])
 		_:
 			p = _regular(8, 0.9)
-	return _scaled(p, r)
+	# Normalise to a unit outer extent so `radius` means the TRUE drawn reach for every shape. Without
+	# this the overhanging shapes (the sniper's muzzle at 1.3, the npc at 1.1) drew outside the body's
+	# collision circle — i.e. you'd aim at pixels that aren't actually hittable.
+	var longest := 0.0
+	for v in p:
+		longest = maxf(longest, v.length())
+	return _scaled(p, r / longest if longest > 0.0 else r)
 
 func _regular(n: int, rad: float) -> PackedVector2Array:
 	var out := PackedVector2Array()

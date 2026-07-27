@@ -22,8 +22,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   **Why code-drawn:** 2D top-down gets no free lighting/fog/perspective, so the next real levers are the
   2D analogues of what a 3D renderer gives you — **PointLight2D + CanvasModulate (torch-lit dungeon),
   glow/bloom + vignette/CRT post, parallax, particles**. More shape detail is NOT the lever.
-  **Follow-ups:** projectiles (GlitchBolt) + corpses/loot still flat Polygon2D; 2D lighting pass;
-  hit/death particles; exclude `tools/` from the web export.
+  **Follow-ups:** ~~exclude `tools/` from the web export~~ ✅ (also excluded `tests/`, a pre-existing
+  hole). Still flat `Polygon2D` and now the odd ones out: **GlitchBolt, Corpse, Stairs, Teleporter,
+  LevelTerminal, LootBoxTerminal**. **Entity FACING** — nothing sets `Visual.rotation`, so the
+  directional shapes (player kite, sniper muzzle) always point screen-right; rotation is free at render
+  time (it doesn't dirty the draw list) but the contact shadow must stop rotating with the body first,
+  or the fake north light spins with the mob. `tools/ArtPreview.gd` hardcodes a 3rd copy of each
+  archetype's tint/radius — instantiate the real scenes instead (as test_silhouette does) so the sheet
+  can't drift from the game. Then: **2D lighting pass**, hit/death particles.
 
 - **REFACTOR: shared art-free FX base class (flagged by the telegraph /shipit reuse pass).** Four Node2D
   custom-draw FX now repeat the same skeleton — a 0→1 progress driver + `queue_redraw` + alpha-tinted
@@ -35,6 +41,11 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   part of shipping the telegraph feature (complexity-tax: don't refactor working code mid-feature). Its
   own task when we want it. NOTE: TelegraphFx uses a PERSISTENT per-mob node (re-triggered each wind-up),
   which differs from the create-and-free model of MeleeSwing/AbilityFx — the base must accommodate both.
+  **Scope confirmed (art-pass review):** keep this a **timed-FX** base over the 4 effects only. The
+  population is now 4 timed FX + 2 STATIC-draw nodes (`Silhouette`, `FloorGrid`) — the static ones have
+  no progress driver, no per-frame redraw and no fade, so a base stretched to fit them degenerates into
+  an empty marker class. Also confirmed NOT duplicated: `_regular`/`_star` (closed rings) vs the
+  TelegraphFx/MeleeSwing wedge builders (apex-at-origin fans) — different topology, don't unify.
 
 - **VISUAL TELEGRAPHS shipped (2026-07-24, both playtesters wanted them).** New `TelegraphFx` (Node2D
   custom-draw) shows a red ground-danger shape during an enemy's wind-up: CONE (locked swing), LANE

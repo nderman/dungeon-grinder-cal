@@ -8,19 +8,22 @@ extends Node2D
 
 const CELL := 64.0
 
-var rect: Rect2 = Rect2()
-var line_color: Color = Color(1, 1, 1, 0.04)
+var rect: Rect2 = Rect2()               # slab bounds, in THIS node's local space
+var line_color: Color = Color(1, 1, 1, 0.05)
 
 func _draw() -> void:
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 		return
-	# Snap to a WORLD-aligned grid so lines line up across adjoining rooms and corridors instead of
-	# restarting at each slab's own edge (which would read as a patchwork).
-	var x := ceilf(rect.position.x / CELL) * CELL
+	# Snap against WORLD position so lines continue across adjoining rooms and corridors instead of
+	# restarting per slab. Rooms hand us LOCAL corners centred on zero and sit at an arbitrary BSP
+	# centre, so without folding that offset back in, every room's grid started on its own phase —
+	# producing exactly the patchwork this is meant to avoid.
+	var origin := global_position
+	var x := ceilf((rect.position.x + origin.x) / CELL) * CELL - origin.x
 	while x < rect.end.x:
 		draw_line(Vector2(x, rect.position.y), Vector2(x, rect.end.y), line_color, 1.0)
 		x += CELL
-	var y := ceilf(rect.position.y / CELL) * CELL
+	var y := ceilf((rect.position.y + origin.y) / CELL) * CELL - origin.y
 	while y < rect.end.y:
 		draw_line(Vector2(rect.position.x, y), Vector2(rect.end.x, y), line_color, 1.0)
 		y += CELL

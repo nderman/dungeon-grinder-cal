@@ -14,7 +14,7 @@ radius = 16.0
 [node name="Visual" parent="."]
 shape = "healer"
 tint = Color(0.45, 0.95, 0.62, 1)
-radius = 17.0
+radius = 16.0
 
 [node name="CollisionShape2D" parent="."]
 shape = SubResource("cs_healer")

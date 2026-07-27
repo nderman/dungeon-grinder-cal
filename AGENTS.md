@@ -86,8 +86,8 @@ a "Season Champion" screen (`MetaManager.seasons_won` prestige). Death still rou
 **Nightmare mode** (`MetaManager.nightmare_enabled`, unlocked after a win, toggled in the Green Room)
 sets `GameManager.nightmare` at run start → enemies deal `×NIGHTMARE_DMG_MULT` damage (`nightmare_dmg_mult()`).
 **Not yet built (next work):**
-- **Balance pass** (defensive affixes stack too hard); **art** (gray-box `Polygon2D`); weapon damage
-  affixes (rarity adds effects but not base dmg); a unique multi-phase final boss. See `docs/TODO.md`.
+- **Balance pass** (defensive affixes stack too hard); **2D lighting** (`PointLight2D`/`CanvasModulate`
+  — the biggest remaining visual lever) + particles; a unique multi-phase final boss. See `docs/TODO.md`.
 - Scripts still to draft: `InputComponent` (optional — Player handles input inline now),
   `SafeRoomTerminal.gd`, `LootBoxTerminal.gd`, `SponsorDropPod.gd`, `GreenRoomUI.gd`,
   `CastingCouchUI.gd`, `FeedbackManager.gd` (the SignalBus listener that plays VFX/SFX),
@@ -121,6 +121,16 @@ abilities, combat, enemies, loot, potions, floors/stairs, and meta-progression, 
 code values. **It's maintained like the test suite: when you change a player-visible mechanic (a stat
 formula, ability, enemy/loot/floor number, a new system), update the matching `docs/guide/` chapter in
 the SAME change.** It's plain Markdown (renders on GitHub; drops into mdBook/GitBook if we ever publish it).
+
+## Art (all drawn in code — no image assets)
+There are **zero image files** in the repo and that's deliberate: it suits the simulated-dungeon
+fiction, version-controls as text, and renders identically on the web build. An entity's look is a
+`Silhouette` node named `Visual` (`shape` + `tint` + `radius` set in its `.tscn`) — **don't add a raw
+`Polygon2D` for a body**; add a shape to `Silhouette` (both `_points` AND `_draw_accents`). `modulate`
+on the entity is reserved for tinting (telegraph flash, elite gold, elemental) so Silhouette must never
+set it. Timed effects are their own custom-draw nodes (`MeleeSwing`, `AbilityFx`, `TelegraphFx`,
+`ElementMark`). Eyeball changes with `tools/ArtPreview.tscn` (archetype sheet) or `tools/BeautyShot.tscn`
+(in-context shot) — both need `--rendering-driver opengl3` and write a PNG to `/tmp`.
 
 ## Conventions
 - File/class names PascalCase; component scripts end in `Component`.

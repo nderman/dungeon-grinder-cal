@@ -14,7 +14,7 @@ radius = 18.0
 [node name="Visual" parent="."]
 shape = "cleric"
 tint = Color(0.92, 0.92, 0.72, 1)
-radius = 19.0
+radius = 18.0
 
 [node name="CollisionShape2D" parent="."]
 shape = SubResource("cs_cleric")

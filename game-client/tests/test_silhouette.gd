@@ -4,8 +4,7 @@ extends TestCase
 # through to the generic blob and nobody would notice until it shipped.
 func _init() -> void: test_name = "silhouette"
 
-const KNOWN := ["player", "goblin", "screamer", "brute", "sniper", "cleric", "healer",
-	"boss", "turret", "showrunner", "npc"]
+const KNOWN := Silhouette.SHAPES   # single source of truth — don't redeclare it here, it WILL drift
 
 const SCENES := [
 	"res://entities/player/Player.tscn", "res://entities/enemies/BaseEnemy.tscn",

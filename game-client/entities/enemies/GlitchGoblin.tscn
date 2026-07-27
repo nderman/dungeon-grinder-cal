@@ -16,7 +16,7 @@ radius = 14.0
 script = ExtResource("sil_art")
 shape = "goblin"
 tint = Color(1, 0.36, 0.36, 1)
-radius = 15.0
+radius = 14.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_goblin")
