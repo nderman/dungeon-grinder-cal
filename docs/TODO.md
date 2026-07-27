@@ -8,6 +8,23 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **ART PASS 1 — code-drawn silhouettes + environment (2026-07-27).** No image assets: `Silhouette.gd`
+  (custom-draw) replaces every entity's flat gray Polygon2D box with a distinct neon-vector body — glow
+  halo, filled shape, inner core, outline, contact shadow, per-archetype accents. 11 archetypes (player /
+  goblin / screamer / brute / sniper / cleric / healer / boss / turret / showrunner / npc) so mobs read
+  APART at a glance (helps the "overwhelming" feedback). Wired into all 12 entity scenes (note: Brute /
+  Screamer / Cleric / Healer are INHERITED from BaseEnemy, so their overrides change in lockstep).
+  Environment: near-black `default_clear_color`, world-aligned `FloorGrid` (sells the simulated-dungeon
+  look + gives motion reference), wall cap/skirt for fake height, and DARKER desaturated floors so the
+  glowing mobs pop (the old bright-red boss room camouflaged red goblins). Drawn once — no per-frame cost.
+  Dev tools: `tools/ArtPreview.tscn` (archetype sheet) + `tools/BeautyShot.tscn` (in-context screenshot)
+  → PNG, run with `--rendering-driver opengl3`. test_silhouette guards that every scene's shape is known.
+  **Why code-drawn:** 2D top-down gets no free lighting/fog/perspective, so the next real levers are the
+  2D analogues of what a 3D renderer gives you — **PointLight2D + CanvasModulate (torch-lit dungeon),
+  glow/bloom + vignette/CRT post, parallax, particles**. More shape detail is NOT the lever.
+  **Follow-ups:** projectiles (GlitchBolt) + corpses/loot still flat Polygon2D; 2D lighting pass;
+  hit/death particles; exclude `tools/` from the web export.
+
 - **REFACTOR: shared art-free FX base class (flagged by the telegraph /shipit reuse pass).** Four Node2D
   custom-draw FX now repeat the same skeleton — a 0→1 progress driver + `queue_redraw` + alpha-tinted
   `_draw`: `MeleeSwing.gd`, `AbilityFx.gd`, `ElementMark.gd`, `TelegraphFx.gd`. Duplication: the tween-vs-

@@ -14,8 +14,8 @@ func _ready() -> void:
 	super._ready()   # InteractablePad wires body enter/exit + the interact button
 	# Role-based look so the prefab only has to set `role`: vendor reads gold, townsfolk reads green.
 	var vis := get_node_or_null("Visual")
-	if vis is Polygon2D:
-		vis.color = Color(1.0, 0.8, 0.3, 0.9) if role == "shop" else Color(0.5, 0.8, 0.6, 0.85)
+	if vis is Silhouette:
+		vis.set_tint(Color(1.0, 0.8, 0.3) if role == "shop" else Color(0.5, 0.8, 0.6))
 	var label := get_node_or_null("Label")
 	if label is Label:
 		label.text = "%s — TRADE [E]" % display_name if role == "shop" else "%s [E]" % display_name

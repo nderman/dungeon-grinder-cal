@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://entities/enemies/MeatGrinderGolem.gd" id="1_golem"]
 [ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
 [ext_resource type="Script" path="res://components/MovementComponent.gd" id="3_move"]
 [ext_resource type="Script" path="res://components/AIComponent.gd" id="4_ai"]
 [ext_resource type="Script" path="res://components/HealthBar.gd" id="5_hb"]
+[ext_resource type="Script" path="res://components/Silhouette.gd" id="sil_art"]
 
 [sub_resource type="CircleShape2D" id="cs_golem"]
 radius = 46.0
@@ -12,9 +13,11 @@ radius = 46.0
 [node name="MeatGrinderGolem" type="CharacterBody2D" groups=["enemies"]]
 script = ExtResource("1_golem")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.55, 0.12, 0.16, 1)
-polygon = PackedVector2Array(-46, -46, 46, -46, 46, 46, -46, 46)
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("sil_art")
+shape = "boss"
+tint = Color(0.75, 0.17, 0.21, 1)
+radius = 46.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("cs_golem")

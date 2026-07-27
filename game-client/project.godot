@@ -151,3 +151,6 @@ config/host="https://eu.i.posthog.com"
 [rendering]
 
 renderer/rendering_method="mobile"
+; Near-black void so the (deliberately dark) floor slabs read as lit ground against it — the dungeon
+; should look like rooms carved out of nothing, not dark-grey on dark-grey.
+environment/defaults/default_clear_color=Color(0.035, 0.04, 0.055, 1)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 ; Inheritable enemy template: the standard component tree (Health/Movement/AI/Protection/HealthBar +
 ; CollisionShape + Visual). New archetypes inherit this and override visual/stats/AI params,
@@ -10,15 +10,18 @@
 [ext_resource type="Script" path="res://components/AIComponent.gd" id="3_ai"]
 [ext_resource type="Script" path="res://components/HealthBar.gd" id="4_hb"]
 [ext_resource type="Script" path="res://components/ProtectionComponent.gd" id="5_prot"]
+[ext_resource type="Script" path="res://components/Silhouette.gd" id="sil_art"]
 
 [sub_resource type="CircleShape2D" id="cs_base"]
 radius = 14.0
 
 [node name="BaseEnemy" type="CharacterBody2D" groups=["enemies"]]
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.8, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("sil_art")
+shape = "goblin"
+tint = Color(0.85, 0.42, 0.42, 1)
+radius = 15.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("cs_base")

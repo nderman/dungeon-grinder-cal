@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://entities/enemies/Showrunner.gd" id="1_show"]
 [ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://entities/enemies/GlitchGoblin.tscn" id="6_gob"]
 [ext_resource type="PackedScene" path="res://entities/enemies/Screamer.tscn" id="7_scream"]
 [ext_resource type="PackedScene" path="res://entities/projectiles/GlitchBolt.tscn" id="8_bolt"]
+[ext_resource type="Script" path="res://components/Silhouette.gd" id="sil_art"]
 
 [sub_resource type="CircleShape2D" id="cs_show"]
 radius = 30.0
@@ -16,9 +17,11 @@ radius = 30.0
 script = ExtResource("1_show")
 add_scenes = Array[PackedScene]([ExtResource("6_gob"), ExtResource("7_scream")])
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.6, 0.3, 0.82, 1)
-polygon = PackedVector2Array(0, -30, 29, -9, 18, 24, -18, 24, -29, -9)
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("sil_art")
+shape = "showrunner"
+tint = Color(0.68, 0.34, 0.9, 1)
+radius = 30.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("cs_show")

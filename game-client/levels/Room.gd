@@ -50,6 +50,15 @@ static func make_floor(corners: PackedVector2Array, color: Color) -> Polygon2D:
 	f.polygon = corners
 	f.color = color
 	f.z_index = -10
+	# Faint grid inside the slab — sells the simulated-dungeon look and gives movement something to
+	# slide past (a flat untextured floor makes a top-down game feel like it's drifting).
+	var bounds := Rect2(corners[0], Vector2.ZERO)
+	for c in corners:
+		bounds = bounds.expand(c)
+	var grid := FloorGrid.new()
+	grid.rect = bounds
+	grid.line_color = color.lightened(0.16)
+	f.add_child(grid)
 	return f
 
 static func make_rect_body(pos: Vector2, block_size: Vector2, color: Color) -> StaticBody2D:
@@ -67,16 +76,30 @@ static func make_rect_body(pos: Vector2, block_size: Vector2, color: Color) -> S
 	vis.polygon = PackedVector2Array([Vector2(-hw, -hh), Vector2(hw, -hh), Vector2(hw, hh), Vector2(-hw, hh)])
 	vis.color = color
 	body.add_child(vis)
+	# Fake a light source from the north: a bright cap on the top edge and a dark skirt on the bottom.
+	# Two flat quads, but they give the block a sense of HEIGHT — the cheapest depth cue in 2D, and the
+	# closest thing a flat top-down scene gets to the shading a 3D renderer would hand you for free.
+	var cap := Polygon2D.new()
+	cap.polygon = PackedVector2Array([Vector2(-hw, -hh), Vector2(hw, -hh), Vector2(hw, -hh + 5.0), Vector2(-hw, -hh + 5.0)])
+	cap.color = color.lightened(0.34)
+	body.add_child(cap)
+	var skirt := Polygon2D.new()
+	skirt.polygon = PackedVector2Array([Vector2(-hw, hh - 4.0), Vector2(hw, hh - 4.0), Vector2(hw, hh), Vector2(-hw, hh)])
+	skirt.color = color.darkened(0.45)
+	body.add_child(skirt)
 	return body
 
 func _floor_color() -> Color:
 	match room_type:
-		"Spawn": return Color(0.12, 0.17, 0.22)
-		"Boss": return Color(0.24, 0.10, 0.13)
-		"MiniBoss": return Color(0.22, 0.15, 0.10)
-		"PhaseDoor": return Color(0.10, 0.20, 0.17)
-		"Safe": return Color(0.10, 0.18, 0.20)
-		_: return Color(0.14, 0.14, 0.18)
+		# Deliberately DARK + desaturated: the mobs are the only saturated, glowing things on screen, so
+		# they read instantly against the ground. A room tinted the same hue as its occupants (the old
+		# bright-red boss room vs red goblins) camouflages the very thing you need to see.
+		"Spawn": return Color(0.10, 0.13, 0.17)
+		"Boss": return Color(0.17, 0.075, 0.10)
+		"MiniBoss": return Color(0.16, 0.115, 0.075)
+		"PhaseDoor": return Color(0.075, 0.15, 0.13)
+		"Safe": return Color(0.075, 0.135, 0.15)
+		_: return Color(0.105, 0.105, 0.14)
 
 # Sealed box: four solid walls with no openings (Safe Room).
 func _build_seal_walls() -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://entities/enemies/HexgunTurret.gd" id="1_hex"]
 [ext_resource type="Script" path="res://components/HealthComponent.gd" id="2_health"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://components/AIComponent.gd" id="4_ai"]
 [ext_resource type="Script" path="res://components/HealthBar.gd" id="5_hb"]
 [ext_resource type="PackedScene" path="res://entities/projectiles/GlitchBolt.tscn" id="6_bolt"]
+[ext_resource type="Script" path="res://components/Silhouette.gd" id="sil_art"]
 
 [sub_resource type="CircleShape2D" id="cs_hex"]
 radius = 30.0
@@ -13,9 +14,11 @@ radius = 30.0
 [node name="HexgunTurret" type="CharacterBody2D" groups=["enemies"]]
 script = ExtResource("1_hex")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(0.95, 0.8, 0.15, 1)
-polygon = PackedVector2Array(30, 0, 15, 26, -15, 26, -30, 0, -15, -26, 15, -26)
+[node name="Visual" type="Node2D" parent="."]
+script = ExtResource("sil_art")
+shape = "turret"
+tint = Color(0.98, 0.82, 0.18, 1)
+radius = 30.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("cs_hex")

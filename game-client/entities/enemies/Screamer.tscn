@@ -10,8 +10,9 @@ radius = 10.0
 [node name="Screamer" instance=ExtResource("1")]
 
 [node name="Visual" parent="."]
-color = Color(0.7, 1.0, 0.3, 1)
-polygon = PackedVector2Array(-10, -10, 10, -10, 10, 10, -10, 10)
+shape = "screamer"
+tint = Color(0.72, 1, 0.32, 1)
+radius = 12.0
 
 [node name="CollisionShape2D" parent="."]
 shape = SubResource("cs_screamer")
