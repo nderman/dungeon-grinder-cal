@@ -409,10 +409,16 @@ func _refresh_granted_abilities() -> void:
 	for gid in granted_abilities:
 		if gid not in fresh and gid not in known_abilities:   # no longer granted, and not independently learned
 			_hotbar_remove_ability(gid)
+			# …and drop it off Q / Right-Mouse too, or the cast keys would still point at an ability the
+			# contestant no longer has (silently doing nothing when pressed).
+			if selected_ability == gid:
+				selected_ability = ""
+			if secondary_ability == gid:
+				secondary_ability = ""
 	for gid in fresh:
 		if gid not in granted_abilities:
-			# A granted ability is only usable from a hotbar slot (not Q-selectable) — if the bar is
-			# full, say so rather than silently swallowing the grant.
+			# Granted abilities are bindable like learned ones; the hotbar slot is just a convenience so
+			# a fresh grant is instantly usable. If the bar is full, say so rather than swallowing it.
 			if not _hotbar_add_ability(gid):
 				SignalBus.toast.emit("Hotbar full — free a slot to use %s" % AbilityLibrary.ability_name(gid), Vector2.ZERO)
 	granted_abilities = fresh
@@ -560,14 +566,24 @@ func unslotted_abilities() -> Array[String]:
 	return out
 
 # Bind the cast key to a known ability.
+# Everything the contestant can cast right now: LEARNED abilities plus the ones equipped gear GRANTS.
+# Both are bindable — a granted ability used to be hotbar-only, which read as a bug ("I have the ability,
+# why can't I put it on Q?"). Losing the item unbinds it (see _refresh_granted_abilities).
+func castable_abilities() -> Array[String]:
+	var out: Array[String] = []
+	for id in known_abilities + granted_abilities:
+		if id not in out:
+			out.append(id)
+	return out
+
 func select_ability(id: String) -> void:
-	if id in known_abilities and id != selected_ability:
+	if id in castable_abilities() and id != selected_ability:
 		selected_ability = id
 		abilities_changed.emit()
 
-# Bind a known ability to the Right-Mouse cast (the secondary). Toggle off if it's already bound there.
+# Bind a castable ability to the Right-Mouse cast (the secondary). Toggle off if already bound there.
 func select_secondary_ability(id: String) -> void:
-	if id not in known_abilities:
+	if id not in castable_abilities():
 		return
 	secondary_ability = "" if id == secondary_ability else id
 	abilities_changed.emit()

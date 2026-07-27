@@ -11,6 +11,7 @@ func run() -> void:
 	var saved_granted := GameManager.granted_abilities.duplicate()
 	var saved_known := GameManager.known_abilities.duplicate()
 	var saved_sel := GameManager.selected_ability
+	var saved_sec := GameManager.secondary_ability
 
 	GameManager.equipped = {}
 	GameManager.bag = []
@@ -18,6 +19,7 @@ func run() -> void:
 	GameManager.granted_abilities = []
 	GameManager.known_abilities = []
 	GameManager.selected_ability = ""
+	GameManager.secondary_ability = ""
 
 	# The desc surfaces the granted ability.
 	var weap := {"kind": "gear", "base": "broadsword", "slot": "Weapon", "rarity": 3, "affixes": [{"grant": "scrap_bomb"}]}
@@ -29,10 +31,21 @@ func run() -> void:
 	check(_hotbar_has("scrap_bomb"), "the granted ability auto-slots onto the hotbar")
 	check("scrap_bomb" not in GameManager.known_abilities, "granted ≠ learned — known_abilities untouched")
 
-	# Unequip → lost from both the granted set and the bar.
+	# BINDABLE. A granted ability used to be hotbar-only, so a player with an ability-granting item
+	# couldn't put it on Q or Right-Mouse and reasonably read that as broken.
+	check("scrap_bomb" in GameManager.castable_abilities(), "a granted ability counts as castable")
+	GameManager.select_ability("scrap_bomb")
+	eq(GameManager.selected_ability, "scrap_bomb", "a granted ability can be bound to Q")
+	GameManager.select_secondary_ability("scrap_bomb")
+	eq(GameManager.secondary_ability, "scrap_bomb", "…and to Right-Mouse")
+
+	# Unequip → lost from the granted set, the bar, AND both cast keys (a binding pointing at an
+	# ability you no longer have would just silently do nothing when pressed).
 	GameManager.unequip("Weapon")
 	check("scrap_bomb" not in GameManager.granted_abilities, "unequipping loses the granted ability")
 	check(not _hotbar_has("scrap_bomb"), "the granted ability leaves the hotbar on unequip")
+	eq(GameManager.selected_ability, "", "unequipping clears it off Q")
+	eq(GameManager.secondary_ability, "", "unequipping clears it off Right-Mouse")
 
 	# A learned ability that's ALSO granted must survive on the bar when the granting item is removed.
 	GameManager.learn_ability("blink")
@@ -47,6 +60,7 @@ func run() -> void:
 	GameManager.granted_abilities = saved_granted
 	GameManager.known_abilities = saved_known
 	GameManager.selected_ability = saved_sel
+	GameManager.secondary_ability = saved_sec
 
 func _hotbar_has(id: String) -> bool:
 	for s in GameManager.hotbar:

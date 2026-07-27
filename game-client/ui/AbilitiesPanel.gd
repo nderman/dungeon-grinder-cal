@@ -23,13 +23,16 @@ func _refresh() -> void:
 	for c in _list.get_children():
 		_list.remove_child(c)
 		c.queue_free()
-	if GameManager.known_abilities.is_empty():
+	# Learned AND gear-granted — a granted ability is castable, so it has to be listed here or there's
+	# no way to bind it to Q / Right-Mouse (which just reads as "my item's ability doesn't work").
+	var castable := GameManager.castable_abilities()
+	if castable.is_empty():
 		var none := Label.new()
-		none.text = "  (none learned yet — find a tome)"
+		none.text = "  (none yet — find a tome, or gear that grants one)"
 		none.modulate = Color(0.6, 0.6, 0.65)
 		_list.add_child(none)
 		return
-	for id in GameManager.known_abilities:
+	for id in castable:
 		_list.add_child(_ability_card(String(id)))
 
 # A card per known ability; the active one gets a gold border + *. Click selects it.
@@ -62,8 +65,10 @@ func _ability_card(id: String) -> Control:
 	v.add_child(head)
 
 	var cost := ("%d mana" % int(a.get("mana_cost", 0))) if is_spell else "no mana"
+	# Flag gear-granted ones: they're fully bindable, but you lose them (and the binding) on unequip.
+	var from_gear := " · from gear" if (id in GameManager.granted_abilities and id not in GameManager.known_abilities) else ""
 	var sub := Label.new()
-	sub.text = "%s · scales %s · %s · %.1fs cd" % ["Spell" if is_spell else "Skill", String(a.get("scale", "INT")), cost, float(a.get("cooldown", 0.0))]
+	sub.text = "%s · scales %s · %s · %.1fs cd%s" % ["Spell" if is_spell else "Skill", String(a.get("scale", "INT")), cost, float(a.get("cooldown", 0.0)), from_gear]
 	sub.add_theme_font_size_override("font_size", 13)
 	sub.modulate = Color(0.7, 0.7, 0.76)
 	v.add_child(sub)
