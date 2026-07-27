@@ -470,5 +470,6 @@ func instance_desc(inst: Dictionary, stats: Dictionary = {}) -> String:
 		if af.has("effect"):
 			parts.append(effect_label(af))
 		elif af.has("grant"):
-			parts.append("Grants %s" % AbilityLibrary.ability_name(String(af["grant"])))
+			# Classic "+1 to skill": teaches it if you lack it, otherwise makes the one you have stronger.
+			parts.append("+1 %s" % AbilityLibrary.ability_name(String(af["grant"])))
 	return " · ".join(parts)

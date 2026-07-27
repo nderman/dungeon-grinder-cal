@@ -26,11 +26,17 @@ Power scales with the ability's stat and its level: `base × (1 + stat × 0.10) 
 
 - **Class starter** — granted and bound to `Q` when you pick your class on Floor 3.
 - **Tomes** (consumables) — Tome: Blink / Ground Slam (Silver+), Null-G Singularity (Platinum+). Picked-up tomes learn instantly.
-- **Item-granted** — Rare+ **weapons & trinkets** have a 20% chance to roll a `Grants <ability>` affix
-  (from a skill pool: Scrap Bomb, Ground Slam, Blink, Holy Shield). It auto-slots on the hotbar so it's
-  instantly usable, and it's **bindable to `Q` / Right-Mouse just like a learned ability** (it shows in the
-  Abilities panel marked *from gear*). **Unequip and you lose it** — including any `Q`/Right-Mouse binding —
-  and its cooldown keeps ticking, so you can't hot-swap to dodge cooldowns.
+- **Item-granted (`+1 <ability>`)** — Rare+ **weapons & trinkets** have a 20% chance to roll a `+1` skill
+  affix (from a pool: Scrap Bomb, Ground Slam, Blink, Holy Shield). It's never dead loot:
+  - **Don't know it?** The item **teaches** it (level 1) while equipped.
+  - **Already know it?** It's **+1 level** — straight extra power.
+  - **Two items granting the same skill stack** (+1 each).
+
+  It auto-slots on the hotbar so it's instantly usable, and it's **bindable to `Q` / Right-Mouse like any
+  learned ability** (the Abilities panel shows the gear bonus, e.g. `Lv 4 (+1 gear)`). **Unequip and you
+  lose it** — the level, the ability if it was gear-only, and any binding — and its cooldown keeps ticking,
+  so you can't hot-swap to dodge cooldowns. Tomes still train the **base** level independently, so a `+1`
+  item never blocks or wastes a tome.
 
 ## Casting & binding
 

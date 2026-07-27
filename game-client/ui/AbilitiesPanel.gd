@@ -58,8 +58,10 @@ func _ability_card(id: String) -> Control:
 
 	# Bind markers: [Q] for the primary cast, [R] for the Right-Mouse secondary.
 	var bind := ("[Q] " if is_primary else "") + ("[R] " if is_secondary else "")
+	var gear_lv := GameManager.ability_bonus_levels(id)   # show WHERE the level came from
 	var head := Label.new()
-	head.text = "%s%s   Lv %d" % [bind, String(a.get("name", id)), GameManager.ability_level(id)]
+	head.text = "%s%s   Lv %d%s" % [bind, String(a.get("name", id)), GameManager.ability_level(id),
+		" (+%d gear)" % gear_lv if gear_lv > 0 else ""]
 	head.add_theme_font_size_override("font_size", 18)
 	head.modulate = Color(0.55, 0.8, 1.0) if is_spell else Color(1.0, 0.7, 0.45)
 	v.add_child(head)

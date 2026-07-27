@@ -159,6 +159,7 @@ var hotbar: Array = [null, null, null, null]
 # run (permanent identity); tomes found mid-crawl are learned per-run. Abilities level by USE.
 var known_abilities: Array[String] = []   # AbilityLibrary ids the contestant can cast this run
 var granted_abilities: Array[String] = []  # ids granted by currently-equipped gear (lost on unequip; ≠ learned)
+var granted_levels: Dictionary = {}        # id -> how many equipped affixes grant it; each is worth a level
 var selected_ability: String = ""          # the one the cast key (Q) fires
 var secondary_ability: String = ""          # the one Right-Mouse fires (a second bindable cast)
 var ability_uses: Dictionary = {}          # id -> times cast this run (drives level-on-use)
@@ -400,12 +401,18 @@ func _recompute_bonuses() -> void:
 # swap, so you can't hot-swap a granting item to dodge its cooldown WITHIN a floor (the Player is rebuilt
 # on a floor change, which does reset it). Learned abilities are untouched.
 func _refresh_granted_abilities() -> void:
-	var fresh: Array[String] = []
+	# COUNT the grants rather than de-duping them: each one is worth a level, so two items granting the
+	# same ability stack instead of the second being wasted.
+	var counts: Dictionary = {}
 	for slot in equipped:
 		for af in equipped[slot].get("affixes", []):
 			var gid := String(af.get("grant", ""))
-			if gid != "" and AbilityLibrary.has_ability(gid) and gid not in fresh:
-				fresh.append(gid)
+			if gid != "" and AbilityLibrary.has_ability(gid):
+				counts[gid] = int(counts.get(gid, 0)) + 1
+	granted_levels = counts
+	var fresh: Array[String] = []
+	for gid in counts:
+		fresh.append(gid)
 	for gid in granted_abilities:
 		if gid not in fresh and gid not in known_abilities:   # no longer granted, and not independently learned
 			_hotbar_remove_ability(gid)
@@ -598,14 +605,30 @@ func register_ability_use(id: String) -> void:
 # A duplicate tome grants a full level's worth of uses (preserving partial progress toward the next).
 # Returns the new level, or 0 if it's unknown / already at MAX_LEVEL. Caps uses at the level-15 threshold.
 func level_ability_from_tome(id: String) -> int:
-	if id not in known_abilities or ability_level(id) >= AbilityLibrary.MAX_LEVEL:
+	# Gate on the TRAINED level, not the gear-boosted one — otherwise equipping a "+1 skill" item could
+	# push you to the cap and silently waste every tome you drink until you took the item off.
+	if id not in known_abilities or ability_base_level(id) >= AbilityLibrary.MAX_LEVEL:
 		return 0
 	var cap := (AbilityLibrary.MAX_LEVEL - 1) * AbilityLibrary.USES_PER_LEVEL
 	ability_uses[id] = mini(int(ability_uses.get(id, 0)) + AbilityLibrary.USES_PER_LEVEL, cap)
 	abilities_changed.emit()
 	return ability_level(id)
 
+# Levels equipped gear adds to an ability. A grant affix spends its FIRST point teaching you the
+# ability (so you get it at level 1); every point after that is +1 level. If you already knew it, every
+# point is a level. That makes the affix never dead — "Grants Ground Slam" used to be worth nothing at
+# all once you'd learned Ground Slam.
+func ability_bonus_levels(id: String) -> int:
+	var n := int(granted_levels.get(id, 0))
+	if n <= 0:
+		return 0
+	return n if id in known_abilities else n - 1
+
+# Base level comes from USES (casting trains the skill); gear adds on top. Capped at MAX_LEVEL.
 func ability_level(id: String) -> int:
+	return clampi(ability_base_level(id) + ability_bonus_levels(id), 1, AbilityLibrary.MAX_LEVEL)
+
+func ability_base_level(id: String) -> int:
 	return AbilityLibrary.level_for_uses(int(ability_uses.get(id, 0)))
 
 # --- Class (chosen on Floor 3, DCC) ------------------------------------------------------------

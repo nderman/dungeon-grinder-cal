@@ -29,7 +29,8 @@ list (Crit/Burn/Leech/Chill/Chain offensive; Armor/Regen/Dodge/Fire-/Frost-Resis
 worth knowing:
 
 - **Weapon power** — Rare+ *weapons* also roll a base-damage multiplier (~Rare ×1.2 → Legendary ×1.6), shown as a `Power ×N` tag.
-- **Granted abilities** — Rare+ weapons/trinkets have a 20% shot at a `Grants <ability>` affix (see [Abilities](abilities.md#getting-abilities)).
+- **Skill affixes** — Rare+ weapons/trinkets have a 20% shot at a `+1 <ability>` affix: it teaches the
+  skill if you lack it, or adds a level if you have it, and they stack (see [Abilities](abilities.md#getting-abilities)).
 
 ## Box types & the Director's Algorithm
 

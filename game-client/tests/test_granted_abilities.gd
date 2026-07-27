@@ -12,6 +12,8 @@ func run() -> void:
 	var saved_known := GameManager.known_abilities.duplicate()
 	var saved_sel := GameManager.selected_ability
 	var saved_sec := GameManager.secondary_ability
+	var saved_uses := GameManager.ability_uses.duplicate(true)
+	var saved_glv := GameManager.granted_levels.duplicate(true)
 
 	GameManager.equipped = {}
 	GameManager.bag = []
@@ -21,9 +23,10 @@ func run() -> void:
 	GameManager.selected_ability = ""
 	GameManager.secondary_ability = ""
 
-	# The desc surfaces the granted ability.
+	# The desc reads as a "+1 to skill" affix (it teaches the ability OR levels the one you have).
 	var weap := {"kind": "gear", "base": "broadsword", "slot": "Weapon", "rarity": 3, "affixes": [{"grant": "scrap_bomb"}]}
-	truthy("Grants" in LootData.instance_desc(weap, {"STR": 10}), "desc surfaces the granted ability")
+	var d := LootData.instance_desc(weap, {"STR": 10})
+	truthy("+1" in d and AbilityLibrary.ability_name("scrap_bomb") in d, "desc surfaces the +1 skill affix")
 
 	# Equip → granted + auto-slotted; NOT added to known_abilities.
 	GameManager.equip(weap)
@@ -47,6 +50,35 @@ func run() -> void:
 	eq(GameManager.selected_ability, "", "unequipping clears it off Q")
 	eq(GameManager.secondary_ability, "", "unequipping clears it off Right-Mouse")
 
+	# "+1 SKILL" semantics — the affix must never be dead loot.
+	GameManager.equipped = {}
+	GameManager.granted_abilities = []
+	GameManager.granted_levels = {}
+	GameManager.known_abilities = []
+	GameManager.ability_uses = {}
+	# (a) You DON'T know it: the first grant spends itself teaching you the ability, at level 1.
+	var w1 := {"kind": "gear", "base": "broadsword", "slot": "Weapon", "rarity": 3, "affixes": [{"grant": "ground_slam"}]}
+	GameManager.equip(w1)
+	eq(GameManager.ability_level("ground_slam"), 1, "an unknown ability is granted at level 1")
+	# (b) A SECOND grant of the same ability stacks instead of being wasted.
+	var r1 := {"kind": "gear", "base": "lucky_charm", "slot": "Trinket", "rarity": 3, "affixes": [{"grant": "ground_slam"}]}
+	GameManager.equip(r1)
+	eq(GameManager.ability_level("ground_slam"), 2, "a second grant of the same ability is +1 level, not wasted")
+	# (c) You ALREADY know it: every grant is a straight +1 (this was the dead-loot case).
+	GameManager.unequip("Trinket")
+	GameManager.unequip("Weapon")
+	GameManager.learn_ability("ground_slam")
+	var base_lv := GameManager.ability_level("ground_slam")
+	GameManager.equip(w1)
+	eq(GameManager.ability_level("ground_slam"), base_lv + 1, "granting an ability you already know is +1 level")
+	GameManager.unequip("Weapon")
+	eq(GameManager.ability_level("ground_slam"), base_lv, "…and the bonus goes away with the item")
+	GameManager.known_abilities = []
+	GameManager.ability_uses = {}
+	GameManager.equipped = {}
+	GameManager.granted_abilities = []
+	GameManager.granted_levels = {}
+
 	# A learned ability that's ALSO granted must survive on the bar when the granting item is removed.
 	GameManager.learn_ability("blink")
 	var ring := {"kind": "gear", "base": "lucky_charm", "slot": "Trinket", "rarity": 2, "affixes": [{"grant": "blink"}]}
@@ -61,6 +93,8 @@ func run() -> void:
 	GameManager.known_abilities = saved_known
 	GameManager.selected_ability = saved_sel
 	GameManager.secondary_ability = saved_sec
+	GameManager.ability_uses = saved_uses
+	GameManager.granted_levels = saved_glv
 
 func _hotbar_has(id: String) -> bool:
 	for s in GameManager.hotbar:
