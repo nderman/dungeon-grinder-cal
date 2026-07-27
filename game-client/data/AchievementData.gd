@@ -14,9 +14,17 @@ const ACHIEVEMENTS := {
 	# Floor 1 was 0 weapon boxes out of 39). Weapon boxes must be tier ≥1 — no tier-0 weapon is droppable.
 	"first_blood":  {"title": "You've Killed a Mob!",        "desc": "First kill of the run — armed and dangerous.", "tier": 1, "scope": "run", "box_type": "weapon"},
 	"phase_finder": {"title": "Sub-Dimensional Tourist",     "desc": "Found a Phase-Door this run.",       "tier": 0, "scope": "run"},
-	"speed_demon":  {"title": "Speed Demon!",                "desc": "3 kills in 2 seconds.",              "tier": 1, "scope": "repeatable", "box_type": "fan"},
-	"crowd_pleaser":{"title": "Multi-Kill!",                 "desc": "Cancelled 2+ mobs in a single blow.", "tier": 0, "scope": "repeatable", "box_type": "fan"},
-	"near_death":   {"title": "Near Death!",                 "desc": "Survived at a sliver of health.",    "tier": 1, "scope": "repeatable", "box_type": "fan"},
+	# Speed Demon is the michael_bay problem all over again, one rung down the ladder: telemetry (27 Jul,
+	# a 4-floor run) caught it firing 11× for 11 Silver boxes. It's the engine of a feedback LOOP — a good
+	# weapon makes 3-kills-in-2s trivial, which pays a box, which buys a better weapon. Same personal-
+	# cooldown lever, same reason: pace the drip without demoting the tier. 90s, not the 12s default —
+	# its natural rate was ~1 per 44s, so the default never bound; only a cooldown longer than that does.
+	"speed_demon":  {"title": "Speed Demon!",                "desc": "3 kills in 2 seconds.",              "tier": 1, "scope": "repeatable", "box_type": "fan", "cooldown": 90.0},
+	"crowd_pleaser":{"title": "Multi-Kill!",                 "desc": "Cancelled 2+ mobs in a single blow.", "tier": 0, "scope": "repeatable", "box_type": "fan", "cooldown": 30.0},
+	# Latent version of the same flood (caught by the guard test, not telemetry — the run that exposed the
+	# others was too easy to ever go low). Hovering at a sliver of HP while regen ticks would re-trip this
+	# every few seconds, paying a box each time exactly when you're least supposed to be rewarded.
+	"near_death":   {"title": "Near Death!",                 "desc": "Survived at a sliver of health.",    "tier": 1, "scope": "repeatable", "box_type": "fan", "cooldown": 60.0},
 	"untouchable":  {"title": "Untouchable!",                "desc": "Dashed clean through a killer.",     "tier": 0, "scope": "repeatable", "box_type": "fan"},
 	"boss_slayer":  {"title": "Boss Slayer",                 "desc": "Put a boss in the ground.",          "tier": 2, "scope": "repeatable", "box_type": "boss"},
 	# --- Combat spectacle (show off the new affixes/primitives) -> Weapon boxes ---
@@ -26,7 +34,8 @@ const ACHIEVEMENTS := {
 	# NOT a tier demotion: tier must stay ≥1 or the "Weapon Box" rolls non-weapon gear (no tier-0 weapon
 	# is droppable), which silently gutted early weapon supply. tier 1 + 45s = an honest, paced drip.
 	"michael_bay":  {"title": "Michael Bay Approved",        "desc": "Blew an enemy to chunks. Do it again.",          "tier": 1, "scope": "repeatable", "box_type": "weapon", "cooldown": 45.0},
-	"chain_react":  {"title": "Chain Reaction",              "desc": "One hit, two corpses. Efficient.",               "tier": 1, "scope": "repeatable", "box_type": "weapon"},
+	# Same story: 8 Silver Weapon boxes in one 4-floor run, because a Chain affix trips it on most kills.
+	"chain_react":  {"title": "Chain Reaction",              "desc": "One hit, two corpses. Efficient.",               "tier": 1, "scope": "repeatable", "box_type": "weapon", "cooldown": 90.0},
 	# --- Survival & misery -> Supply boxes ---
 	"grave_robber": {"title": "Grave Robber",                "desc": "Looted a corpse. They won't be needing it.",     "tier": 0, "scope": "run", "box_type": "supply"},
 	"tapped_out":   {"title": "Tapped Out",                  "desc": "Cast on an empty tank. Pack a battery.",         "tier": 0, "scope": "run", "box_type": "supply"},

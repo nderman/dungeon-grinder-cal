@@ -28,6 +28,19 @@ func run() -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	check(cd_at - now > float(AchievementManager.REPEAT_COOLDOWN), "michael_bay uses its own longer cooldown, not the 12s default")
 
+	# LOOT-FIREHOSE GUARD. Twice now a repeatable that pays a REAL (tier ≥1) box has flooded a run with
+	# gear — michael_bay (9 boxes off one floor), then speed_demon + chain_react (11 + 8 in a 4-floor run).
+	# Both are self-reinforcing: the box makes you stronger, which makes the feat easier to trip again.
+	# So any tier-1+ repeatable must carry an EXPLICIT cooldown well above the 12s default, which is far
+	# too short to bind on a feat that naturally fires every ~45s. Boss Slayer is the deliberate exception:
+	# it's capped by the number of bosses on the floor, not by how fast you can kill trash.
+	for id in AchievementData.ACHIEVEMENTS:
+		var a: Dictionary = AchievementData.ACHIEVEMENTS[id]
+		if a.get("scope") != "repeatable" or int(a.get("tier", 0)) < 1 or id == "boss_slayer":
+			continue
+		check(float(a.get("cooldown", 0.0)) >= 45.0,
+			"repeatable '%s' pays a tier-%d box, so it needs an explicit anti-flood cooldown" % [id, int(a.get("tier", 0))])
+
 	titles.clear()
 	GameManager.current_floor = 7
 	AchievementManager._repeat_cd.erase("michael_bay")
