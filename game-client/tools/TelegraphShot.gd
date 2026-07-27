@@ -38,10 +38,16 @@ func _ready() -> void:
 			if ai == null:
 				continue
 			if ai.current_state == ai.State.TELEGRAPH:
-				var fx: Node = e.get_node_or_null("TelegraphFx")
+				# Read the component's own reference — a node made with .new() isn't named after its
+				# class, so get_node("TelegraphFx") ALWAYS misses and would look like a regression.
+				# in_tree is the bit that actually matters: a valid ref that never entered the tree
+				# is precisely the bug this tool was written to catch.
+				var fx: TelegraphFx = ai._tele_fx
 				await RenderingServer.frame_post_draw
 				get_viewport().get_texture().get_image().save_png("/tmp/telegraph.png")
-				print("SAVED /tmp/telegraph.png  frame=%d  fx_visible=%s" % [frame, str(fx.visible) if fx else "NO FX NODE"])
+				print("SAVED /tmp/telegraph.png  frame=%d  in_tree=%s visible=%s kind=%s" % [
+					frame, str(fx != null and fx.is_inside_tree()), str(fx != null and fx.visible),
+					str(fx._kind) if fx else "none"])
 				get_tree().quit()
 				return
 		if is_instance_valid(victim):   # stay in its face so aggro + attack range hold

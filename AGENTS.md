@@ -129,8 +129,12 @@ fiction, version-controls as text, and renders identically on the web build. An 
 `Polygon2D` for a body**; add a shape to `Silhouette` (both `_points` AND `_draw_accents`). `modulate`
 on the entity is reserved for tinting (telegraph flash, elite gold, elemental) so Silhouette must never
 set it. Timed effects are their own custom-draw nodes (`MeleeSwing`, `AbilityFx`, `TelegraphFx`,
-`ElementMark`). Eyeball changes with `tools/ArtPreview.tscn` (archetype sheet) or `tools/BeautyShot.tscn`
-(in-context shot) — both need `--rendering-driver opengl3` and write a PNG to `/tmp`.
+`ElementMark`). Eyeball changes with `tools/ArtPreview.tscn` (archetype sheet), `tools/BeautyShot.tscn`
+(in-context shot) or `tools/TelegraphShot.tscn` (waits for a live enemy wind-up, then shoots that frame)
+— all need `--rendering-driver opengl3` and write a PNG to `/tmp`. **Verify visual work by LOOKING at the
+output, not by the code path running:** telegraphs shipped broken for days because `add_child` was
+rejected mid-setup, so the node existed with a valid reference but never entered the tree and never drew.
+Assert `is_inside_tree()`, and treat engine warnings as unexplained until you know which commit caused them.
 
 ## Conventions
 - File/class names PascalCase; component scripts end in `Component`.

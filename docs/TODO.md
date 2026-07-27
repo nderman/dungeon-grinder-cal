@@ -8,6 +8,14 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
 
 ## Inbox (raw, undated thoughts land here)
 
+- **TUNING DIAL: `Player.AUTOAIM_MAX_RANGE` = 620px (2026-07-27).** Added because with body ROTATION
+  live, an unbounded assist made the player a compass pointing at the nearest mob anywhere on the floor.
+  620 ≈ the screen half-diagonal (viewport 1152×648), so it's generous: a mob directly above/below you at
+  620px is technically OFF-screen and can still be locked, and there's **no line-of-sight check**, so you
+  can aim through a wall. Both are deliberate (an LOS raycast per enemy per frame isn't worth it) but if
+  assist ever feels like it's grabbing things you can't see, this is the number to lower (~450 puts it
+  comfortably on-screen in every direction). With nothing in range the body faces your movement dir.
+
 - **DESIGN DECISION (2026-07-27): the CON one-shot cliff is INTENDED. Do not "fix" it.** `HP = CON × 10`
   is the ONLY source of HP growth — dump your points elsewhere and your HP is frozen for the whole run
   while enemy damage scales ×(1 + 0.35·(floor−1)), i.e. 3.1× by floor 7. Telemetry (27 Jul, a real run:
