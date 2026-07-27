@@ -15,6 +15,7 @@ var current_stats: Dictionary = {"STR": 4, "DEX": 4, "INT": 4, "CON": 4, "CHA": 
 @onready var protection_comp: ProtectionComponent = $ProtectionComponent
 @onready var mana_comp: ManaComponent = $ManaComponent
 @onready var weapon_anchor: Node2D = $WeaponAnchor
+@onready var _visual: Silhouette = $Visual as Silhouette
 
 # Dash
 @export var dash_cooldown: float = 1.0
@@ -195,6 +196,8 @@ func _physics_process(delta: float) -> void:
 		if to_mouse.length() > 1.0:
 			aim_dir = to_mouse.normalized()
 	weapon_anchor.rotation = aim_dir.angle()
+	if _visual:
+		_visual.face(aim_dir)   # the contestant's body points where you're aiming (snaps — it's a reticle)
 	# Don't fire while a modal (Stat-Injection / inventory) is open — a click on its buttons
 	# shouldn't also trigger the weapon (fire is polled, not consumed by the GUI).
 	if Input.is_action_pressed("fire") and not ModalPanel.any_open():

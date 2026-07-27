@@ -24,10 +24,10 @@ A scratchpad for random thoughts so they don't get lost. Newest ideas go under
   glow/bloom + vignette/CRT post, parallax, particles**. More shape detail is NOT the lever.
   **Follow-ups:** ~~exclude `tools/` from the web export~~ ✅ (also excluded `tests/`, a pre-existing
   hole). Still flat `Polygon2D` and now the odd ones out: **GlitchBolt, Corpse, Stairs, Teleporter,
-  LevelTerminal, LootBoxTerminal**. **Entity FACING** — nothing sets `Visual.rotation`, so the
-  directional shapes (player kite, sniper muzzle) always point screen-right; rotation is free at render
-  time (it doesn't dirty the draw list) but the contact shadow must stop rotating with the body first,
-  or the fake north light spins with the mob. `tools/ArtPreview.gd` hardcodes a 3rd copy of each
+  LevelTerminal, LootBoxTerminal**. ~~**Entity FACING**~~ ✅ done — `Silhouette.face()/face_smooth()`;
+  the Player snaps to the reticle, mobs ease toward their target, and a locked swing holds `_swing_aim`
+  so the body matches the telegraphed cone. Unblocked by making the contact shadow a CENTRED CIRCLE
+  (rotation-invariant), so no counter-rotation is needed. `tools/ArtPreview.gd` hardcodes a 3rd copy of each
   archetype's tint/radius — instantiate the real scenes instead (as test_silhouette does) so the sheet
   can't drift from the game. Then: **2D lighting pass**, hit/death particles.
 

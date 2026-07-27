@@ -40,6 +40,7 @@ var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
 var _swing_aim: Vector2 = Vector2.RIGHT   # swing direction, LOCKED at telegraph start (sidestep it)
 var _tele_fx: TelegraphFx   # ground-danger shape shown during the wind-up (cone/lane/line)
+var _visual: Silhouette     # the body art, turned to face the target (cached — this runs every frame)
 var _swing_fx: MeleeSwing                 # reused slash VFX for swing attacks (lazy)
 var _use_swing_this_attack: bool = false  # chosen at each telegraph: swing this hit, or slam (lunge)
 var _stun_until: float = 0.0    # wall-clock (s) the mob can act again (Ground Slam etc.)
@@ -69,6 +70,7 @@ func _ready() -> void:
 	if parent:
 		_tele_fx = TelegraphFx.new()
 		parent.add_child(_tele_fx)   # drawn at the mob's origin (ground-danger indicator)
+		_visual = parent.get_node_or_null("Visual") as Silhouette
 	# Aggro-on-damage: a hit drags the mob onto you even from beyond detection_range —
 	# no more free sniping from across the floor.
 	var hc := get_parent().get_node_or_null("HealthComponent")
@@ -173,10 +175,24 @@ func _physics_process(delta: float) -> void:
 		if is_instance_valid(parent):
 			parent.velocity = Vector2.ZERO   # held in place; chase/attack drive suspended
 		return
+	_face_target(delta)
 	match current_state:
 		State.IDLE: _find_target()
 		State.CHASE: _handle_chase(delta)
 		_: pass   # TELEGRAPH/ATTACK/COOLDOWN driven by timers
+
+# Turn the body toward whoever it's hunting (or its heading when it has no target), so the directional
+# silhouettes read — a sniper's muzzle should point at you, not always screen-right. A LOCKED swing keeps
+# its telegraphed arc: the body holds `_swing_aim` so the cone you're dodging matches where it's looking.
+func _face_target(delta: float) -> void:
+	if _visual == null or not is_instance_valid(parent):
+		return
+	if current_state in [State.TELEGRAPH, State.ATTACK] and _use_swing_this_attack:
+		_visual.face(_swing_aim)
+	elif is_instance_valid(target):
+		_visual.face_smooth(target.global_position - parent.global_position, delta)
+	elif parent.velocity.length() > 5.0:
+		_visual.face_smooth(parent.velocity, delta)
 
 func _find_target() -> void:
 	var p := _get_player()

@@ -25,11 +25,11 @@ const SHAPES := ["player", "goblin", "screamer", "brute", "sniper", "cleric", "h
 
 # Halo layers: [scale, alpha] — biggest/faintest first, so they stack into a soft falloff.
 const GLOW_LAYERS: Array[Vector2] = [Vector2(1.55, 0.05), Vector2(1.34, 0.08), Vector2(1.16, 0.13)]
-# Contact shadow: offset "down-right" from the fake north light, squashed into an ellipse.
-const SHADOW_OFFSET := Vector2(0.12, 0.3)   # × radius
-const SHADOW_SQUASH := 0.42                 # y-scale — a floor ellipse, not a ball
-const SHADOW_RADIUS := 0.95                 # × radius
-const SHADOW_ALPHA := 0.34
+# Contact shadow. Deliberately a CENTRED CIRCLE: the body rotates to face its target, and an offset or
+# squashed shadow would spin with it (making the fake light source orbit the mob). A centred circle is
+# rotation-invariant, so facing is free and the grounding still reads.
+const SHADOW_RADIUS := 0.88                 # × radius
+const SHADOW_ALPHA := 0.32
 
 func _ready() -> void:
 	queue_redraw()
@@ -39,13 +39,24 @@ func set_tint(c: Color) -> void:
 	tint = c
 	queue_redraw()
 
+# --- Facing -------------------------------------------------------------------------------------
+# Point the body along `dir`. This is NODE rotation, which does not dirty the cached draw commands —
+# so turning to face a target every frame is free. The directional shapes (the player's kite, the
+# sniper's muzzle, the goblin's eyes) only make sense once something calls these.
+func face(dir: Vector2) -> void:
+	if dir.length_squared() > 0.0001:
+		rotation = dir.angle()
+
+# Eased turn for mobs, so they swing round to face you instead of snapping like a turret.
+func face_smooth(dir: Vector2, delta: float, speed: float = 10.0) -> void:
+	if dir.length_squared() > 0.0001:
+		rotation = lerp_angle(rotation, dir.angle(), minf(1.0, speed * delta))
+
 func _draw() -> void:
 	var body := _points(shape, radius)
-	# Contact shadow first (underneath everything): a squashed dark ellipse offset "down". Flat top-down
-	# art floats without one — this is the 2D stand-in for the grounding a 3D renderer gives you.
-	draw_set_transform(SHADOW_OFFSET * radius, 0.0, Vector2(1.0, SHADOW_SQUASH))
+	# Contact shadow first (underneath everything). Flat top-down art floats without one — this is the
+	# 2D stand-in for the grounding a 3D renderer gives you.
 	draw_circle(Vector2.ZERO, radius * SHADOW_RADIUS, Color(0, 0, 0, SHADOW_ALPHA * tint.a))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if glow:
 		for layer in GLOW_LAYERS:
 			draw_colored_polygon(_scaled(body, layer.x), _shade(0.0, layer.y))
@@ -66,9 +77,8 @@ func _shade(amount: float, alpha_override: float = -1.0) -> Color:
 # --- Shapes -------------------------------------------------------------------------------------
 # Unit-ish polygons (roughly -1..1), scaled by `radius`. Each archetype is a different SILHOUETTE —
 # bulk, spikes and proportions do the reading, since everything is the same flat colour family.
-# NOTE: nothing sets `rotation` on the Visual yet, so the directional shapes (kite, muzzle) always point
-# screen-RIGHT. Wiring facing is a logged follow-up — it's free at render time but the contact shadow
-# has to stop rotating with the body first, or the fake light source spins with the mob.
+# Shapes are authored pointing RIGHT (+x) and turned by `face()` / `face_smooth()`: the Player aims its
+# body with the reticle, mobs swing round toward their target.
 func _points(kind: String, r: float) -> PackedVector2Array:
 	var p: PackedVector2Array
 	match kind:
