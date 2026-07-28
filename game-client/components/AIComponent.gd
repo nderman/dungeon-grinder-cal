@@ -36,8 +36,17 @@ var current_state: State = State.IDLE
 												# you outmaneuver them (and they can't wedge charging through it)
 
 const STUCK_BEELINE_TIME := 2.5   # navmesh-only bosses beeline after this long with no path progress
+# Physically WEDGED is a different failure from "can't path to you": a boss jammed between two cover
+# blocks (or cover and a wall) still has a perfectly valid path — its body just doesn't fit through the
+# gap, so it grinds in place forever. Detected by actual displacement, and recovered by steering back
+# onto its own nav mesh (which, being boss-sized, excludes exactly the gaps it can wedge in).
+const WEDGE_TIME := 1.2           # secs of trying-to-move-but-not-moving before we treat it as wedged
+const WEDGE_SPEED := 8.0          # px/sec below which "moving" doesn't count
+const WEDGE_TELEPORT_TIME := 5.0  # still wedged this long? place it on the mesh outright
 var _active: bool = true
 var _no_progress: float = 0.0   # secs a navmesh-only chaser has made no headway (anti safe-spot)
+var _wedged_for: float = 0.0    # secs it has been trying to move without actually moving
+var _last_pos: Vector2 = Vector2.ZERO
 var _tele_fx: TelegraphFx   # ground-danger shape shown during the wind-up (cone/lane/line)
 var _visual: Silhouette     # the body art, turned to face the target (cached — this runs every frame)
 # Fraction of a wind-up spent TRACKING before the aim commits. The REST is the locked window — shape
@@ -255,8 +264,35 @@ func _handle_chase(delta: float) -> void:
 			# Trash mobs beeline immediately when unreachable, so kiting them behind cover doesn't
 			# leave them stuck out of range.
 			dir = target.global_position - global_position
+		# Wedge check: we're ASKING it to move — if it isn't actually moving, it's jammed in geometry.
+		var moved := parent.global_position.distance_to(_last_pos) / maxf(delta, 0.0001) if parent else 0.0
+		_last_pos = parent.global_position if parent else _last_pos
+		if dir.length() > 1.0 and moved < WEDGE_SPEED:
+			_wedged_for += delta
+		else:
+			_wedged_for = 0.0
+		if _wedged_for >= WEDGE_TIME:
+			dir = _unwedge_dir()   # steer OUT of the gap instead of further into it
 		if dir.length() > 1.0:
 			move_comp.handle_movement(delta, dir.normalized(), move_speed * speed_mult)
+
+# Direction back onto this mob's own nav mesh — the nearest point on it is by definition somewhere its
+# body fits, so it's the way out of a wedge. Falls back to shoving away from the target, since a boss
+# usually wedges while pressing toward you. Hard-places it if it stays stuck absurdly long.
+func _unwedge_dir() -> Vector2:
+	if parent == null:
+		return Vector2.ZERO
+	var map := _agent.get_navigation_map() if _agent else RID()
+	if map.is_valid() and not NavigationServer2D.map_get_regions(map).is_empty():
+		var safe := NavigationServer2D.map_get_closest_point(map, parent.global_position)
+		if _wedged_for >= WEDGE_TELEPORT_TIME:
+			parent.global_position = safe   # last resort: an unkillable stuck boss softlocks the floor
+			_wedged_for = 0.0
+			return Vector2.ZERO
+		var out := safe - parent.global_position
+		if out.length() > 1.0:
+			return out
+	return (parent.global_position - target.global_position) if is_instance_valid(target) else Vector2.ZERO
 
 func _change_state(new_state: State) -> void:
 	current_state = new_state
